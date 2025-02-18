@@ -3,6 +3,7 @@ import { IssfaComponent } from './pages/issfa/issfa.component';
 import { ItinerarioComponent } from './pages/itinerario/itinerario.component';
 import { ItinerarioFormComponent } from './pages/itinerario-form/itinerario-form.component';
 import { HistoryItinerarioComponent } from './pages/history-itinerario/history-itinerario.component';
+import { LoginComponent } from './pages/login/login.component';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: '/welcome' },
@@ -11,4 +12,5 @@ export const routes: Routes = [
   { path: 'itinerario', component: ItinerarioComponent },
   { path: 'itinerario-form', component: ItinerarioFormComponent },
   { path: 'history-itinerario', component: HistoryItinerarioComponent },
+  { path: 'login', component: LoginComponent },
 ];

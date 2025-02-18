@@ -43,7 +43,38 @@
     <nz-header>
       <div class="app-header">
         <span class="header-title">GESTIUM - SERVICIOS LEGALES INTEGRALES</span>
-      </div>
+    
+        <!-- Avatar para iniciar sesión (cuando NO está logueado) -->
+        <nz-avatar 
+            *ngIf="!isLogged(); else isLoggedIn"
+            nzTooltipTitle="Iniciar Sesión" 
+            nzTooltipPlacement="bottomRight" 
+            nz-tooltip
+            nzIcon="user" 
+            routerLink="/login"
+            class="login-avatar"
+        ></nz-avatar>
+    
+        <!-- Cuando está logueado -->
+        <ng-template #isLoggedIn>
+            <button nz-button nz-dropdown [nzDropdownMenu]="menu" class="user-dropdown">
+                <nz-avatar 
+                    [nzSrc]="registersService.currentRegister?.photoURL || 'assets/default-avatar.png'" 
+                    nzIcon="user" 
+                    class="user-avatar">
+                </nz-avatar>
+                <span nz-icon nzType="down"></span>
+            </button>
+    
+            <nz-dropdown-menu #menu="nzDropdownMenu">
+                <ul nz-menu>
+                    <li nz-menu-item>
+                        <a (click)="logout()" style="color: brown;"><span nz-icon nzType="logout" style="color: brown;"></span> Cerrar Sesión</a>
+                    </li>
+                </ul>
+            </nz-dropdown-menu>
+        </ng-template>
+    </div>    
     </nz-header>
     <nz-content>
       <div class="inner-content">

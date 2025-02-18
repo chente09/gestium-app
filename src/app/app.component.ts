@@ -4,6 +4,15 @@ import { Router, RouterLink, RouterModule, RouterOutlet } from '@angular/router'
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
+import { RegistersService } from './services/registers/registers.service';
+import { UsersService } from './services/users/users.service';
+import { NzAvatarModule } from 'ng-zorro-antd/avatar';
+import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+
+
+import { NzFlexModule } from 'ng-zorro-antd/flex';
+
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 
 @Component({
   selector: 'app-root',
@@ -14,7 +23,11 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
     NzLayoutModule, 
     NzMenuModule,
     RouterModule,
-    CommonModule
+    CommonModule,
+    NzAvatarModule,
+    NzDropDownModule,
+    NzFlexModule,
+    NzToolTipModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
@@ -31,7 +44,11 @@ export class AppComponent {
     { title: 'Banco Pichincha', route: null } // Este no tiene ruta
   ];
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    public registersService: RegistersService,
+    private usersService: UsersService  
+  ) {}
 
   ngOnInit() {
     this.activeRoute = this.router.url; // Captura la ruta activa al iniciar
@@ -47,5 +64,18 @@ export class AppComponent {
 
   irWelcome() {
     this.router.navigate(['/welcome']);
+  }
+
+  isLogged(): boolean {
+    return this.usersService.getCurrentUser() !== null;
+  }
+
+  logout(): void {
+    this.registersService.currentRegister = undefined;
+    this.usersService.logout();
+    this.router.navigate(['/login']).then(() => {
+      // Forzar la recarga de la página
+      window.location.reload();
+    });
   }
 }

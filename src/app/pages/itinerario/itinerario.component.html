@@ -6,7 +6,7 @@
         <a routerLink="/history-itinerario" class="link">Historial de Itinerario</a>
     </div>
 </div>
-<div style="width: 1300px;">
+<div >
     
     <div class="filters">
         <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()" nzPlaceHolder="Filtrar por área">
@@ -21,18 +21,17 @@
         (nzCurrentPageDataChange)="onCurrentPageDataChange($event)">
         <thead>
             <tr>
-
-                <th nzWidth="10%">Estado</th>
-                <th nzWidth="15%">Área</th>
-                <th nzWidth="10%">Juzgado</th>
-                <th nzWidth="10%">Piso</th>
-                <th nzWidth="20%">Trámite</th>
-                <th nzWidth="15%">Solicita</th>
-                <th nzWidth="15%">Fecha Solicitud</th>
-                <th nzWidth="15%">Fecha Término</th>
-                <th nzWidth="20%">Observaciones</th>
-                <th nzWidth="20%">Documentos</th>
-                <th nzWidth="5%">Acciones</th>
+                <th nzWidth="6%">Estado</th>
+                <th nzWidth="12%">Área</th>
+                <th nzWidth="6%">Juzgado</th>
+                <th nzWidth="8%">Piso</th>
+                <th nzWidth="15%">Trámite</th>
+                <th nzWidth="12%">Solicitante</th>
+                <th nzWidth="13%">Fecha de Solicitud</th>
+                <th nzWidth="13%">Fecha de Término</th>
+                <th nzWidth="10%">Observaciones</th>
+                <th nzWidth="10%">Documentos</th>
+                <th nzWidth="7%">Acciones</th>
             </tr>
         </thead>
         <tbody *ngIf="rowSelectionTable.data && rowSelectionTable.data.length > 0; else emptyTable">

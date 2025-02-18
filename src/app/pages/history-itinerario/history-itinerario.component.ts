@@ -8,6 +8,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import {NzPopconfirmModule} from 'ng-zorro-antd/popconfirm';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { RouterModule } from '@angular/router';
 
 
 
@@ -21,7 +22,8 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
     FormsModule,
     NzPopconfirmModule,
     NzButtonModule,
-    NzIconModule
+    NzIconModule,
+    RouterModule
   ],
   templateUrl: './history-itinerario.component.html',
   styleUrl: './history-itinerario.component.css'

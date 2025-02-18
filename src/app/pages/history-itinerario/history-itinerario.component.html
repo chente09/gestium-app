@@ -1,23 +1,31 @@
+<div class="header-grid">
+    <div class="header-item">
+        <a routerLink="/itinerario-form" class="link">Registrar nueva actividad</a>
+    </div>
+    <div class="header-item">
+        <a routerLink="/itinerario" class="link">Volver</a>
+    </div>
+</div>
 <div style="width: 1800px;">
     <nz-table class="itinerario-table" #itinerarioTable nzBordered [nzData]="itinerarios" nzTableLayout="fixed" nzPagination="true" [nzPageSize]="5" nzShowSizeChanger="true" nzSize="small">
         <thead>
             <tr>
-                <th nzWidth="10%">Área</th>
-                <th nzWidth="10%">Estado</th>
-                <th nzWidth="10%">Juzgado</th>
-                <th nzWidth="10%">Piso</th>
-                <th nzWidth="15%">Trámite</th>
-                <th nzWidth="15%">Solicita</th>
-                <th nzWidth="15%">Fecha Solicitud</th>
-                <th nzWidth="15%">Fecha Término</th>
-                <th nzWidth="15%">Observaciones</th>
-                <th nzWidth="10%">Imagen</th>
-                <th nzWidth="10%">PDF</th>
-                <th nzWidth="15%">Fecha Completado</th>
-                <th nzWidth="15%">Hora Completado</th>
-                <th nzWidth="19%">Observaciones Completado</th>
-                <th nzWidth="10%">Acciones</th>
-            </tr>
+                <th nzWidth="7%">Área</th>
+                <th nzWidth="7%">Estado</th>
+                <th nzWidth="7%">Juzgado</th>
+                <th nzWidth="6%">Piso</th>
+                <th nzWidth="10%">Trámite</th>
+                <th nzWidth="10%">Solicitante</th>
+                <th nzWidth="8%">Fecha de Solicitud</th>
+                <th nzWidth="8%">Fecha de Término</th>
+                <th nzWidth="7%">Observaciones</th>
+                <th nzWidth="6%">Imagen</th>
+                <th nzWidth="6%">PDF</th>
+                <th nzWidth="8%">Fecha Completado</th>
+                <th nzWidth="6%">Hora Completado</th>
+                <th nzWidth="8%">Obs. Completado</th>
+                <th nzWidth="6%">Acciones</th>
+            </tr>            
         </thead>
         <tbody *ngIf="itinerarios.length > 0">
             <tr *ngFor="let item of itinerarios; trackBy: trackById">

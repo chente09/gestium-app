@@ -34,3 +34,30 @@
     width: 100%; /* Ajusta el ancho del input a la celda */
     box-sizing: border-box; /* Evita que el padding afecte el tamaño */
 }
+
+.header-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Dos columnas iguales */
+    gap: 20px;
+    margin-bottom: 20px;
+    
+}
+
+.header-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #eff2f5;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.link {
+    font-size: 18px;
+    color: #d3272c;
+    text-decoration: none;
+}
+
+.link:hover {
+    text-decoration: underline;
+}

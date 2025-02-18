@@ -8,7 +8,6 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 
 import { ItinerarioService, Itinerario } from '../../services/itinerario/itinerario.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { RouterModule } from '@angular/router';
@@ -27,7 +26,6 @@ import { RouterModule } from '@angular/router';
     NzBreadCrumbModule,
     RouterModule
   ],
-  providers:[NzModalService],
   templateUrl: './itinerario.component.html',
   styleUrl: './itinerario.component.css'
 })
@@ -50,7 +48,6 @@ export class ItinerarioComponent implements OnInit {
   constructor(
     private itinerarioService: ItinerarioService,
     private message: NzMessageService,
-    private modal: NzModalService
   ) {}
   ngOnInit(): void {
     this.itinerarioService.getItinerarios().subscribe(data => {

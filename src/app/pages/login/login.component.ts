@@ -8,9 +8,8 @@ import { FormGroup, FormBuilder, Validators, ReactiveFormsModule, AbstractContro
 import { RegistersService } from '../../services/registers/registers.service';
 import { Router } from '@angular/router';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { signInWithRedirect } from '@angular/fire/auth';
 
 
 @Component({
@@ -49,8 +48,21 @@ export class LoginComponent {
       password: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', Validators.required]
     }, { validators: this.passwordMatchValidator });
+
+    this.checkRedirectResult();
   }
 
+  // Verifica si hay un usuario después de la redirección
+checkRedirectResult(): void {
+  const auth = getAuth();
+  getRedirectResult(auth)
+    .then(response => {
+      if (response) {
+        this.handleGoogleLogin(response);
+      }
+    })
+    .catch(error => this.handleGoogleError(error));
+}
   emailGestiumValidator(control: AbstractControl): ValidationErrors | null {
     const email = control.value?.trim();
     return email && email.includes('gestium') ? null : { gestiumEmail: true };

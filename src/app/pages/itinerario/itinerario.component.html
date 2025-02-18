@@ -1,0 +1,70 @@
+<div class="header-grid">
+    <div class="header-item">
+        <a routerLink="/itinerario-form" class="link">Registrar nueva actividad</a>
+    </div>
+    <div class="header-item">
+        <a routerLink="/history-itinerario" class="link">Historial de Itinerario</a>
+    </div>
+</div>
+<div style="width: 1300px;">
+    
+    <div class="filters">
+        <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()" nzPlaceHolder="Filtrar por área">
+            <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
+        </nz-select>
+        <nz-date-picker [formControl]="selectedDate" (ngModelChange)="filterItinerarios()" [nzFormat]="'yyyy-MM-dd'">
+        </nz-date-picker>
+        <button nz-button nzType="default" (click)="showAllAreas()">Mostrar todas</button>
+    </div>
+    <nz-table class="itinerario-table" #rowSelectionTable nzBordered nzShowPagination nzShowSizeChanger
+        [nzData]="filteredItinerarios" [nzLoading]="loading"
+        (nzCurrentPageDataChange)="onCurrentPageDataChange($event)">
+        <thead>
+            <tr>
+
+                <th nzWidth="10%">Estado</th>
+                <th nzWidth="15%">Área</th>
+                <th nzWidth="10%">Juzgado</th>
+                <th nzWidth="10%">Piso</th>
+                <th nzWidth="20%">Trámite</th>
+                <th nzWidth="15%">Solicita</th>
+                <th nzWidth="15%">Fecha Solicitud</th>
+                <th nzWidth="15%">Fecha Término</th>
+                <th nzWidth="20%">Observaciones</th>
+                <th nzWidth="20%">Documentos</th>
+                <th nzWidth="5%">Acciones</th>
+            </tr>
+        </thead>
+        <tbody *ngIf="rowSelectionTable.data && rowSelectionTable.data.length > 0; else emptyTable">
+            <tr *ngFor="let item of rowSelectionTable.data; trackBy: trackById">
+                <td>
+                    <nz-tag [nzColor]="item.estado ? 'green' : 'red'">
+                        {{ item.estado ? 'Completado' : 'Pendiente' }}
+                    </nz-tag>
+                </td>
+                <td>{{ item.area }}</td>
+                <td>{{ item.juzgado }}</td>
+                <td>{{ item.piso }}</td>
+                <td>{{ item.tramite }}</td>
+                <td>{{ item.solicita }}</td>
+                <td>{{ item.fechaSolicitud }}</td>
+                <td>{{ item.fechaTermino }}</td>
+                <td>{{ item.observaciones }}</td>
+                <td>{{ item.imagen || item.pdf || 'N/A' }}</td>
+                <td>
+                    <button *ngIf="!item.estado" nz-button nzType="primary">Hecho</button>
+                </td>
+            </tr>
+        </tbody>
+
+        <!-- Template para cuando no hay datos -->
+        <ng-template #emptyTable>
+            <tbody>
+                <tr>
+                    <td colspan="11" style="text-align: center;">No hay datos disponibles</td>
+                </tr>
+            </tbody>
+        </ng-template>
+
+    </nz-table>
+</div>

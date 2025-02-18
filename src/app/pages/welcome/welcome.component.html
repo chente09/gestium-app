@@ -1,0 +1,39 @@
+<nz-layout class="welcome-container">
+    <div class="welcome-header">
+        <h1>Bienvenido a GESTIUM - Servicios Legales Integrales</h1>
+        <p>Selecciona una opción para comenzar.</p>
+    </div>
+
+    <nz-card [nzBordered]="true">
+        <h2 class="title">Áreas</h2>
+        <hr>
+        <nz-row [nzGutter]="16" justify="center">
+            <nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="12" *ngFor="let item of sections">
+                <a [routerLink]="item.route" class="section-link">
+                    <nz-card class="section-card" [nzBordered]="false" [nzHoverable]="true">
+                        <div class="section-avatar">
+                            <nz-icon [nzType]="item.icon" nzTheme="outline" class="section-icon"></nz-icon>
+                        </div>
+                        <nz-card-meta [nzTitle]="item.title" [nzDescription]="item.description"></nz-card-meta>
+                    </nz-card>
+                </a>
+            </nz-col>
+        </nz-row>
+    </nz-card>
+    <nz-card [nzBordered]="true">
+        <h2 class="title">Utilidades</h2>
+        <hr>
+        <nz-row [nzGutter]="16" justify="center">
+            <nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="12" *ngFor="let item of sections2">
+                <a [routerLink]="item.route" class="section-link">
+                    <nz-card class="section-card" [nzBordered]="false" [nzHoverable]="true">
+                        <div class="section-avatar">
+                            <nz-icon [nzType]="item.icon" nzTheme="outline" class="section-icon"></nz-icon>
+                        </div>
+                        <nz-card-meta [nzTitle]="item.title" [nzDescription]="item.description"></nz-card-meta>
+                    </nz-card>
+                </a>
+            </nz-col>
+        </nz-row>
+    </nz-card>
+</nz-layout>

@@ -1,0 +1,38 @@
+.welcome-container {
+    text-align: center;
+    padding: 20px;
+}
+
+.welcome-header h1 {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.section-avatar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 6px; /* Ajusta el espacio según lo necesites */
+}
+
+.section-icon {
+    font-size: 30px; /* Ajusta el tamaño del icono según lo necesites */
+}
+
+.section-card {
+    background-color: #eff2f5;
+    padding: 16px; 
+    margin-top: 5px;
+    margin-bottom: 5px;
+    font-size: 19px;
+}
+
+@media (max-width: 768px) {
+    .section-card {
+      width: 100%; /* Asegura que las tarjetas ocupen todo el ancho */
+    }
+}
+
+.title {
+    text-align: left;
+}

@@ -1,0 +1,135 @@
+:host {
+  display: flex;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  font-size: 20px;
+}
+
+.app-layout {
+  height: 100vh;
+  display: flex;
+}
+
+.menu-sidebar {
+  position: relative;
+  z-index: 10;
+  height: 100vh;
+  box-shadow: 2px 0 6px rgba(0,21,41,.35);
+  overflow-y: auto;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centra el título */
+  height: 64px;
+  padding: 0 24px;
+  background: #001529;
+  position: relative;
+}
+
+
+.header-title {
+  color: #fff;
+  font-weight: lighter;
+  font-size: 22px;
+  text-align: center;
+  flex-grow: 1;
+  white-space: nowrap; /* Evita que el texto se divida en varias líneas */
+}
+@media (max-width: 768px) {
+  .header-trigger {
+    font-size: 20px;
+  }
+  .header-title {
+    font-size: 10px; /* Reduce el tamaño del título en pantallas pequeñas */
+  }
+}
+
+li {
+  font-size: 15px;
+}
+
+.header-title:hover {
+  color: #d3272c;
+}
+.sidebar-logo {
+  position: relative;
+  height: 64px;
+  padding-left: 12px;
+  overflow: hidden;
+  line-height: 64px;
+  background: #001529;
+  transition: all .3s;
+}
+
+.sidebar-logo img {
+  display: inline-block;
+  height: 60px;
+  width: 60px;
+  vertical-align: middle;
+}
+
+.sidebar-logo h1 {
+  display: inline-block;
+  margin: 0 0 0 20px;
+  color: #fff;
+  font-weight: lighter;
+  font-size: 25px;
+  vertical-align: middle;
+}
+.sidebar-logo h1:hover {
+  color: #d3272c;
+}
+nz-header {
+  padding: 0;
+  width: 100%;
+  z-index: 2;
+}
+
+nz-content {
+  margin: 24px;
+}
+
+.inner-content {
+  padding: 24px;
+  background: #fff;
+  height: 100%;
+}
+
+nz-layout {
+  flex-grow: 1; /* Hace que el contenido principal ocupe el espacio restante */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+nz-content {
+  flex-grow: 1; /* Hace que el contenido crezca sin afectar el header */
+  overflow: hidden; /* Evita que el contenido principal haga scroll */
+  display: flex;
+}
+
+.inner-content {
+  flex-grow: 1;
+  height: 100%;
+  overflow-y: auto; /* Permite el scroll dentro del área de contenido sin afectar el header */
+  scrollbar-width: none;
+}
+.menu-collapse {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 12px;
+  color: #fff;
+  transition: all 0.3s;
+}
+
+.nzIcon {
+  font-size: 40px;
+}
+.ant-menu-dark.ant-menu-dark:not(.ant-menu-horizontal) .ant-menu-item-selected {
+  background-color: #d3272d81; 
+}

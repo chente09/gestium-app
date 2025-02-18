@@ -128,15 +128,25 @@ checkRedirectResult(): void {
     const auth = getAuth();
     const provider = new GoogleAuthProvider();
   
-    if (window.location.hostname === 'localhost') {
-      // Usa signInWithPopup en desarrollo
-      signInWithPopup(auth, provider)
-        .then(response => this.handleGoogleLogin(response))
-        .catch(error => this.handleGoogleError(error));
-    } else {
-      // Usa signInWithRedirect en producción
-      signInWithRedirect(auth, provider);
-    }
+    signInWithPopup(auth, provider)
+      .then((response) => {
+        const userEmail = response.user.email?.trim();
+        console.log("Correo del usuario:", userEmail);
+  
+        if (userEmail && userEmail.includes('gestium') && userEmail.includes('@gmail.com')) {
+          this.message.success('Inicio de sesión con Google exitoso.');
+          this.router.navigate(['/welcome']);
+          this.resetForms();
+        } else {
+          this.message.warning('Solo los correos autorizados pueden iniciar sesión.');
+          this.registerService.logout();
+          this.resetForms();
+        }
+      })
+      .catch((error) => {
+        console.log("Error al iniciar sesión con Google:", error);
+        this.message.error('Error al intentar iniciar sesión con Google.');
+      });
   }
   
   // Maneja la respuesta del login

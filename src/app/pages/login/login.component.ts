@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { NzCardModule } from 'ng-zorro-antd/card';
+import { signInWithRedirect } from '@angular/fire/auth';
 
 
 @Component({
@@ -115,26 +116,39 @@ export class LoginComponent {
     const auth = getAuth();
     const provider = new GoogleAuthProvider();
   
-    signInWithPopup(auth, provider)
-      .then((response) => {
-        const userEmail = response.user.email?.trim();
-        console.log("Correo del usuario:", userEmail);
-  
-        if (userEmail && userEmail.includes('gestium') && userEmail.includes('@gmail.com')) {
-          this.message.success('Inicio de sesión con Google exitoso.');
-          this.router.navigate(['/welcome']);
-          this.resetForms();
-        } else {
-          this.message.warning('Solo los correos autorizados pueden iniciar sesión.');
-          this.registerService.logout();
-          this.resetForms();
-        }
-      })
-      .catch((error) => {
-        console.log("Error al iniciar sesión con Google:", error);
-        this.message.error('Error al intentar iniciar sesión con Google.');
-      });
+    if (window.location.hostname === 'localhost') {
+      // Usa signInWithPopup en desarrollo
+      signInWithPopup(auth, provider)
+        .then(response => this.handleGoogleLogin(response))
+        .catch(error => this.handleGoogleError(error));
+    } else {
+      // Usa signInWithRedirect en producción
+      signInWithRedirect(auth, provider);
+    }
   }
+  
+  // Maneja la respuesta del login
+  handleGoogleLogin(response: any): void {
+    const userEmail = response.user.email?.trim();
+    console.log("Correo del usuario:", userEmail);
+  
+    if (userEmail && userEmail.includes('gestium') && userEmail.includes('@gmail.com')) {
+      this.message.success('Inicio de sesión con Google exitoso.');
+      this.router.navigate(['/welcome']);
+      this.resetForms();
+    } else {
+      this.message.warning('Solo los correos autorizados pueden iniciar sesión.');
+      this.registerService.logout();
+      this.resetForms();
+    }
+  }
+  
+  // Maneja errores del login
+  handleGoogleError(error: any): void {
+    console.log("Error al iniciar sesión con Google:", error);
+    this.message.error('Error al intentar iniciar sesión con Google.');
+  }
+  
   
   toggleRegister(): void {
     this.isRegistering = !this.isRegistering;

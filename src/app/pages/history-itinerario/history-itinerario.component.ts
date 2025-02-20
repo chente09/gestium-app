@@ -5,14 +5,20 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import {NzPopconfirmModule} from 'ng-zorro-antd/popconfirm';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { RouterModule } from '@angular/router';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { ChangeDetectorRef } from '@angular/core';
+import { Subject, takeUntil } from 'rxjs';
 
+enum Estado {
+  COMPLETADO = 'completado',
+  INCOMPLETO = 'incompleto',
+  PENDIENTE = 'pendiente'
+}
 
 @Component({
   selector: 'app-history-itinerario',
@@ -42,10 +48,12 @@ export class HistoryItinerarioComponent implements OnInit {
   selectedArea = new FormControl('');
   selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
-  
+  selectedEstado = new FormControl(null);
+  estados: string[] = ['Completo', 'Incompleto', 'Pendiente']; // Agrega los estados que manejes
   listOfCurrentPageData: Itinerario[] = [];
   checked = false;
   indeterminate = false;
+  Estado = Estado;
 
   constructor(
     private itinerarioService: ItinerarioService,
@@ -53,77 +61,80 @@ export class HistoryItinerarioComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) { }
 
+  private destroy$ = new Subject<void>();
+
   ngOnInit(): void {
     this.itinerarioService.getItinerarios().subscribe((data) => {
       this.itinerarios = data;
       this.updateEditCache(this.itinerarios);
       this.filterItinerarios();  // Filtrar al cargar los datos
     });
-  
+
     this.initEditCache();
-  
-    this.selectedArea.valueChanges.subscribe(value => {
-      console.log('Cambio en área:', value);
-      this.filterItinerarios();
-    });
-  
-    this.selectedDate.valueChanges.subscribe(value => {
-      console.log('Cambio en fecha:', value);
-      this.filterItinerarios();
-    });
+
+    this.selectedArea.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
+  this.selectedDate.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
+  this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
   }
-  
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   filterItinerarios(): void {
     const selectedAreaValue = this.selectedArea.value;
+    const selectedEstadoValue = this.selectedEstado.value;
     const [fechaInicio, fechaFin] = this.selectedDate.value || [null, null];
-  
-    console.log('Aplicando filtros...');
-    console.log('Área seleccionada:', selectedAreaValue);
-    console.log('Fecha seleccionada:', fechaInicio, fechaFin);
-  
+
     this.filteredItinerarios = this.itinerarios.filter(item => {
       const estadoStr = String(item.estado).toLowerCase();
-      const isPendingOrIncomplete = estadoStr === 'false' || estadoStr === 'incompleto';
+      const isEstadoMatch = selectedEstadoValue ? estadoStr === String(selectedEstadoValue).toLowerCase() : true;
       const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
-  
+
       const fechaSolicitud = new Date(item.fechaSolicitud);
       const isDateInRange =
         (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
         (!fechaFin || fechaSolicitud <= new Date(fechaFin));
-  
-      return isPendingOrIncomplete && isAreaMatch && isDateInRange;
+
+      return isEstadoMatch && isAreaMatch && isDateInRange;
     });
-  
-    console.log('Itinerarios filtrados:', this.filteredItinerarios);
+
     this.cdr.detectChanges();
   }
-  
 
   showAllAreas(): void {
     this.selectedArea.setValue('');
+    this.selectedDate.setValue([null, null]);
+    this.selectedEstado.setValue(null);
     this.filterItinerarios();
   }
-  getEstadoColor(estado: any): string {
-    if (estado === true || estado === 'true') {
-      return 'green'; // Completado
-    } else if (estado === 'incompleto') {
-      return 'orange'; // Incompleto
-    } else {
-      return 'red'; // Pendiente
+  getEstadoColor(estado: Estado): string {
+    switch (estado) {
+      case Estado.COMPLETADO:
+        return 'green'; // Completado
+      case Estado.INCOMPLETO:
+        return 'orange'; // Incompleto
+      case Estado.PENDIENTE:
+        return 'red'; // Pendiente
+      default:
+        return 'gray'; // En caso de que el estado no sea válido
     }
   }
-  
-  getEstadoTexto(estado: any): string {
-    if (estado === true || estado === 'true') {
-      return 'Completado';
-    } else if (estado === 'incompleto') {
-      return 'Incompleto';
-    } else {
-      return 'Pendiente';
+
+  getEstadoTexto(estado: Estado): string {
+    switch (estado) {
+      case Estado.COMPLETADO:
+        return 'Completado';
+      case Estado.INCOMPLETO:
+        return 'Incompleto';
+      case Estado.PENDIENTE:
+        return 'Pendiente';
+      default:
+        return 'Estado desconocido'; // En caso de que el estado no sea válido
     }
   }
-  
+
   private initEditCache(): void {
     this.itinerarios.forEach(item => {
       if (!this.editCache[item.id]) {
@@ -150,33 +161,31 @@ export class HistoryItinerarioComponent implements OnInit {
   }
   async saveEdit(id: string): Promise<void> {
     if (!this.editCache[id]) return;
-
+  
     const updatedItinerario = this.editCache[id].data;
     const index = this.itinerarios.findIndex(item => item.id === id);
-
     if (index === -1) return;
-
-    // Evitar actualizaciones innecesarias
+  
     if (JSON.stringify(this.itinerarios[index]) === JSON.stringify(updatedItinerario)) {
-      console.log('No hay cambios en el itinerario.');
+      this.message.info('No se han realizado cambios.');
       this.editCache[id].edit = false;
       return;
     }
-
+  
     try {
       await this.itinerarioService.updateItinerario(id, updatedItinerario);
-      console.log('Itinerario actualizado');
-
-      // Actualizar la lista original
       this.itinerarios[index] = { ...updatedItinerario };
       this.editCache[id].edit = false;
+      this.message.success('Itinerario actualizado correctamente.');
     } catch (error) {
+      this.message.error('Error al actualizar el itinerario. Intente nuevamente.');
       console.error('Error al actualizar el itinerario', error);
     }
   }
+  
   updateEditCache(itinerarios: Itinerario[]): void {
     itinerarios.forEach(item => {
-      if (item.id) {
+      if (!this.editCache[item.id]) { // Solo agregar si no existe
         this.editCache[item.id] = {
           edit: false,
           data: { ...item }
@@ -186,8 +195,9 @@ export class HistoryItinerarioComponent implements OnInit {
   }
   eliminar(id: string): void {
     this.itinerarioService.deleteItinerario(id).then(() => {
-      this.itinerarios = this.itinerarios.filter(it => it.id !== id);
       this.message.success('Itinerario eliminado correctamente.');
+      this.itinerarios = this.itinerarios.filter(it => it.id !== id);
+      this.filterItinerarios(); // Asegurar que la vista refleje la eliminación
     }).catch(error => {
       this.message.error('Error al eliminar el itinerario.');
       console.error(error);

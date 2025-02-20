@@ -67,7 +67,19 @@
                     </ng-template>
                 </td>
                 <td>
-                    <button *ngIf="!item.estado" nz-button nzType="primary">Hecho</button>
+                    <ng-container>
+                        <!-- Botón "Completado" -->
+                        <button *ngIf="item.estado !== Estado.COMPLETADO" nz-button nzType="primary"
+                            (click)="setEstado(item, Estado.COMPLETADO)">
+                            Completado
+                        </button>
+
+                        <!-- Botón "En Proceso" -->
+                        <button *ngIf="item.estado !== Estado.INCOMPLETO" nz-button nzType="default"
+                            (click)="setEstado(item, Estado.INCOMPLETO)">
+                            En Proceso
+                        </button>
+                    </ng-container>
                 </td>
             </tr>
         </tbody>
@@ -80,6 +92,30 @@
                 </tr>
             </tbody>
         </ng-template>
+
+        <!-- Formulario visible solo cuando se presiona "Completado" -->
+        <div *ngIf="mostrarFormulario">
+            <h3>Detalles de Finalización</h3>
+
+            <label>Observaciones:</label>
+            <input nz-input [(ngModel)]="selectedItem.obsCompletado" (input)="validarFormulario()" name="observaciones"
+                placeholder="Ingrese observaciones" />
+
+            <label>Fotografía:</label>
+            <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true" [(nzFileList)]="imageFileList"
+                (nzChange)="onFileSelected($event)">
+                <div class="upload-button"><i nz-icon nzType="upload"></i> Subir Imagen</div>
+            </nz-upload>
+
+            <!-- Botón "Guardar" solo si el formulario es válido -->
+            <button nz-button nzType="primary" type="button" (click)="guardarEstado()" [disabled]="!formularioValido">
+                Guardar
+            </button>
+            <button nz-button nzType="default" type="button" (click)="mostrarFormulario = false">
+                Cancelar
+            </button>
+            
+        </div>
 
     </nz-table>
 </div>

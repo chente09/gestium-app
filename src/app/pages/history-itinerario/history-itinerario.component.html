@@ -8,12 +8,18 @@
 </div>
 <div style="width: 1800px;">
     <div class="filters">
-        <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()" nzPlaceHolder="Filtrar por área">
+        <nz-select [formControl]="selectedArea" nzPlaceHolder="Filtrar por área">
             <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
         </nz-select>
-        <nz-range-picker [formControl]="selectedDate" (ngModelChange)="filterItinerarios()"></nz-range-picker>
+    
+        <nz-select [formControl]="selectedEstado" nzPlaceHolder="Filtrar por estado">
+            <nz-option *ngFor="let estado of estados" [nzValue]="estado" [nzLabel]="estado"></nz-option>
+        </nz-select>        
+    
+        <nz-range-picker [formControl]="selectedDate"></nz-range-picker>
+    
         <button nz-button nzType="default" (click)="showAllAreas()">Mostrar todas</button>
-    </div>
+    </div>    
     <nz-table class="itinerario-table" #itinerarioTable nzBordered [nzData]="filteredItinerarios" nzTableLayout="fixed"
         nzPagination="true" [nzPageSize]="5" nzShowSizeChanger="true" nzSize="small">
         <thead>
@@ -77,7 +83,16 @@
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.fechaCompletado }}</td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.horaCompletado }}</td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.obsCompletado }}</td>
-                <td *ngIf="!editCache[item.id]?.edit">{{ item.imgcompletado }}</td>
+                <td *ngIf="!editCache[item.id]?.edit">
+                    <ng-container *ngIf="item.imgcompletado; else noImage">
+                        <a [href]="item.imgcompletado" target="_blank">
+                            <img [src]="item.imgcompletado" alt="Imagen" width="100" style="cursor: pointer;">
+                        </a>
+                    </ng-container>
+                    <ng-template #noImage>
+                        N/A
+                    </ng-template>
+                </td>
 
                 <!-- Modo edición -->
                 <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input

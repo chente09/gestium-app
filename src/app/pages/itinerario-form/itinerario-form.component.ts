@@ -14,6 +14,12 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzUploadModule } from 'ng-zorro-antd/upload';
 
+enum Estado {
+  COMPLETADO = 'completado',
+  INCOMPLETO = 'incompleto',
+  PENDIENTE = 'pendiente'
+}
+
 @Component({
   selector: 'app-itinerario-form',
   standalone: true,
@@ -75,7 +81,7 @@ export class ItinerarioFormComponent implements OnInit {
       solicita: [''],
       fechaSolicitud: [new Date().toISOString().split('T')[0], Validators.required],
       fechaTermino: ['', Validators.required],
-      estado: [false],
+      estado: [Estado.PENDIENTE, Validators.required],
       observaciones: [''],
       area: [this.areas[0]],
     });
@@ -88,26 +94,20 @@ export class ItinerarioFormComponent implements OnInit {
     this.itinerarioForm.patchValue({ area });
   }
   onImageSelected(event: any) {
-    const file = event.file.originFileObj;  // Extrae el archivo correctamente
+    const file = event.file?.originFileObj;
     if (file) {
-      this.selectedImage = file;
+        this.selectedImage = file;
     }
-  }
-
-  onImage2Selected(event: any) {
-    const file = event.file.originFileObj;  // Extrae el archivo correctamente
-    if (file) {
-      this.selectedImage2 = file;
-    }
-  }
+}
 
   // 📂 Manejar selección de PDF
   onPDFSelected(event: any) {
-    const file = event.file.originFileObj;  // Extrae el archivo correctamente
+    const file = event.file?.originFileObj;
     if (file) {
-      this.selectedPDF = file;
+        this.selectedPDF = file;
     }
-  }
+}
+
   // 🌟 Enviar formulario
   async submitForm(): Promise<void> {
     if (this.itinerarioForm.invalid || !this.selectedArea) {
@@ -125,7 +125,6 @@ export class ItinerarioFormComponent implements OnInit {
         this.itinerarioForm.value,
         this.selectedImage ?? undefined,  // Imagen principal
         this.selectedPDF ?? undefined,    // PDF
-        this.selectedImage2 ?? undefined  // Imagen de completado
       );
       this.message.success('Itinerario guardado correctamente 🎉');
 

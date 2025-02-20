@@ -4,6 +4,12 @@ import { Storage, ref, uploadBytesResumable, getDownloadURL, deleteObject, uploa
 import { map, Observable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
+enum Estado {
+  COMPLETADO = 'completado',
+  INCOMPLETO = 'incompleto',
+  PENDIENTE = 'pendiente'
+}
+
 export interface Itinerario {
   id: string;
   juzgado: string;
@@ -12,7 +18,7 @@ export interface Itinerario {
   solicita: string;
   fechaSolicitud: string;
   fechaTermino: string;
-  estado: boolean;
+  estado: Estado;
   observaciones?: string;
   imagen?: string; //Guardar la URL de la imagen
   pdf?: string; //Guardar la URL del PDF
@@ -35,12 +41,12 @@ export class ItinerarioService {
   async createItinerario(itinerario: Omit<Itinerario, 'id'>, imageFile?: File, pdfFile?: File, selectedImage2?: File): Promise<string> {
     const itinerarioRef = collection(this.firestore, this.collectionName);
     const id = uuidv4(); // Genera un ID único
-  
+
     try {
       let imageUrl = '';
       let pdfUrl = '';
       let image2Url = '';
-  
+
       // 📂 Subir imagen si existe y obtener URL
       if (imageFile) {
         const imagePath = `itinerarios/images/${id}.jpg`;
@@ -48,7 +54,7 @@ export class ItinerarioService {
         await uploadBytes(imageRef, imageFile);
         imageUrl = await getDownloadURL(imageRef); // 🔹 Obtener la URL completa
       }
-  
+
       // 📂 Subir PDF si existe y obtener URL
       if (pdfFile) {
         const pdfPath = `itinerarios/pdfs/${id}.pdf`;
@@ -56,7 +62,7 @@ export class ItinerarioService {
         await uploadBytes(pdfRef, pdfFile);
         pdfUrl = await getDownloadURL(pdfRef); // 🔹 Obtener la URL completa
       }
-  
+
       // 📂 Subir imagen 2 si existe y obtener URL
       if (selectedImage2) {
         const image2Path = `itinerarios/imagesComplete/${id}.jpg`;
@@ -64,21 +70,21 @@ export class ItinerarioService {
         await uploadBytes(image2Ref, selectedImage2);
         image2Url = await getDownloadURL(image2Ref); // 🔹 Obtener la URL completa
       }
-  
+
       // 📄 Guardar en Firestore con las URL de los archivos
-      const newDoc = await addDoc(itinerarioRef, { 
-        ...itinerario, 
+      const newDoc = await addDoc(itinerarioRef, {
+        ...itinerario,
         ...(imageUrl ? { imagen: imageUrl } : {}),
         ...(pdfUrl ? { pdf: pdfUrl } : {}),
         ...(image2Url ? { imgcompletado: image2Url } : {})
       });
-  
+
       return newDoc.id;
     } catch (error: any) {
       throw new Error(`Error al crear el itinerario: ${error.message}`);
     }
   }
-  
+
 
   // 📌 Obtener todos los itinerarios como Observable
   getItinerarios(): Observable<Itinerario[]> {
@@ -106,7 +112,7 @@ export class ItinerarioService {
       )
     ) as Observable<Itinerario[]>;
   }
-  
+
 
   // 📌 Obtener un itinerario por ID
   async getItinerarioById(id: string): Promise<Itinerario | undefined> {
@@ -120,8 +126,19 @@ export class ItinerarioService {
     }
   }
 
+  async uploadImage(filePath: string, file: File): Promise<string> {
+    const fileRef = ref(this.storage, filePath);
+    await uploadBytes(fileRef, file); // Subir el archivo
+    return await getDownloadURL(fileRef); // Retornar la URL del archivo
+  }
+
   // 📌 Actualizar un itinerario con nuevas imágenes o PDFs opcionales
-  async updateItinerario(id: string, itinerario: Partial<Itinerario>, newImageFile?: File, newPdfFile?: File): Promise<void> {
+  async updateItinerario(
+    id: string, 
+    itinerario: Partial<Itinerario>, 
+    newImageFile?: File, 
+    newPdfFile?: File
+): Promise<void> {
     const docRef = doc(this.firestore, `${this.collectionName}/${id}`);
 
     try {
@@ -135,7 +152,9 @@ export class ItinerarioService {
         // 🗑️ Eliminar imagen anterior si existe
         if (itinerario.imagen) {
           const oldImageRef = ref(this.storage, itinerario.imagen);
-          await deleteObject(oldImageRef).catch(() => console.warn('No se pudo eliminar la imagen anterior.'));
+          await deleteObject(oldImageRef).catch((error) => 
+            console.error('Error al eliminar la imagen anterior:', error)
+          );
         }
 
         await uploadBytes(imageRef, newImageFile);
@@ -150,19 +169,23 @@ export class ItinerarioService {
         // 🗑️ Eliminar PDF anterior si existe
         if (itinerario.pdf) {
           const oldPdfRef = ref(this.storage, itinerario.pdf);
-          await deleteObject(oldPdfRef).catch(() => console.warn('No se pudo eliminar el PDF anterior.'));
+          await deleteObject(oldPdfRef).catch((error) => 
+            console.error('Error al eliminar el PDF anterior:', error)
+          );
         }
 
         await uploadBytes(pdfRef, newPdfFile);
         updatedData.pdf = pdfPath;
       }
 
-      // 📄 Actualizar en Firestore
-      await updateDoc(docRef, updatedData);
+      // 📄 Actualizar en Firestore solo si hay cambios
+      if (Object.keys(updatedData).length > 0) {
+        await updateDoc(docRef, updatedData);
+      }
     } catch (error: any) {
       throw new Error(`Error al actualizar el itinerario ${id}: ${error.message}`);
     }
-  }
+}
 
   // 📌 Eliminar un itinerario y sus archivos asociados
   async deleteItinerario(id: string): Promise<void> {
@@ -186,6 +209,12 @@ export class ItinerarioService {
       if (itinerarioData.pdf) {
         const pdfRef = ref(this.storage, itinerarioData.pdf);
         await deleteObject(pdfRef).catch(() => console.warn('No se pudo eliminar el PDF.'));
+      }
+
+      // 🗑️ Eliminar imagen 2 si existe
+      if (itinerarioData.imgcompletado) {
+        const image2Ref = ref(this.storage, itinerarioData.imgcompletado);
+        await deleteObject(image2Ref).catch(() => console.warn('No se pudo eliminar la imagen 2.'));
       }
 
       // 🗑️ Eliminar documento en Firestore

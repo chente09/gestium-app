@@ -86,15 +86,6 @@
         </nz-row>
 
         <nz-form-item>
-            <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
-                (nzChange)="onImage2Selected($event)">
-                <div class="upload-button">
-                    <i nz-icon nzType="upload"></i> Subir Imagen Completada
-                </div>
-            </nz-upload>
-        </nz-form-item>
-
-        <nz-form-item>
             <nz-form-control>
                 <button class="save-button" nz-button nzBlock="true" [disabled]="isLoading"
                     [nzLoading]="isLoading"><nz-icon [nzType]="'save'"></nz-icon> Guardar</button>

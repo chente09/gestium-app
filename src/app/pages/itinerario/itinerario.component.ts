@@ -9,8 +9,8 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { ItinerarioService, Itinerario } from '../../services/itinerario/itinerario.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
-import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { RouterModule } from '@angular/router';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 
 @Component({
   selector: 'app-itinerario',
@@ -23,8 +23,8 @@ import { RouterModule } from '@angular/router';
     NzTagModule,
     NzButtonModule,
     NzDatePickerModule,
-    NzBreadCrumbModule,
-    RouterModule
+    RouterModule,
+    NzIconModule
   ],
   templateUrl: './itinerario.component.html',
   styleUrl: './itinerario.component.css'
@@ -38,7 +38,7 @@ export class ItinerarioComponent implements OnInit {
 
   // Filtros
   selectedArea = new FormControl('');
-  selectedDate = new FormControl(null);
+  selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
 
   listOfCurrentPageData: Itinerario[] = [];
@@ -48,7 +48,7 @@ export class ItinerarioComponent implements OnInit {
   constructor(
     private itinerarioService: ItinerarioService,
     private message: NzMessageService,
-  ) {}
+  ) { }
   ngOnInit(): void {
     this.itinerarioService.getItinerarios().subscribe(data => {
       this.itinerarios = data;
@@ -61,20 +61,45 @@ export class ItinerarioComponent implements OnInit {
   }
 
   filterItinerarios(): void {
-    const today = new Date().toISOString().slice(0, 10);
     const selectedAreaValue = this.selectedArea.value;
-    const selectedDateValue = this.selectedDate.value
-      ? new Date(this.selectedDate.value).toISOString().slice(0, 10)
-      : null;
-
+    const [fechaInicio, fechaFin] = this.selectedDate.value || [null, null];
+  
     this.filteredItinerarios = this.itinerarios.filter(item => {
-      const isToday = item.fechaSolicitud === today;
-      const isPending = !item.estado;
+      // Convertir `estado` a string para evitar problemas de tipo
+      const estadoStr = String(item.estado).toLowerCase();
+  
+      // Verificar si está pendiente o incompleto
+      const isPendingOrIncomplete = estadoStr === 'false' || estadoStr === 'incompleto';
+  
       const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
-      const isDateMatch = selectedDateValue ? item.fechaSolicitud === selectedDateValue : true;
-
-      return isToday && isPending && isAreaMatch && isDateMatch;
+  
+      const fechaSolicitud = new Date(item.fechaSolicitud);
+      const isDateInRange =
+        (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
+        (!fechaFin || fechaSolicitud <= new Date(fechaFin));
+  
+      return isPendingOrIncomplete && isAreaMatch && isDateInRange;
     });
+  }
+
+  getEstadoColor(estado: any): string {
+    if (estado === true || estado === 'true') {
+      return 'green'; // Completado
+    } else if (estado === 'incompleto') {
+      return 'orange'; // Incompleto
+    } else {
+      return 'red'; // Pendiente
+    }
+  }
+
+  getEstadoTexto(estado: any): string {
+    if (estado === true || estado === 'true') {
+      return 'Completado';
+    } else if (estado === 'incompleto') {
+      return 'Incompleto';
+    } else {
+      return 'Pendiente';
+    }
   }
 
   showAllAreas(): void {

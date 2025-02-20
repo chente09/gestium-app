@@ -7,33 +7,44 @@
     </div>
 </div>
 <div style="width: 1800px;">
-    <nz-table class="itinerario-table" #itinerarioTable nzBordered [nzData]="itinerarios" nzTableLayout="fixed" nzPagination="true" [nzPageSize]="5" nzShowSizeChanger="true" nzSize="small">
+    <div class="filters">
+        <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()" nzPlaceHolder="Filtrar por área">
+            <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
+        </nz-select>
+        <nz-range-picker [formControl]="selectedDate" (ngModelChange)="filterItinerarios()"></nz-range-picker>
+        <button nz-button nzType="default" (click)="showAllAreas()">Mostrar todas</button>
+    </div>
+    <nz-table class="itinerario-table" #itinerarioTable nzBordered [nzData]="filteredItinerarios" nzTableLayout="fixed"
+        nzPagination="true" [nzPageSize]="5" nzShowSizeChanger="true" nzSize="small">
         <thead>
             <tr>
-                <th nzWidth="7%">Área</th>
-                <th nzWidth="7%">Estado</th>
-                <th nzWidth="7%">Juzgado</th>
-                <th nzWidth="6%">Piso</th>
-                <th nzWidth="10%">Trámite</th>
-                <th nzWidth="10%">Solicitante</th>
-                <th nzWidth="8%">Fecha de Solicitud</th>
-                <th nzWidth="8%">Fecha de Término</th>
-                <th nzWidth="7%">Observaciones</th>
-                <th nzWidth="6%">Imagen</th>
-                <th nzWidth="6%">PDF</th>
-                <th nzWidth="8%">Fecha Completado</th>
+                <th nzWidth="5%">Área</th>
+                <th nzWidth="6%">Estado</th>
+                <th nzWidth="6%">Juzgado</th>
+                <th nzWidth="5%">Piso</th>
+                <th nzWidth="9%">Trámite</th>
+                <th nzWidth="9%">Solicitante</th>
+                <th nzWidth="7%">Fecha de Solicitud</th>
+                <th nzWidth="7%">Fecha de Término</th>
+                <th nzWidth="6%">Observaciones</th>
+                <th nzWidth="5%">Imagen</th>
+                <th nzWidth="5%">PDF</th>
+                <th nzWidth="7%">Fecha Completado</th>
                 <th nzWidth="6%">Hora Completado</th>
-                <th nzWidth="8%">Obs. Completado</th>
+                <th nzWidth="7%">Obs. Completado</th>
+                <th nzWidth="7%">Imagen Completado</th>
                 <th nzWidth="6%">Acciones</th>
-            </tr>            
+            </tr>
         </thead>
         <tbody *ngIf="itinerarios.length > 0">
-            <tr *ngFor="let item of itinerarios; trackBy: trackById">
+            <tr *ngFor="let item of filteredItinerarios; trackBy: trackById">
                 <!-- Modo lectura -->
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.area }}</td>
-                <td *ngIf="!editCache[item.id]?.edit"><nz-tag [nzColor]="item.estado ? 'green' : 'red'">
-                    {{ item.estado ? 'Completado' : 'Pendiente' }}
-                </nz-tag></td>
+                <td *ngIf="!editCache[item.id]?.edit">
+                    <nz-tag [nzColor]="getEstadoColor(item.estado)">
+                        {{ getEstadoTexto(item.estado) }}
+                    </nz-tag>                      
+                </td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.juzgado }}</td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.piso }}</td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.tramite }}</td>
@@ -41,41 +52,80 @@
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.fechaSolicitud }}</td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.fechaTermino }}</td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.observaciones }}</td>
-                <td *ngIf="!editCache[item.id]?.edit">{{ item.imagen }}</td>
-                <td *ngIf="!editCache[item.id]?.edit">{{ item.pdf }}</td>
+                <!-- Columna de la Imagen -->
+                <td *ngIf="!editCache[item.id]?.edit">
+                    <ng-container *ngIf="item.imagen; else noImage">
+                        <a [href]="item.imagen" target="_blank">
+                            <img [src]="item.imagen" alt="Imagen" width="100" style="cursor: pointer;">
+                        </a>
+                    </ng-container>
+                    <ng-template #noImage>
+                        N/A
+                    </ng-template>
+                </td>
+                <!-- Columna del PDF -->
+                <td *ngIf="!editCache[item.id]?.edit">
+                    <ng-container *ngIf="item.pdf; else noPDF">
+                        <a [href]="item.pdf" download="documento.pdf" target="_blank">
+                            Descargar PDF
+                        </a>
+                    </ng-container>
+                    <ng-template #noPDF>
+                        N/A
+                    </ng-template>
+                </td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.fechaCompletado }}</td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.horaCompletado }}</td>
                 <td *ngIf="!editCache[item.id]?.edit">{{ item.obsCompletado }}</td>
-                
-    
+                <td *ngIf="!editCache[item.id]?.edit">{{ item.imgcompletado }}</td>
+
                 <!-- Modo edición -->
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.area" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.estado" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.juzgado" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.piso" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.tramite" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.solicita" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="date" nz-input [(ngModel)]="editCache[item.id].data.fechaSolicitud" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="date" nz-input [(ngModel)]="editCache[item.id].data.fechaTermino" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.observaciones" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.imagen" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.pdf" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="date" nz-input [(ngModel)]="editCache[item.id].data.fechaCompletado" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="time" nz-input [(ngModel)]="editCache[item.id].data.horaCompletado" /></td>
-                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input [(ngModel)]="editCache[item.id].data.obsCompletado" /></td>
-    
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.area" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.estado" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.juzgado" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.piso" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.tramite" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.solicita" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="date" nz-input
+                        [(ngModel)]="editCache[item.id].data.fechaSolicitud" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="date" nz-input
+                        [(ngModel)]="editCache[item.id].data.fechaTermino" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.observaciones" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.imagen" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.pdf" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="date" nz-input
+                        [(ngModel)]="editCache[item.id].data.fechaCompletado" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="time" nz-input
+                        [(ngModel)]="editCache[item.id].data.horaCompletado" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.obsCompletado" /></td>
+                <td *ngIf="editCache[item.id]?.edit"><input type="text" nz-input
+                        [(ngModel)]="editCache[item.id].data.imgcompletado" /></td>
+
                 <!-- Acciones -->
                 <td>
                     <ng-container *ngIf="!editCache[item.id]?.edit">
                         <!-- Confirmación de eliminación -->
                         <button nz-button nzType="link" nzDanger nz-popconfirm
-                            nzPopconfirmTitle="¿Seguro que quieres eliminar?"
-                            (nzOnConfirm)="eliminar(item.id)"><nz-icon [nzType]="'delete'"></nz-icon></button>
-                        <button nz-button nzType="link" nzInfo (click)="startEdit(item.id)"><nz-icon [nzType]="'edit'"></nz-icon></button>
+                            nzPopconfirmTitle="¿Seguro que quieres eliminar?" (nzOnConfirm)="eliminar(item.id)"><nz-icon
+                                [nzType]="'delete'"></nz-icon></button>
+                        <button nz-button nzType="link" nzInfo (click)="startEdit(item.id)"><nz-icon
+                                [nzType]="'edit'"></nz-icon></button>
                     </ng-container>
                     <ng-container *ngIf="editCache[item.id]?.edit">
-                        <button nz-button nzType="link" (click)="saveEdit(item.id)"><nz-icon [nzType]="'check'"></nz-icon></button>
-                        <button nz-button nzType="link" nzDanger nz-popconfirm nzPopconfirmTitle="¿Seguro que quieres cancelar?"
+                        <button nz-button nzType="link" (click)="saveEdit(item.id)"><nz-icon
+                                [nzType]="'check'"></nz-icon></button>
+                        <button nz-button nzType="link" nzDanger nz-popconfirm
+                            nzPopconfirmTitle="¿Seguro que quieres cancelar?"
                             (nzOnConfirm)="cancelEdit(item.id)"><nz-icon [nzType]="'close'"></nz-icon></button>
                     </ng-container>
                 </td>

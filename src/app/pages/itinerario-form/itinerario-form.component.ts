@@ -11,6 +11,8 @@ import { FormsModule } from '@angular/forms';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { RouterModule } from '@angular/router';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzUploadModule } from 'ng-zorro-antd/upload';
 
 @Component({
   selector: 'app-itinerario-form',
@@ -25,7 +27,9 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
     NzSelectModule,
     FormsModule,
     RouterModule,
-    NzIconModule
+    NzIconModule,
+    NzRadioModule,
+    NzUploadModule
   ],
   templateUrl: './itinerario-form.component.html',
   styleUrl: './itinerario-form.component.css'
@@ -34,17 +38,26 @@ export class ItinerarioFormComponent implements OnInit {
 
   itinerarioForm: FormGroup = new FormGroup({});
   selectedImage: File | null = null; // 🌟 Ahora manejamos imagen y PDF por separado
+  selectedImage2: File | null = null;
   selectedPDF: File | null = null;
   isLoading = false;
   selectedArea: string | null = null;
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
-  selectedFileType: string | null = null;
+  selectedFileType: string = 'image';
+  selectedFileName: string | null = null;
+  imageFileList: any[] = [];
+  pdfFileList: any[] = [];
 
   constructor(
-    private fb: FormBuilder, 
+    private fb: FormBuilder,
     private itinerarioService: ItinerarioService,
     private message: NzMessageService
-  ) { }
+  ) {
+    this.itinerarioForm = this.fb.group({
+      fileType: [''], // Control para el tipo de archivo (imagen o PDF)
+      file: [null]    // Control para el archivo seleccionado
+    });
+  }
 
   ngOnInit(): void {
     this.initForm();
@@ -65,115 +78,87 @@ export class ItinerarioFormComponent implements OnInit {
       estado: [false],
       observaciones: [''],
       area: [this.areas[0]],
-      fileType: [null]
     });
 
     this.selectedArea = this.areas[0];
   }
+
   onAreaChange(area: string): void {
     this.selectedArea = area;
     this.itinerarioForm.patchValue({ area });
   }
-
-
-  // 🌟 Manejar selección de imagen o PDF
-  onFileSelected(event: any, type: 'image' | 'pdf'): void {
-    const file: File = event.target.files[0];
-
-    if (!file) return;
-
-    if (type === 'image') {
-      if (!file.type.startsWith('image/')) {
-        console.warn('Solo se permiten archivos de imagen.');
-        event.target.value = '';
-        return;
-      }
+  onImageSelected(event: any) {
+    const file = event.file.originFileObj;  // Extrae el archivo correctamente
+    if (file) {
       this.selectedImage = file;
-    } else if (type === 'pdf') {
-      if (file.type !== 'application/pdf') {
-        console.warn('Solo se permiten archivos PDF.');
-        event.target.value = '';
-        return;
-      }
-      this.selectedPDF = file;
     }
   }
 
+  onImage2Selected(event: any) {
+    const file = event.file.originFileObj;  // Extrae el archivo correctamente
+    if (file) {
+      this.selectedImage2 = file;
+    }
+  }
+
+  // 📂 Manejar selección de PDF
+  onPDFSelected(event: any) {
+    const file = event.file.originFileObj;  // Extrae el archivo correctamente
+    if (file) {
+      this.selectedPDF = file;
+    }
+  }
   // 🌟 Enviar formulario
   async submitForm(): Promise<void> {
     if (this.itinerarioForm.invalid || !this.selectedArea) {
       this.message.warning('Debe seleccionar un área y completar todos los campos obligatorios.');
       return;
     }
-  
+
     this.isLoading = true;
     this.message.loading('Guardando itinerario...', { nzDuration: 1000 });
-  
+
     try {
       const formData = this.itinerarioForm.value;
-      if (!formData.tramite.trim() || !formData.fechaTermino.trim()) {
-        this.message.error('Los campos obligatorios no pueden estar vacíos.');
-        this.isLoading = false;
-        return;
-      }
-  
-      await this.itinerarioService.addItinerario(
-        formData, 
-        this.selectedImage ?? undefined, 
-        this.selectedPDF ?? undefined
+
+      await this.itinerarioService.createItinerario(
+        this.itinerarioForm.value,
+        this.selectedImage ?? undefined,  // Imagen principal
+        this.selectedPDF ?? undefined,    // PDF
+        this.selectedImage2 ?? undefined  // Imagen de completado
       );
-  
       this.message.success('Itinerario guardado correctamente 🎉');
-  
-      // Reiniciar formulario
+
+      // 🔄 Reiniciar formulario
       this.itinerarioForm.reset({
         fechaSolicitud: new Date().toISOString().split('T')[0], // Mantiene la fecha actual por defecto
         area: this.areas[0]
       });
-  
       this.selectedImage = null;
       this.selectedPDF = null;
+      this.selectedImage2 = null;
       this.selectedArea = this.areas[0];
-  
+
       this.clearFileInputs();
     } catch (error) {
       console.error('Error al guardar el itinerario:', error);
       this.message.error('Hubo un error al guardar el itinerario. Intente de nuevo.');
+    } finally {
+      this.isLoading = false;
     }
-  
-    this.isLoading = false;
-  }  
+
+  }
 
   // 🌟 Método para limpiar los inputs de archivo
   clearFileInputs(): void {
-    const fileInputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
-    fileInputs.forEach(input => (input.value = ''));
+    this.selectedImage = null;
+    this.selectedPDF = null;
+
+    // Vacía las listas de archivos en nz-upload
+    this.imageFileList = [];
+    this.pdfFileList = [];
+
   }
 
-  onFileSelectedAtach(event: Event, fileType: string) {
-    const inputElement = event.target as HTMLInputElement; // Aseguramos que es un input
-    
-    if (!inputElement || !inputElement.files || inputElement.files.length === 0) {
-      this.message.warning('No se seleccionó ningún archivo.');
-      return;
-    }
-  
-    const file = inputElement.files[0];
-  
-    // Validar tipo de archivo
-    if (fileType === 'image' && !file.type.startsWith('image/')) {
-      this.message.error('Debe seleccionar una imagen válida.');
-      inputElement.value = ''; // Limpiar el input
-      return;
-    }
-  
-    if (fileType === 'pdf' && file.type !== 'application/pdf') {
-      this.message.error('Debe seleccionar un archivo PDF válido.');
-      inputElement.value = ''; // Limpiar el input
-      return;
-    }
-  
-    this.message.success(`Archivo seleccionado: ${file.name}`);
-  }
-  
+
 }

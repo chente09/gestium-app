@@ -41,7 +41,8 @@
                 <nz-form-item>
                     <nz-form-label nzFor="solicita" nzWidth="200px">Solicita</nz-form-label>
                     <nz-form-control>
-                        <input nz-input formControlName="solicita" placeholder="SIngresar datos si es necesario especificar quien recibe el trámite" />
+                        <input nz-input formControlName="solicita"
+                            placeholder="SIngresar datos si es necesario especificar quien recibe el trámite" />
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
@@ -55,25 +56,6 @@
             </nz-col>
         </nz-row>
 
-        <!-- <nz-row [nzGutter]="16">
-            <nz-col nzSpan="12">
-                <nz-form-item>
-                    <nz-form-label nzFor="fechaTermino" nzWidth="200px">Fecha de Término</nz-form-label>
-                    <nz-form-control>
-                        <input nz-input formControlName="fechaTermino" type="date" required />
-                    </nz-form-control>
-                </nz-form-item>
-            </nz-col>
-            <nz-col nzSpan="12">
-                <nz-form-item>
-                    <nz-form-label nzFor="estado" nzWidth="200px">Estado</nz-form-label>
-                    <nz-form-control>
-                        <nz-switch formControlName="estado"></nz-switch>
-                    </nz-form-control>
-                </nz-form-item>
-            </nz-col>
-        </nz-row> -->
-
         <nz-form-item>
             <nz-form-label nzFor="observaciones" nzWidth="200px">Observaciones</nz-form-label>
             <nz-form-control>
@@ -81,34 +63,44 @@
             </nz-form-control>
         </nz-form-item>
 
+        <nz-form-label>Archivos</nz-form-label>
+        <nz-row [nzGutter]="16">
+            <nz-col nzSpan="12">
+                <nz-form-item>
+                    <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
+                        [(nzFileList)]="imageFileList" (nzChange)="onImageSelected($event)">
+                        <div class="upload-button"><i nz-icon nzType="upload"></i> Subir Imagen</div>
+                    </nz-upload>
+                </nz-form-item>
+            </nz-col>
+            <nz-col nzSpan="12">
+                <nz-form-item>
+                    <nz-form-item>
+                        <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true"
+                            [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
+                            <div class="upload-button"><i nz-icon nzType="upload"></i> Subir PDF</div>
+                        </nz-upload>
+                    </nz-form-item>
+                </nz-form-item>
+            </nz-col>
+        </nz-row>
+
         <nz-form-item>
-            <nz-form-label nzFor="fileType" nzWidth="200px">Seleccionar Tipo de Archivo</nz-form-label>
-            <nz-form-control>
-                <nz-select formControlName="fileType" nzPlaceHolder="Seleccione un tipo">
-                    <nz-option nzValue="image" nzLabel="Imagen"></nz-option>
-                    <nz-option nzValue="pdf" nzLabel="PDF"></nz-option>
-                </nz-select>
-            </nz-form-control>
+            <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
+                (nzChange)="onImage2Selected($event)">
+                <div class="upload-button">
+                    <i nz-icon nzType="upload"></i> Subir Imagen Completada
+                </div>
+            </nz-upload>
         </nz-form-item>
 
-        <nz-form-item *ngIf="itinerarioForm.get('fileType')?.value">
-            <nz-form-label nzFor="fileInput" nzWidth="200px">Subir Archivo</nz-form-label>
-            <nz-form-control>
-                <input 
-                    type="file" 
-                    [accept]="itinerarioForm.get('fileType')?.value === 'image' ? 'image/*' : 'application/pdf'" 
-                    (change)="onFileSelectedAtach($event, itinerarioForm.get('fileType')?.value)"
-                />
-            </nz-form-control>
-        </nz-form-item>
-
         <nz-form-item>
             <nz-form-control>
-                <button class="save-button" nz-button nzBlock="true" [disabled]="isLoading" [nzLoading]="isLoading" ><nz-icon [nzType]="'save'" ></nz-icon> Guardar</button>
+                <button class="save-button" nz-button nzBlock="true" [disabled]="isLoading"
+                    [nzLoading]="isLoading"><nz-icon [nzType]="'save'"></nz-icon> Guardar</button>
             </nz-form-control>
         </nz-form-item>
     </div>
-
     <p *ngIf="isLoading">Guardando...</p>
 </form>
 <div class="header-grid">

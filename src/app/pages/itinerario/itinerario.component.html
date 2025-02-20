@@ -6,14 +6,12 @@
         <a routerLink="/history-itinerario" class="link">Historial de Itinerario</a>
     </div>
 </div>
-<div >
-    
+<div>
     <div class="filters">
         <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()" nzPlaceHolder="Filtrar por área">
             <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
         </nz-select>
-        <nz-date-picker [formControl]="selectedDate" (ngModelChange)="filterItinerarios()" [nzFormat]="'yyyy-MM-dd'">
-        </nz-date-picker>
+        <nz-range-picker [formControl]="selectedDate" (ngModelChange)="filterItinerarios()"></nz-range-picker>
         <button nz-button nzType="default" (click)="showAllAreas()">Mostrar todas</button>
     </div>
     <nz-table class="itinerario-table" #rowSelectionTable nzBordered nzShowPagination nzShowSizeChanger
@@ -37,8 +35,8 @@
         <tbody *ngIf="rowSelectionTable.data && rowSelectionTable.data.length > 0; else emptyTable">
             <tr *ngFor="let item of rowSelectionTable.data; trackBy: trackById">
                 <td>
-                    <nz-tag [nzColor]="item.estado ? 'green' : 'red'">
-                        {{ item.estado ? 'Completado' : 'Pendiente' }}
+                    <nz-tag [nzColor]="getEstadoColor(item.estado)">
+                        {{ getEstadoTexto(item.estado) }}
                     </nz-tag>
                 </td>
                 <td>{{ item.area }}</td>
@@ -49,7 +47,25 @@
                 <td>{{ item.fechaSolicitud }}</td>
                 <td>{{ item.fechaTermino }}</td>
                 <td>{{ item.observaciones }}</td>
-                <td>{{ item.imagen || item.pdf || 'N/A' }}</td>
+                <td>
+                    <ng-container *ngIf="item.imagen || item.pdf; else noData">
+                        <!-- Mostrar imagen si existe -->
+                        <a *ngIf="item.imagen" [href]="item.imagen" target="_blank">
+                            <img [src]="item.imagen" alt="Imagen" width="100" style="cursor: pointer;">
+                        </a>
+
+                        <!-- Mostrar enlace de descarga si hay PDF -->
+                        <a *ngIf="item.pdf" [href]="item.pdf" download="documento.pdf" target="_blank"
+                            style="color: rgb(190, 31, 31);">
+                            <i nz-icon nzType="download"></i>Descargar PDF
+                        </a>
+                    </ng-container>
+
+                    <!-- Caso cuando no hay imagen ni PDF -->
+                    <ng-template #noData>
+                        N/A
+                    </ng-template>
+                </td>
                 <td>
                     <button *ngIf="!item.estado" nz-button nzType="primary">Hecho</button>
                 </td>

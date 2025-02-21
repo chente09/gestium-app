@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -12,6 +12,7 @@ import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { RouterModule } from '@angular/router';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzUploadModule } from 'ng-zorro-antd/upload';
+import { NzModalModule } from 'ng-zorro-antd/modal';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -33,7 +34,8 @@ enum Estado {
     NzDatePickerModule,
     RouterModule,
     NzIconModule,
-    NzUploadModule
+    NzUploadModule,
+    NzModalModule
   ],
   templateUrl: './itinerario.component.html',
   styleUrl: './itinerario.component.css'
@@ -55,6 +57,9 @@ export class ItinerarioComponent implements OnInit {
   fechaActual: string = '';  // Variable para la fecha por defecto
   horaActual: string = '';
 
+  isVisible = false; // Controla la visibilidad del modal
+  isConfirmLoading = false;
+
   // Filtros
   selectedArea = new FormControl('');
   selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
@@ -67,6 +72,7 @@ export class ItinerarioComponent implements OnInit {
   constructor(
     private itinerarioService: ItinerarioService,
     private message: NzMessageService,
+    private cdr: ChangeDetectorRef
   ) { }
   ngOnInit(): void {
     this.setFechaHoraActual();
@@ -132,39 +138,60 @@ export class ItinerarioComponent implements OnInit {
     this.selectedDate.setValue([null, null]);
     this.filterItinerarios();
   }
-
   setEstado(item: Itinerario, estado: Estado): void {
     this.selectedItem = { ...item, estado };
 
-    if (estado === Estado.COMPLETADO) {
+    if (estado === Estado.COMPLETADO || estado === Estado.INCOMPLETO) {
       this.setFechaHoraActual(); // Asigna fecha y hora automáticamente
-      this.mostrarFormulario = true;
+      if (estado === Estado.INCOMPLETO) {
+        //Limpiar fecha y hora
+        this.selectedItem.fechaCompletado = '';
+        this.selectedItem.horaCompletado = '';
+        this.selectedItem.obsCompletado = ''; // Limpia el campo de observación
+        this.setFechaHoraActual();
+      }
+      this.showModal(); // 🔥 Abre el modal en lugar de mostrar el formulario
+      this.cdr.detectChanges();
     } else {
       this.guardarEstado(); // Guarda automáticamente si es "En Proceso"
     }
   }
-
+  showModal(): void {
+    this.isVisible = true;
+  }
+  handleOk(): void {
+    this.isConfirmLoading = true;
+    setTimeout(() => {
+      this.isVisible = false;
+      this.isConfirmLoading = false;
+    }, 1000);
+  }
+  // Método para manejar el botón "Cancelar"
+  handleCancel(): void {
+    this.isVisible = false;
+  }
   // 📌 Asigna la fecha y hora actual si no existen
   setFechaHoraActual(): void {
     const ahora = new Date();
     const fecha = ahora.toISOString().split('T')[0]; // YYYY-MM-DD
     const hora = ahora.toTimeString().slice(0, 5);   // HH:MM
 
-    if (!this.selectedItem.fechaCompletado) {
-      this.selectedItem.fechaCompletado = fecha;
-    }
-    if (!this.selectedItem.horaCompletado) {
-      this.selectedItem.horaCompletado = hora;
-    }
-  }
-
+    // Actualiza la fecha y hora siempre
+    this.selectedItem.fechaCompletado = fecha;
+    this.selectedItem.horaCompletado = hora;
+}
   // 📌 Valida el formulario antes de guardar
   validarFormulario(): void {
-    this.formularioValido = !!this.selectedItem?.obsCompletado?.trim()
-      && !!this.selectedItem?.fechaCompletado
-      && !!this.selectedItem?.horaCompletado;
-  }
-
+    // Si el estado es "INCOMPLETO", no es obligatorio tener una observación
+    if (this.selectedItem.estado === Estado.INCOMPLETO) {
+        this.formularioValido = true;
+    } else {
+        // Para "COMPLETADO", la observación es obligatoria
+        this.formularioValido = !!this.selectedItem?.obsCompletado?.trim()
+            && !!this.selectedItem?.fechaCompletado
+            && !!this.selectedItem?.horaCompletado;
+    }
+}
   // 📌 Guarda los datos del itinerario en el backend
   async guardarEstado(): Promise<void> {
     if (!this.selectedItem) return;
@@ -176,40 +203,58 @@ export class ItinerarioComponent implements OnInit {
 
     // 📌 Subir imagen a Firebase si hay una nueva seleccionada
     if (this.imagenSeleccionada) {
-        const filePath = `itinerarios/imagesComplete/${Date.now()}_${this.imagenSeleccionada.name}`;
-        try {
-            imgURL = await this.itinerarioService.uploadImage(filePath, this.imagenSeleccionada);
-        } catch (error) {
-            this.message.error('Error al subir la imagen');
-            console.error('Error al subir la imagen:', error);
-            return;
-        }
+      const filePath = `itinerarios/imagesComplete/${Date.now()}_${this.imagenSeleccionada.name}`;
+      try {
+        imgURL = await this.itinerarioService.uploadImage(filePath, this.imagenSeleccionada);
+        this.message.success('Imagen subida con éxito');
+        this.imagenSeleccionada = null;
+        this.handleCancel();
+      } catch (error) {
+        this.message.error('Error al subir la imagen');
+        console.error('Error al subir la imagen:', error);
+        return;
+      }
     }
 
     const datosActualizados = {
-        ...this.selectedItem,
-        fechaCompletado: this.selectedItem.fechaCompletado || new Date().toISOString().split('T')[0],
-        horaCompletado: this.selectedItem.horaCompletado || new Date().toTimeString().slice(0, 5),
-        imgcompletado: imgURL // ✅ Ahora se guarda la URL completa
+      ...this.selectedItem,
+      fechaCompletado: this.selectedItem.fechaCompletado || new Date().toISOString().split('T')[0],
+      horaCompletado: this.selectedItem.horaCompletado || new Date().toTimeString().slice(0, 5),
+      imgcompletado: imgURL // ✅ Ahora se guarda la URL completa
     };
 
     this.itinerarioService.updateItinerario(this.selectedItem.id, datosActualizados)
-        .then(() => {
-            this.message.success('Itinerario actualizado correctamente');
-            this.mostrarFormulario = false;
-        })
-        .catch(error => {
-            this.message.error('Error al guardar los cambios');
-            console.error('Error al guardar los cambios:', error);
-        });
+      .then(() => {
+        this.message.success('Itinerario actualizado correctamente');
+        this.mostrarFormulario = false;
+        this.limpiarCampos();
+      })
+      .catch(error => {
+        this.message.error('Error al guardar los cambios');
+        console.error('Error al guardar los cambios:', error);
+      });
+  }
+  limpiarCampos(): void {
+    this.selectedItem = null;
+    this.imagenSeleccionada = null;
+    this.imageFileList = [];
+    this.isVisible = false;
+  }
+
+  editarIncompleto(item: Itinerario): void {
+    this.selectedItem = { ...item }; // Copia el item seleccionado
+    this.setFechaHoraActual();
+    this.showModal(); // Abre el modal
+    this.cdr.detectChanges(); // Detecta cambios para actualizar la vista
 }
+
   // 📌 Manejo de archivos seleccionados en el formulario
   async onFileSelected(event: any): Promise<void> {
     const file = event.file?.originFileObj || null;
     this.imagenSeleccionada = file;
 
     this.validarFormulario();
-}
+  }
 
   // 📌 Sube la imagen a Firebase y actualiza la URL en el objeto seleccionado
   async subirImagen(file: File): Promise<void> {

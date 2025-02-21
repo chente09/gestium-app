@@ -49,7 +49,7 @@ export class HistoryItinerarioComponent implements OnInit {
   selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
   selectedEstado = new FormControl(null);
-  estados: string[] = ['Completo', 'Incompleto', 'Pendiente']; // Agrega los estados que manejes
+  estados: string[] = ['Completado', 'Incompleto', 'Pendiente']; // Agrega los estados que manejes
   listOfCurrentPageData: Itinerario[] = [];
   checked = false;
   indeterminate = false;

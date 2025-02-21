@@ -128,17 +128,18 @@ export class ItinerarioFormComponent implements OnInit {
       );
       this.message.success('Itinerario guardado correctamente 🎉');
 
+      const currentArea = this.itinerarioForm.get('area')?.value;
+
       // 🔄 Reiniciar formulario
       this.itinerarioForm.reset({
         fechaSolicitud: new Date().toISOString().split('T')[0], // Mantiene la fecha actual por defecto
-        area: this.areas[0]
+        area: currentArea,
+        estado: Estado.PENDIENTE
       });
       this.selectedImage = null;
       this.selectedPDF = null;
-      this.selectedImage2 = null;
-      this.selectedArea = this.areas[0];
-
-      this.clearFileInputs();
+      this.imageFileList = [];
+      this.pdfFileList = [];
     } catch (error) {
       console.error('Error al guardar el itinerario:', error);
       this.message.error('Hubo un error al guardar el itinerario. Intente de nuevo.');
@@ -150,9 +151,6 @@ export class ItinerarioFormComponent implements OnInit {
 
   // 🌟 Método para limpiar los inputs de archivo
   clearFileInputs(): void {
-    this.selectedImage = null;
-    this.selectedPDF = null;
-
     // Vacía las listas de archivos en nz-upload
     this.imageFileList = [];
     this.pdfFileList = [];

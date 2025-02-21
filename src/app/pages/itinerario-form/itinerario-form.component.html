@@ -75,12 +75,10 @@
             </nz-col>
             <nz-col nzSpan="12">
                 <nz-form-item>
-                    <nz-form-item>
-                        <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true"
-                            [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
-                            <div class="upload-button"><i nz-icon nzType="upload"></i> Subir PDF</div>
-                        </nz-upload>
-                    </nz-form-item>
+                    <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true"
+                        [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
+                        <div class="upload-button"><i nz-icon nzType="upload"></i> Subir PDF</div>
+                    </nz-upload>
                 </nz-form-item>
             </nz-col>
         </nz-row>
@@ -96,7 +94,7 @@
 </form>
 <div class="header-grid">
     <div class="header-item">
-        <a routerLink="/itinerario" class="link">Volver</a>
+        <a routerLink="/itinerario" class="link">Pendientes</a>
     </div>
     <div class="header-item">
         <a routerLink="/history-itinerario" class="link">Historial de Itinerario</a>

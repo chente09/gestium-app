@@ -20,6 +20,8 @@ import { Subject, takeUntil } from 'rxjs';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { NzMenuModule } from 'ng-zorro-antd/menu';
+import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -45,7 +47,9 @@ enum Estado {
     NzModalModule,
     NzListModule,
     NzFormModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    NzMenuModule,
+    NzDropDownModule,
   ],
   templateUrl: './itinerario.component.html',
   styleUrl: './itinerario.component.css'
@@ -66,6 +70,8 @@ export class ItinerarioComponent implements OnInit {
   imageFileList: any[] = [];
   fechaActual: string = '';  // Variable para la fecha por defecto
   horaActual: string = '';
+  notificaciones: { tramite: string; fechaTermino: string }[] = [];
+  mostrarNotificaciones = false; // Estado para mostrar/ocultar la lista
 
   isVisible = false; // Controla la visibilidad del modal
   isEnProcesoVisible = false;
@@ -82,7 +88,7 @@ export class ItinerarioComponent implements OnInit {
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
 
   selectedEstado = new FormControl(null);
-  estados: string[] = [ 'Incompleto', 'Pendiente'];
+  estados: string[] = ['Incompleto', 'Pendiente'];
 
   listOfCurrentPageData: Itinerario[] = [];
   checked = false;
@@ -103,13 +109,35 @@ export class ItinerarioComponent implements OnInit {
       this.filterItinerarios();
       this.itinerarios.forEach(item => {
         this.editCache[item.id] = { edit: false };
+
+        // Verificar si la fecha de término es igual a la fecha actual
+        if (this.esFechaTerminoHoy(item.fechaTermino)) {
+          this.agregarNotificacion(item);
+        }
       });
       this.loading = false;
     });
+
     // Detectar cambios en los filtros
     this.selectedArea.valueChanges.subscribe(() => this.filterItinerarios());
     this.selectedDate.valueChanges.subscribe(() => this.filterItinerarios());
     this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
+  }
+
+  // Método para verificar si la fecha de término es hoy
+  esFechaTerminoHoy(fechaTermino: string): boolean {
+    const fechaActual = new Date().toISOString().split('T')[0]; // Fecha actual en formato YYYY-MM-DD
+    return fechaTermino <= fechaActual;
+  }
+
+  agregarNotificacion(item: Itinerario): void {
+    const notificacion = {
+      tramite: item.tramite,
+      fechaTermino: item.fechaTermino,
+    };
+    if (!this.notificaciones.some(n => n.tramite === notificacion.tramite && n.fechaTermino === notificacion.fechaTermino)) {
+      this.notificaciones.push(notificacion);
+    }
   }
 
   descargarRegistrosPDF(): void {
@@ -117,44 +145,44 @@ export class ItinerarioComponent implements OnInit {
       this.message.warning('No hay registros para descargar.');
       return;
     }
-  
+
     // Guardar el valor original de nzPageSize
     const originalPageSize = this.rowSelectionTable.nzPageSize;
-  
+
     // Mostrar todos los registros (desactivar paginación)
     this.rowSelectionTable.nzPageSize = 1000; // Un número muy grande
-  
+
     // Esperar a que la tabla se actualice
     setTimeout(() => {
       const tabla = document.getElementById('tabla-itinerarios') as HTMLElement;
-  
+
       // Capturar la tabla con html2canvas
       html2canvas(tabla).then((canvas) => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
-  
+
         const imgWidth = 210; // Ancho de la página A4 en mm
         const imgHeight = (canvas.height * imgWidth) / canvas.width; // Altura proporcional
-  
+
         // Altura de la página A4 en mm
         const pageHeight = 297;
-  
+
         // Si la imagen es más alta que una página, dividirla en varias páginas
         if (imgHeight > pageHeight) {
           let position = 0; // Posición inicial en el PDF
-  
+
           while (position < imgHeight) {
             // Agregar una nueva página si no es la primera
             if (position > 0) {
               pdf.addPage();
             }
-  
+
             // Calcular la altura de la porción de la imagen que cabe en la página
             const height = Math.min(pageHeight, imgHeight - position);
-  
+
             // Agregar la porción de la imagen al PDF
             pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
-  
+
             // Mover la posición para la siguiente porción
             position += pageHeight;
           }
@@ -162,10 +190,10 @@ export class ItinerarioComponent implements OnInit {
           // Si la imagen cabe en una sola página, agregarla directamente
           pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
         }
-  
+
         // Descargar el PDF
         pdf.save('itinerarios.pdf');
-  
+
         // Restaurar el valor original de nzPageSize
         this.rowSelectionTable.nzPageSize = originalPageSize;
       });

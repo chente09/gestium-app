@@ -80,7 +80,7 @@
                 <td *ngIf="!editCache[item.id]?.edit">
                     <ng-container *ngIf="item.imagen; else noImage">
                         <a [href]="item.imagen" target="_blank">
-                            <img [src]="item.imagen" alt="Imagen" width="100" style="cursor: pointer;">
+                            <img [src]="item.imagen" alt="Imagen" width="60" style="cursor: pointer;">
                         </a>
                     </ng-container>
                     <ng-template #noImage>
@@ -167,10 +167,10 @@
                 <td>
                     <ng-container *ngIf="!editCache[item.id]?.edit">
                         <!-- Confirmación de eliminación -->
-                        <!-- <button nz-button nzType="link" nzDanger nz-popconfirm
+                        <button nz-button nzType="link" nzDanger nz-popconfirm
                             nzPopconfirmTitle="¿Seguro que quieres eliminar?" (nzOnConfirm)="eliminar(item.id)"><nz-icon
                                 [nzType]="'delete'"></nz-icon>
-                        </button> -->
+                        </button>
                         <button nz-button nzType="link" nzInfo (click)="startEdit(item.id)"><nz-icon
                                 [nzType]="'edit'"></nz-icon>Etitar
                         </button>

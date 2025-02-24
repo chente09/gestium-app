@@ -15,8 +15,32 @@
         <a routerLink="/history-itinerario" class="link">Historial de Itinerario</a>
     </div>
 </div>
+<div class="notification-container">
+    <!-- Botón de notificaciones -->
+    <div class="notification-container">
+        <button nz-button (click)="mostrarNotificaciones = !mostrarNotificaciones">
+            <i nz-icon nzType="bell"></i>
+            <span *ngIf="notificaciones.length > 0" class="notification-badge">{{ notificaciones.length }}</span>
+        </button>
+    </div>    
+
+    <!-- Menú de notificaciones (sin NzDropDownModule) -->
+    <div *ngIf="mostrarNotificaciones" class="notification-menu">
+        <ul>
+            <li *ngFor="let notificacion of notificaciones">
+                <div class="notification-item">
+                    <strong>{{ notificacion.tramite }}</strong>
+                    <p>Fecha de término: {{ notificacion.fechaTermino }}</p>
+                </div>
+            </li>
+            <li *ngIf="notificaciones.length === 0">No hay notificaciones.</li>
+        </ul>
+    </div>
+</div>
+<hr class="divider">
 <div>
     <div class="filters">
+        <!-- Filtros existentes -->
         <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()" nzPlaceHolder="Filtrar por área">
             <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
         </nz-select>
@@ -33,6 +57,7 @@
             <i nz-icon nzType="download"></i> Descargar Registros (PDF)
         </button>
     </div>
+
     <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered nzShowPagination
         nzShowSizeChanger [nzData]="filteredItinerarios" [nzLoading]="loading"
         (nzCurrentPageDataChange)="onCurrentPageDataChange($event)">
@@ -73,7 +98,7 @@
                     <ng-container *ngIf="item.imagen || item.pdf; else noData">
                         <!-- Mostrar imagen si existe -->
                         <a *ngIf="item.imagen" [href]="item.imagen" target="_blank">
-                            <img [src]="item.imagen" alt="Imagen" width="100" style="cursor: pointer;">
+                            <img [src]="item.imagen" alt="Imagen" width="60" style="cursor: pointer;">
                         </a>
 
                         <!-- Mostrar enlace de descarga si hay PDF -->

@@ -5,13 +5,17 @@ import { ItinerarioFormComponent } from './pages/itinerario-form/itinerario-form
 import { HistoryItinerarioComponent } from './pages/history-itinerario/history-itinerario.component';
 import { LoginComponent } from './pages/login/login.component';
 import { WelcomeComponent } from './pages/welcome/welcome.component';
+import { canActivate, redirectUnauthorizedTo } from '@angular/fire/auth-guard';
+
+export const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['/login']);
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: '/login' },
-  { path: 'welcome', component: WelcomeComponent },
-  { path: 'issfa', component: IssfaComponent },
-  { path: 'itinerario', component: ItinerarioComponent },
-  { path: 'itinerario-form', component: ItinerarioFormComponent },
-  { path: 'history-itinerario', component: HistoryItinerarioComponent },
-  { path: 'login', component: LoginComponent },
+  { path: 'login', component: LoginComponent, },
+  { path: 'welcome', component: WelcomeComponent, ...canActivate(redirectUnauthorizedToLogin) },
+  { path: 'issfa', component: IssfaComponent, ...canActivate(redirectUnauthorizedToLogin) },
+  { path: 'itinerario', component: ItinerarioComponent, ...canActivate(redirectUnauthorizedToLogin) },
+  { path: 'itinerario-form', component: ItinerarioFormComponent, ...canActivate(redirectUnauthorizedToLogin) },
+  { path: 'history-itinerario', component: HistoryItinerarioComponent, ...canActivate(redirectUnauthorizedToLogin) },
+  
 ];

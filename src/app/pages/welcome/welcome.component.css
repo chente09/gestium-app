@@ -2,11 +2,27 @@
     text-align: center;
     padding: 20px;
 }
-
+.title {
+    text-align: left;
+}
 .welcome-header h1 {
     font-size: 24px;
     font-weight: bold;
 }
+
+
+/* Ajuste del tamaño de las tarjetas */
+.section-card {
+    background-color: #eff2f5;
+    padding: 16px;
+    margin: 10px 0;
+    font-size: 19px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
 
 .section-avatar {
     display: flex;
@@ -19,20 +35,40 @@
     font-size: 30px; /* Ajusta el tamaño del icono según lo necesites */
 }
 
-.section-card {
-    background-color: #eff2f5;
-    padding: 16px; 
-    margin-top: 5px;
-    margin-bottom: 5px;
-    font-size: 19px;
+/* Mejorando el diseño responsivo */
+@media (max-width: 1024px) {
+    .section-card {
+        font-size: 16px; /* Reduce el tamaño del texto en pantallas medianas */
+    }
 }
 
 @media (max-width: 768px) {
     .section-card {
-      width: 100%; /* Asegura que las tarjetas ocupen todo el ancho */
+        width: 100%; /* Asegura que las tarjetas ocupen todo el ancho */
+        font-size: 14px; /* Reduce aún más el tamaño del texto */
+        padding: 12px; /* Ajuste del espacio interno */
+    }
+
+    .section-icon {
+        font-size: 25px; /* Disminuye el tamaño del ícono */
     }
 }
 
-.title {
-    text-align: left;
+@media (max-width: 480px) {
+    .section-card {
+        font-size: 12px; /* Texto más pequeño en dispositivos muy pequeños */
+        padding: 5px;
+    }
+
+    .section-icon {
+        font-size: 20px; /* Ícono más pequeño */
+    }
+
+    .ant-card-meta-title {
+        overflow: hidden;
+        color: rgba(0, 0, 0, .85);
+        font-size: 8px;
+        text-overflow: ellipsis;
+    }
 }
+

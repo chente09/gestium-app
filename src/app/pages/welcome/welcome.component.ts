@@ -33,8 +33,8 @@ export class WelcomeComponent {
   ];
 
   sections2 = [
-    { title: 'INTINERARIO', description: 'Control de actividades del tramitador', icon: 'schedule', route: '/itinerario' },
-    { title: 'CONTROL DE GASTOS', description: 'Control de gastos por área', icon: 'credit-card', route: '/gastos' },
+    { title: 'Itinerario', description: 'Control de actividades del tramitador', icon: 'schedule', route: '/itinerario' },
+    { title: 'Control de Gastos', description: 'Control de gastos por área', icon: 'credit-card', route: '/gastos' },
   ];
 
   

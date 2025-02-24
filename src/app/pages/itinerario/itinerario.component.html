@@ -19,17 +19,20 @@
         (nzCurrentPageDataChange)="onCurrentPageDataChange($event)">
         <thead>
             <tr>
-                <th nzWidth="6%">Estado</th>
-                <th nzWidth="12%">Área</th>
-                <th nzWidth="6%">Juzgado</th>
-                <th nzWidth="8%">Piso</th>
-                <th nzWidth="15%">Trámite</th>
-                <th nzWidth="12%">Solicitante</th>
-                <th nzWidth="13%">Fecha de Solicitud</th>
-                <th nzWidth="13%">Fecha de Término</th>
-                <th nzWidth="10%">Observaciones</th>
-                <th nzWidth="10%">Documentos</th>
-                <th nzWidth="7%">Acciones</th>
+                <th nzWidth="5%">Estado</th>
+                <th nzWidth="10%">Área</th>
+                <th nzWidth="5%">Juzgado</th>
+                <th nzWidth="5%">Piso</th>
+                <th nzWidth="12%">Trámite</th>
+                <th nzWidth="10%">Solicitante</th>
+                <th nzWidth="10%">Fecha de Solicitud</th>
+                <th nzWidth="10%">Fecha de Término</th>
+                <th nzWidth="8%">Observaciones</th>
+                <th nzWidth="8%">Documentos</th>
+                <th nzWidth="6%">Fecha Completado</th>
+                <th nzWidth="5%">Hora Completado</th>
+                <th nzWidth="6%">Obs. Completado</th>
+                <th nzWidth="6%">Acciones</th>
             </tr>
         </thead>
         <tbody *ngIf="rowSelectionTable.data && rowSelectionTable.data.length > 0; else emptyTable">
@@ -66,24 +69,29 @@
                         N/A
                     </ng-template>
                 </td>
+                <td>{{ item.fechaCompletado }}</td>
+                <td>{{ item.horaCompletado }}</td>
+                <td>
+                    <!-- Mostrar la observación completada -->
+                    <span>{{ item.obsCompletado }}</span>
+
+                    <!-- Mostrar el botón solo si hay historial -->
+                    <button nz-button nzType="link" (click)="verHistorial(item)">
+                        Ver Historial
+                    </button>
+                </td>
                 <td>
                     <ng-container>
-                        <!-- Botón "Completado" -->
-                        <button *ngIf="item.estado !== Estado.COMPLETADO" nz-button nzType="primary"
-                            (click)="setEstado(item, Estado.COMPLETADO)">
+                        <!-- Botón "Completado" (siempre visible) -->
+                        <button nz-button nzType="primary"
+                                (click)="setEstado(item, Estado.COMPLETADO)">
                             Completado
                         </button>
-                    
-                        <!-- Botón "En Proceso" -->
-                        <button *ngIf="item.estado !== Estado.INCOMPLETO" nz-button nzType="default"
-                            (click)="setEstado(item, Estado.INCOMPLETO)">
+                
+                        <!-- Botón "En Proceso" (siempre visible) -->
+                        <button nz-button nzType="default"
+                                (click)="setEstado(item, Estado.INCOMPLETO)">
                             En Proceso
-                        </button>
-                    
-                        <!-- Botón "Editar" (solo visible cuando el estado es INCOMPLETO) -->
-                        <button *ngIf="item.estado === Estado.INCOMPLETO" nz-button nzType="dashed"
-                            (click)="editarIncompleto(item)">
-                            Editar
                         </button>
                     </ng-container>
                 </td>
@@ -92,34 +100,60 @@
 
         <!-- Template para cuando no hay datos -->
         <ng-template #emptyTable>
-            <tbody>
-                <tr>
-                    <td colspan="11" style="text-align: center;">No hay datos disponibles</td>
-                </tr>
-            </tbody>
+            <tbody></tbody>
         </ng-template>
     </nz-table>
 </div>
 
-<!-- Modal -->
+<!-- Modal de Formulario -->
 <nz-modal [(nzVisible)]="isVisible" nzTitle="Detalles de Finalización" [nzFooter]="modalFooter"
     (nzOnCancel)="handleCancel()">
     <ng-container *nzModalContent>
-        <p>Observaciones:</p>
-        <input nz-input [(ngModel)]="selectedItem.obsCompletado" (input)="validarFormulario()" name="observaciones"
-            placeholder="Ingrese observaciones" />
+        <form nz-form>
+            <nz-form-item>
+                <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
+                <nz-form-control>
+                    <textarea nz-input [(ngModel)]="selectedItem.obsCompletado" (input)="validarFormulario()"
+                        id="observaciones" name="observaciones" placeholder="Ingrese observaciones" rows="4"></textarea>
+                </nz-form-control>
+            </nz-form-item>
 
-        <p>Fotografía:</p>
-        <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true" [(nzFileList)]="imageFileList"
-            (nzChange)="onFileSelected($event)">
-            <div class="upload-button"><i nz-icon nzType="upload"></i> Subir Imagen</div>
-        </nz-upload>
+            <nz-form-item>
+                <nz-form-label nzFor="fotografia">Fotografía</nz-form-label>
+                <nz-form-control>
+                    <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
+                        [(nzFileList)]="imageFileList" (nzChange)="onFileSelected($event)">
+                        <button nz-button>
+                            <i nz-icon nzType="upload"></i> Subir Imagen
+                        </button>
+                    </nz-upload>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
     </ng-container>
 
     <ng-template #modalFooter>
-        <button nz-button nzDanger="true" (click)="handleCancel()"><nz-icon nzType="close"></nz-icon> Cancelar</button>
-        <button nz-button nzType="dashed" nzBorderless="true" (click)="guardarEstado()" [nzLoading]="isConfirmLoading"><nz-icon nzType="save"></nz-icon>Guardar</button>
+        <button nz-button nzDanger="true" (click)="handleCancel()">
+            <i nz-icon nzType="close"></i> Cancelar
+        </button>
+        <button nz-button nzType="primary" (click)="guardarEstado()" [nzLoading]="isConfirmLoading">
+            <i nz-icon nzType="save"></i> Guardar
+        </button>
     </ng-template>
 </nz-modal>
 
-
+<!-- Modal de Historial -->
+<nz-modal [(nzVisible)]="isHistorialVisible" nzTitle="Historial de Observaciones" (nzOnCancel)="cerrarHistorial()"
+    [nzFooter]="null">
+    <ng-container *nzModalContent>
+        <nz-list>
+            <nz-list-item *ngFor="let entrada of historialActual">
+                <strong *ngIf="entrada.nombre || entrada.email">
+                    User: {{ entrada.nombre || entrada.email || entrada.uid }}
+                </strong>
+                <p>{{ entrada.observacion }}</p>
+                <p>{{ entrada.fecha }} {{ entrada.hora }}</p>
+            </nz-list-item>
+        </nz-list>
+    </ng-container>
+</nz-modal>

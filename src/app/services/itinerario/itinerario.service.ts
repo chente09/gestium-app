@@ -27,6 +27,14 @@ export interface Itinerario {
   horaCompletado?: string;
   obsCompletado?: string;
   imgcompletado?: string; //Guardar la URL de la imagen
+  historial?: { 
+    observacion: string; 
+    fecha: string; 
+    hora: string,
+    uid: string,
+    email?: string; // Correo electrónico del usuario (opcional)
+    nombre?: string; // Nombre del usuario (opcional)
+  }[];
 }
 
 @Injectable({
@@ -107,7 +115,8 @@ export class ItinerarioService {
           fechaCompletado: doc.fechaCompletado || '',
           horaCompletado: doc.horaCompletado || '',
           obsCompletado: doc.obsCompletado || '',
-          imgcompletado: doc.imgcompletado || ''
+          imgcompletado: doc.imgcompletado || '',
+          historial: doc.historial || []
         }))
       )
     ) as Observable<Itinerario[]>;
@@ -134,11 +143,11 @@ export class ItinerarioService {
 
   // 📌 Actualizar un itinerario con nuevas imágenes o PDFs opcionales
   async updateItinerario(
-    id: string, 
-    itinerario: Partial<Itinerario>, 
-    newImageFile?: File, 
-    newPdfFile?: File
-): Promise<void> {
+    id: string,
+    itinerario: Partial<Itinerario>,
+    newImageFile?: File,
+    newPdfFile?: File,
+  ): Promise<void> {
     const docRef = doc(this.firestore, `${this.collectionName}/${id}`);
 
     try {
@@ -152,13 +161,13 @@ export class ItinerarioService {
         // 🗑️ Eliminar imagen anterior si existe
         if (itinerario.imagen) {
           const oldImageRef = ref(this.storage, itinerario.imagen);
-          await deleteObject(oldImageRef).catch((error) => 
+          await deleteObject(oldImageRef).catch((error) =>
             console.error('Error al eliminar la imagen anterior:', error)
           );
         }
 
         await uploadBytes(imageRef, newImageFile);
-        updatedData.imagen = imagePath;
+        updatedData.imagen = await getDownloadURL(imageRef); // 🔹 Obtener la URL completa
       }
 
       // 📂 Subir nuevo PDF si se proporciona
@@ -169,13 +178,24 @@ export class ItinerarioService {
         // 🗑️ Eliminar PDF anterior si existe
         if (itinerario.pdf) {
           const oldPdfRef = ref(this.storage, itinerario.pdf);
-          await deleteObject(oldPdfRef).catch((error) => 
+          await deleteObject(oldPdfRef).catch((error) =>
             console.error('Error al eliminar el PDF anterior:', error)
           );
         }
 
         await uploadBytes(pdfRef, newPdfFile);
-        updatedData.pdf = pdfPath;
+        updatedData.pdf = await getDownloadURL(pdfRef); // 🔹 Obtener la URL completa
+      }
+
+      // 📄 Obtener el historial actual desde Firestore
+      const docSnapshot = await getDoc(docRef);
+      const historialActual = docSnapshot.data()?.['historial'] || [];
+
+      // 📄 Combinar el historial actual con el nuevo historial (si existe)
+      if (updatedData.historial) {
+        updatedData.historial = [...historialActual, ...updatedData.historial];
+      } else {
+        updatedData.historial = historialActual; // Mantener el historial actual
       }
 
       // 📄 Actualizar en Firestore solo si hay cambios
@@ -185,7 +205,7 @@ export class ItinerarioService {
     } catch (error: any) {
       throw new Error(`Error al actualizar el itinerario ${id}: ${error.message}`);
     }
-}
+  }
 
   // 📌 Eliminar un itinerario y sus archivos asociados
   async deleteItinerario(id: string): Promise<void> {

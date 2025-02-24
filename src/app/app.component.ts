@@ -73,9 +73,7 @@ export class AppComponent {
   logout(): void {
     this.registersService.currentRegister = undefined;
     this.usersService.logout();
-    this.router.navigate(['/login']).then(() => {
-      // Forzar la recarga de la página
-      window.location.reload();
-    });
+    localStorage.clear();  // O sessionStorage.clear();
+    this.router.navigate(['/login']);
   }
 }

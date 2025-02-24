@@ -134,7 +134,7 @@
                             nzPopconfirmTitle="¿Seguro que quieres eliminar?" (nzOnConfirm)="eliminar(item.id)"><nz-icon
                                 [nzType]="'delete'"></nz-icon></button>
                         <button nz-button nzType="link" nzInfo (click)="startEdit(item.id)"><nz-icon
-                                [nzType]="'edit'"></nz-icon></button>
+                                [nzType]="'edit'"></nz-icon>Etitar</button>
                     </ng-container>
                     <ng-container *ngIf="editCache[item.id]?.edit">
                         <button nz-button nzType="link" (click)="saveEdit(item.id)"><nz-icon

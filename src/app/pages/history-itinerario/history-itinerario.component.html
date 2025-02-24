@@ -34,10 +34,11 @@
 
     <button nz-button nzType="default" (click)="showAllAreas()">Mostrar todas</button>
 </div>
-<div style="width: 1800px;">
+
+<!-- Tabla con scroll horizontal -->
+<div class="table-container">
     <nz-table class="itinerario-table" #itinerarioTable nzBordered nzShowPagination nzShowSizeChanger 
-    [nzData]="filteredItinerarios" nzTableLayout="fixed"
-        nzPagination>
+        [nzData]="filteredItinerarios" nzTableLayout="fixed">
         <thead>
             <tr>
                 <th nzWidth="6%">Área</th>

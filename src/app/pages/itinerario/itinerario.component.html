@@ -88,8 +88,16 @@
                         N/A
                     </ng-template>
                 </td>
-                <td>{{ item.fechaCompletado }}</td>
-                <td>{{ item.horaCompletado }}</td>
+                <td>
+                    <span *ngIf="item.historial && item.historial.length > 0">
+                        {{ item.historial[item.historial.length - 1].fecha }}
+                    </span>
+                </td>
+                <td>
+                    <span *ngIf="item.historial && item.historial.length > 0">
+                        {{ item.historial[item.historial.length - 1].hora }}
+                    </span>
+                </td>
                 <td>
                     <!-- Mostrar la última observación del historial -->
                     <span *ngIf="item.historial && item.historial.length > 0">
@@ -107,12 +115,12 @@
                         <button nz-button class="btn-completado" (click)="completarItem(item)">
                             <i nz-icon nzType="check"></i> Completado
                         </button>
-                
-                        <button nz-button  class="btn-proceso" (click)="enProcesoItem(item)">
+
+                        <button nz-button class="btn-proceso" (click)="enProcesoItem(item)">
                             <i nz-icon nzType="hourglass"></i> En Proceso
                         </button>
                     </ng-container>
-                </td>                
+                </td>
             </tr>
         </tbody>
 

@@ -1,3 +1,9 @@
+.divider {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px ;
+}
+
 .itinerario-table {
     width: 100%;
     overflow-x: auto; /* Permite el desplazamiento horizontal */
@@ -60,4 +66,51 @@
 
 .link:hover {
     text-decoration: underline;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+/* Asegura que los elementos de filtro tengan un tamaño uniforme */
+.filters nz-select,
+.filters nz-range-picker,
+.filters button {
+    min-width: 200px;
+}
+
+/* Espaciado y tamaño de los botones */
+.filters button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Mejora la apariencia de los selectores en pantallas grandes */
+.filters nz-select,
+.filters nz-range-picker {
+    width: auto;
+}
+
+/* Responsivo: en pantallas pequeñas, apila los elementos */
+@media (max-width: 768px) {
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters nz-select,
+    .filters nz-range-picker,
+    .filters button {
+        width: 10%;
+    }
 }

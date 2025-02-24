@@ -13,6 +13,7 @@ import { RouterModule } from '@angular/router';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzUploadModule } from 'ng-zorro-antd/upload';
+import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -35,7 +36,8 @@ enum Estado {
     RouterModule,
     NzIconModule,
     NzRadioModule,
-    NzUploadModule
+    NzUploadModule,
+    NzBreadCrumbModule
   ],
   templateUrl: './itinerario-form.component.html',
   styleUrl: './itinerario-form.component.css'
@@ -111,7 +113,7 @@ export class ItinerarioFormComponent implements OnInit {
   // 🌟 Enviar formulario
   async submitForm(): Promise<void> {
     if (this.itinerarioForm.invalid || !this.selectedArea) {
-      this.message.warning('Debe seleccionar un área y completar todos los campos obligatorios.');
+      this.message.warning('Debe completar todos los campos obligatorios.');
       return;
     }
 

@@ -10,6 +10,15 @@ enum Estado {
   PENDIENTE = 'pendiente'
 }
 
+export interface EntradaHistorial {
+  observacion: string;
+  fecha: string;
+  hora: string;
+  uid: string;
+  email?: string; // Correo electrónico del usuario (opcional)
+  nombre?: string; // Nombre del usuario (opcional)
+}
+
 export interface Itinerario {
   id: string;
   juzgado: string;
@@ -26,15 +35,9 @@ export interface Itinerario {
   fechaCompletado?: string;
   horaCompletado?: string;
   obsCompletado?: string;
+  completPor?: string;
   imgcompletado?: string; //Guardar la URL de la imagen
-  historial?: { 
-    observacion: string; 
-    fecha: string; 
-    hora: string,
-    uid: string,
-    email?: string; // Correo electrónico del usuario (opcional)
-    nombre?: string; // Nombre del usuario (opcional)
-  }[];
+  historial?: EntradaHistorial[];
 }
 
 @Injectable({
@@ -115,6 +118,7 @@ export class ItinerarioService {
           fechaCompletado: doc.fechaCompletado || '',
           horaCompletado: doc.horaCompletado || '',
           obsCompletado: doc.obsCompletado || '',
+          completPor: doc.completPor || '',
           imgcompletado: doc.imgcompletado || '',
           historial: doc.historial || []
         }))
@@ -149,15 +153,15 @@ export class ItinerarioService {
     newPdfFile?: File,
   ): Promise<void> {
     const docRef = doc(this.firestore, `${this.collectionName}/${id}`);
-
+  
     try {
       let updatedData: Partial<Itinerario> = { ...itinerario };
-
+  
       // 📂 Subir nueva imagen si se proporciona
       if (newImageFile) {
         const imagePath = `itinerarios/images/${id}.jpg`;
         const imageRef = ref(this.storage, imagePath);
-
+  
         // 🗑️ Eliminar imagen anterior si existe
         if (itinerario.imagen) {
           const oldImageRef = ref(this.storage, itinerario.imagen);
@@ -165,16 +169,16 @@ export class ItinerarioService {
             console.error('Error al eliminar la imagen anterior:', error)
           );
         }
-
+  
         await uploadBytes(imageRef, newImageFile);
         updatedData.imagen = await getDownloadURL(imageRef); // 🔹 Obtener la URL completa
       }
-
+  
       // 📂 Subir nuevo PDF si se proporciona
       if (newPdfFile) {
         const pdfPath = `itinerarios/pdfs/${id}.pdf`;
         const pdfRef = ref(this.storage, pdfPath);
-
+  
         // 🗑️ Eliminar PDF anterior si existe
         if (itinerario.pdf) {
           const oldPdfRef = ref(this.storage, itinerario.pdf);
@@ -182,22 +186,33 @@ export class ItinerarioService {
             console.error('Error al eliminar el PDF anterior:', error)
           );
         }
-
+  
         await uploadBytes(pdfRef, newPdfFile);
         updatedData.pdf = await getDownloadURL(pdfRef); // 🔹 Obtener la URL completa
       }
-
+  
       // 📄 Obtener el historial actual desde Firestore
       const docSnapshot = await getDoc(docRef);
-      const historialActual = docSnapshot.data()?.['historial'] || [];
-
-      // 📄 Combinar el historial actual con el nuevo historial (si existe)
+      const historialActual: EntradaHistorial[] = docSnapshot.data()?.['historial'] || [];
+  
+      // 📄 Verificar si hay un nuevo historial para agregar
       if (updatedData.historial) {
-        updatedData.historial = [...historialActual, ...updatedData.historial];
+        // Filtrar entradas duplicadas
+        const nuevoHistorialFiltrado = updatedData.historial.filter((nuevaEntrada: EntradaHistorial) => {
+          // Verificar si la nueva entrada ya existe en el historial actual
+          return !historialActual.some((entradaExistente: EntradaHistorial) =>
+            entradaExistente.observacion === nuevaEntrada.observacion &&
+            entradaExistente.fecha === nuevaEntrada.fecha &&
+            entradaExistente.hora === nuevaEntrada.hora
+          );
+        });
+  
+        // Combinar el historial actual con el nuevo historial filtrado
+        updatedData.historial = [...historialActual, ...nuevoHistorialFiltrado];
       } else {
         updatedData.historial = historialActual; // Mantener el historial actual
       }
-
+  
       // 📄 Actualizar en Firestore solo si hay cambios
       if (Object.keys(updatedData).length > 0) {
         await updateDoc(docRef, updatedData);

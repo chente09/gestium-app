@@ -1,3 +1,18 @@
+<nz-breadcrumb>
+    <nz-breadcrumb-item>
+        <a routerLink="/welcome">
+            <nz-icon nzType="home" />
+        </a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>
+        <a routerLink="/itinerario">
+            <nz-icon nzType="bars" />
+            <span>Actvidades Pendientes</span>
+        </a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>Registro de Actividades</nz-breadcrumb-item>
+</nz-breadcrumb>
+<hr class="divider">
 <form nz-form [formGroup]="itinerarioForm" (ngSubmit)="submitForm()" class="itinerario-form">
     <!-- Selector de Área -->
     <nz-form-item>
@@ -32,7 +47,8 @@
         <nz-form-item>
             <nz-form-label nzFor="tramite" nzRequired nzWidth="200px">Trámite</nz-form-label>
             <nz-form-control>
-                <input nz-input formControlName="tramite" placeholder="Ingrese el trámite" required />
+                <input nz-input formControlName="tramite"
+                    placeholder="Ingresar el número de proceso o describa el trámite a realizar " required />
             </nz-form-control>
         </nz-form-item>
 
@@ -42,7 +58,7 @@
                     <nz-form-label nzFor="solicita" nzWidth="200px">Solicita</nz-form-label>
                     <nz-form-control>
                         <input nz-input formControlName="solicita"
-                            placeholder="SIngresar datos si es necesario especificar quien recibe el trámite" />
+                            placeholder="Ingresar datos si es necesario especificar quien recibe el trámite" />
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
@@ -64,9 +80,9 @@
         </nz-form-item>
 
         <nz-form-label>Archivos</nz-form-label>
-        <nz-row [nzGutter]="16">
+        <nz-row [nzGutter]="16" class="file-upload-container">
             <nz-col nzSpan="12">
-                <nz-form-item>
+                <nz-form-item class="upload-item">
                     <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
                         [(nzFileList)]="imageFileList" (nzChange)="onImageSelected($event)">
                         <div class="upload-button"><i nz-icon nzType="upload"></i> Subir Imagen</div>
@@ -74,7 +90,7 @@
                 </nz-form-item>
             </nz-col>
             <nz-col nzSpan="12">
-                <nz-form-item>
+                <nz-form-item class="upload-item">
                     <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true"
                         [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
                         <div class="upload-button"><i nz-icon nzType="upload"></i> Subir PDF</div>
@@ -82,6 +98,7 @@
                 </nz-form-item>
             </nz-col>
         </nz-row>
+
 
         <nz-form-item>
             <nz-form-control>

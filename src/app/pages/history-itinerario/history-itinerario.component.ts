@@ -13,6 +13,9 @@ import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { ChangeDetectorRef } from '@angular/core';
 import { Subject, takeUntil } from 'rxjs';
+import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzListModule } from 'ng-zorro-antd/list';
+import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -35,6 +38,9 @@ enum Estado {
     NzDatePickerModule,
     ReactiveFormsModule,
     NzSelectModule,
+    NzModalModule,
+    NzListModule,
+    NzBreadCrumbModule
   ],
   templateUrl: './history-itinerario.component.html',
   styleUrl: './history-itinerario.component.css'
@@ -54,6 +60,8 @@ export class HistoryItinerarioComponent implements OnInit {
   checked = false;
   indeterminate = false;
   Estado = Estado;
+  isHistorialVisible = false; // Controla la visibilidad del modal
+  historialActual: any[] = []; // Almacena el historial actual
 
   constructor(
     private itinerarioService: ItinerarioService,
@@ -204,5 +212,15 @@ export class HistoryItinerarioComponent implements OnInit {
     });
   }
 
+
+  verHistorial(item: any): void {
+    this.historialActual = item.historial || []; // Asigna el historial del item
+    this.isHistorialVisible = true; // Abre el modal
+  }
+
+  cerrarHistorial(): void {
+    this.isHistorialVisible = false; // Cierra el modal
+    this.historialActual = []; // Limpia el historial
+  }
 
 }

@@ -20,6 +20,8 @@
     "@angular/platform-browser-dynamic": "^19.1.0",
     "@angular/router": "^19.1.0",
     "gestium-sli": "file:",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.0",
     "ng-zorro-antd": "^19.0.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",

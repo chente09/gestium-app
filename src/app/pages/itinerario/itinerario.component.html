@@ -1,3 +1,12 @@
+<nz-breadcrumb>
+    <nz-breadcrumb-item>
+        <a routerLink="/welcome">
+            <nz-icon nzType="home" />
+        </a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>Actvidades Pendientes</nz-breadcrumb-item>
+</nz-breadcrumb>
+<hr class="divider">
 <div class="header-grid">
     <div class="header-item">
         <a routerLink="/itinerario-form" class="link">Registrar nueva actividad</a>
@@ -11,11 +20,21 @@
         <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()" nzPlaceHolder="Filtrar por área">
             <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
         </nz-select>
+
+        <nz-select [formControl]="selectedEstado" nzPlaceHolder="Filtrar por estado">
+            <nz-option *ngFor="let estado of estados" [nzValue]="estado" [nzLabel]="estado"></nz-option>
+        </nz-select>
+
         <nz-range-picker [formControl]="selectedDate" (ngModelChange)="filterItinerarios()"></nz-range-picker>
+
         <button nz-button nzType="default" (click)="showAllAreas()">Mostrar todas</button>
+
+        <button nz-button class="download-button" (click)="descargarRegistrosPDF()">
+            <i nz-icon nzType="download"></i> Descargar Registros (PDF)
+        </button>
     </div>
-    <nz-table class="itinerario-table" #rowSelectionTable nzBordered nzShowPagination nzShowSizeChanger
-        [nzData]="filteredItinerarios" [nzLoading]="loading"
+    <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered nzShowPagination
+        nzShowSizeChanger [nzData]="filteredItinerarios" [nzLoading]="loading"
         (nzCurrentPageDataChange)="onCurrentPageDataChange($event)">
         <thead>
             <tr>
@@ -72,29 +91,28 @@
                 <td>{{ item.fechaCompletado }}</td>
                 <td>{{ item.horaCompletado }}</td>
                 <td>
-                    <!-- Mostrar la observación completada -->
-                    <span>{{ item.obsCompletado }}</span>
+                    <!-- Mostrar la última observación del historial -->
+                    <span *ngIf="item.historial && item.historial.length > 0">
+                        {{ item.historial[item.historial.length - 1].observacion }}
+                    </span>
 
                     <!-- Mostrar el botón solo si hay historial -->
-                    <button nz-button nzType="link" (click)="verHistorial(item)">
+                    <button nz-button nzType="link" style="color: #bf8220" (click)="verHistorial(item)"
+                        *ngIf="item.historial && item.historial.length > 0">
                         Ver Historial
                     </button>
                 </td>
                 <td>
-                    <ng-container>
-                        <!-- Botón "Completado" (siempre visible) -->
-                        <button nz-button nzType="primary"
-                                (click)="setEstado(item, Estado.COMPLETADO)">
-                            Completado
+                    <ng-container class="action-buttons">
+                        <button nz-button class="btn-completado" (click)="completarItem(item)">
+                            <i nz-icon nzType="check"></i> Completado
                         </button>
                 
-                        <!-- Botón "En Proceso" (siempre visible) -->
-                        <button nz-button nzType="default"
-                                (click)="setEstado(item, Estado.INCOMPLETO)">
-                            En Proceso
+                        <button nz-button  class="btn-proceso" (click)="enProcesoItem(item)">
+                            <i nz-icon nzType="hourglass"></i> En Proceso
                         </button>
                     </ng-container>
-                </td>
+                </td>                
             </tr>
         </tbody>
 
@@ -105,7 +123,9 @@
     </nz-table>
 </div>
 
-<!-- Modal de Formulario -->
+
+<!-- Modal Completado -->
+
 <nz-modal [(nzVisible)]="isVisible" nzTitle="Detalles de Finalización" [nzFooter]="modalFooter"
     (nzOnCancel)="handleCancel()">
     <ng-container *nzModalContent>
@@ -136,7 +156,36 @@
         <button nz-button nzDanger="true" (click)="handleCancel()">
             <i nz-icon nzType="close"></i> Cancelar
         </button>
-        <button nz-button nzType="primary" (click)="guardarEstado()" [nzLoading]="isConfirmLoading">
+        <button nz-button nzType="primary" (click)="guardarEstado()" [nzLoading]="isConfirmLoading"
+            [disabled]="!formularioValido">
+            <i nz-icon nzType="save"></i> Guardar
+        </button>
+    </ng-template>
+</nz-modal>
+
+<!-- Modal para EN PROCESO -->
+<nz-modal [(nzVisible)]="isEnProcesoVisible" nzTitle="Detalles de En Proceso" [nzFooter]="modalFooterEnProceso"
+    (nzOnCancel)="handleCancelEnProceso()">
+    <ng-container *nzModalContent>
+        <form nz-form>
+            <nz-form-item>
+                <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
+                <nz-form-control>
+                    <ng-container *ngIf="selectedItem">
+                        <textarea nz-input [(ngModel)]="selectedItem.obsEnProceso"
+                            (input)="validarFormularioEnProceso()" id="observaciones" name="observaciones"
+                            placeholder="Ingrese observaciones" rows="4"></textarea>
+                    </ng-container>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+
+    <ng-template #modalFooterEnProceso>
+        <button nz-button nzDanger="true" (click)="handleCancelEnProceso()">
+            <i nz-icon nzType="close"></i> Cancelar
+        </button>
+        <button nz-button nzType="primary" (click)="guardarEstadoEnProceso()" [nzLoading]="isConfirmLoading">
             <i nz-icon nzType="save"></i> Guardar
         </button>
     </ng-template>

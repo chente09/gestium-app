@@ -88,17 +88,55 @@
 }
 
 
-nz-modal {
-    max-width: 600px;
+/* Ajustar el modal */
+.nz-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Espaciado entre elementos */
+    padding: 20px;
 }
 
-nz-form-item {
-    margin-bottom: 16px;
+/* Asegurar que el formulario ocupe todo el espacio */
+form[nz-form] {
+    width: 100%;
 }
 
+/* Estilos para cada item del formulario */
+.nz-form-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+}
+
+/* Ajustar el label */
+nz-form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+/* Asegurar que el textarea ocupe el 100% */
+textarea[nz-input] {
+    width: 100%;
+    min-height: 120px;
+    padding: 8px;
+    resize: none; /* Evita que el usuario lo redimensione */
+    border-radius: 5px;
+    border: 1px solid #d9d9d9;
+}
+
+/* Estilos para la sección de subida de imágenes */
 nz-upload {
-    display: block;
+    width: 100%;
 }
+
+/* Botones alineados a la derecha */
+nz-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
 
 textarea {
     resize: vertical;

@@ -161,22 +161,26 @@
 <!-- Modal Completado -->
 
 <nz-modal [(nzVisible)]="isVisible" nzTitle="Detalles de Finalización" [nzFooter]="modalFooter"
-    (nzOnCancel)="handleCancel()">
+    (nzOnCancel)="handleCancel()" [nzWidth]="'600px'">
     <ng-container *nzModalContent>
         <form nz-form>
+            <!-- Observaciones -->
             <nz-form-item>
                 <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
                 <nz-form-control>
                     <textarea nz-input [(ngModel)]="selectedItem.obsCompletado" (input)="validarFormulario()"
-                        id="observaciones" name="observaciones" placeholder="Ingrese observaciones" rows="4"></textarea>
+                        id="observaciones" name="observaciones" placeholder="Ingrese observaciones" rows="4"
+                        style="width: 100%;"></textarea>
                 </nz-form-control>
             </nz-form-item>
 
+            <!-- Fotografía -->
             <nz-form-item>
                 <nz-form-label nzFor="fotografia">Fotografía</nz-form-label>
                 <nz-form-control>
                     <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
-                        [(nzFileList)]="imageFileList" (nzChange)="onFileSelected($event)">
+                        [(nzFileList)]="imageFileList" (nzChange)="onFileSelected($event)"
+                        style="width: 100%;">
                         <button nz-button>
                             <i nz-icon nzType="upload"></i> Subir Imagen
                         </button>
@@ -186,6 +190,7 @@
         </form>
     </ng-container>
 
+    <!-- Footer -->
     <ng-template #modalFooter>
         <button nz-button nzDanger="true" (click)="handleCancel()">
             <i nz-icon nzType="close"></i> Cancelar
@@ -197,8 +202,9 @@
     </ng-template>
 </nz-modal>
 
+
 <!-- Modal para EN PROCESO -->
-<nz-modal [(nzVisible)]="isEnProcesoVisible" nzTitle="Detalles de En Proceso" [nzFooter]="modalFooterEnProceso"
+<nz-modal [(nzVisible)]="isEnProcesoVisible" nzTitle="Agrega Observaciones del Proceso" [nzFooter]="modalFooterEnProceso"
     (nzOnCancel)="handleCancelEnProceso()">
     <ng-container *nzModalContent>
         <form nz-form>

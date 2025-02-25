@@ -92,7 +92,8 @@
 .nz-modal-body {
     display: flex;
     flex-direction: column;
-    gap: 16px; /* Espaciado entre elementos */
+    gap: 16px;
+    /* Espaciado entre elementos */
     padding: 20px;
 }
 
@@ -120,7 +121,8 @@ textarea[nz-input] {
     width: 100%;
     min-height: 120px;
     padding: 8px;
-    resize: none; /* Evita que el usuario lo redimensione */
+    resize: none;
+    /* Evita que el usuario lo redimensione */
     border-radius: 5px;
     border: 1px solid #d9d9d9;
 }
@@ -259,7 +261,7 @@ textarea {
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    align-items: flex-end; 
+    align-items: flex-end;
 }
 
 /* Botón de notificaciones */
@@ -309,6 +311,8 @@ textarea {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     padding: 10px;
     transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1001;
+    border: 1px solid #032341;
 }
 
 /* Evita movimientos bruscos al mostrar */
@@ -344,3 +348,174 @@ textarea {
     color: #666;
 }
 
+/* Estilos base (para pantallas grandes) */
+/* Resetear estilos predeterminados de listas */
+ul.list-group {
+    padding-left: 2px; /* Eliminar el padding-left predeterminado */
+    margin-left: 0;  /* Eliminar el margin-left predeterminado */
+    
+}
+
+ul.list-group li {
+    padding-left: 5px; /* Asegurarse de que no haya padding-left en los elementos de la lista */
+    margin-left: 0;  /* Asegurarse de que no haya margin-left en los elementos de la lista */
+}
+
+.gestion-rutas-container {
+    max-width: 500px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gestion-title {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #032341;
+    font-weight: lighter;
+    font-size: 24px;
+}
+
+.actividad-input {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.actividad-input input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.actividad-input button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    background-color: #032341;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.actividad-item {
+    background: #f8f9fa;
+    border-radius: 5px;
+    padding: 5px;
+    margin-left: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.actividad-text {
+    font-size: 18px;
+    font-weight: bold;
+    color: #032341;
+    flex-grow: 1;
+}
+
+.actividad-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.actividad-actions button {
+    padding: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+}
+
+.actividad-actions button nz-icon {
+    font-size: 16px;
+    color: #6c757d;
+}
+
+/* Media Queries para Responsividad */
+
+/* Pantallas medianas (tablets, hasta 768px) */
+@media (max-width: 768px) {
+    .gestion-rutas-container {
+        max-width: 90%; /* Reducir el ancho del contenedor */
+        padding: 15px;
+    }
+
+    .gestion-title {
+        font-size: 22px; /* Reducir el tamaño del título */
+    }
+
+    .actividad-input input {
+        font-size: 14px; /* Reducir el tamaño del texto del input */
+    }
+
+    .actividad-input button {
+        padding: 8px 16px; /* Reducir el tamaño del botón */
+        font-size: 14px;
+    }
+
+    .actividad-text {
+        font-size: 16px; /* Reducir el tamaño del texto de la actividad */
+    }
+
+    .actividad-actions button nz-icon {
+        font-size: 14px; /* Reducir el tamaño de los íconos */
+    }
+}
+
+/* Pantallas pequeñas (móviles, hasta 480px) */
+@media (max-width: 480px) {
+    .gestion-rutas-container {
+        max-width: 100%; /* Ocupar todo el ancho disponible */
+        padding: 10px;
+    }
+
+    .gestion-title {
+        font-size: 20px; /* Título más pequeño */
+    }
+
+    .actividad-input {
+        flex-direction: column; /* Cambiar a disposición vertical */
+        gap: 8px;
+    }
+
+    .actividad-input input {
+        width: 100%; /* Input ocupa todo el ancho */
+    }
+
+    .actividad-input button {
+        width: 100%; /* Botón ocupa todo el ancho */
+        padding: 10px;
+    }
+
+    .actividad-item {
+        flex-direction: column; /* Cambiar a disposición vertical */
+        align-items: flex-start; /* Alinear el texto a la izquierda */
+        gap: 10px; /* Espacio entre texto y acciones */
+    }
+
+    .actividad-text {
+        margin-right: 0; /* Eliminar margen derecho */
+        font-size: 16px; /* Tamaño de texto más pequeño */
+    }
+
+    .actividad-actions {
+        width: 100%; /* Acciones ocupan todo el ancho */
+        justify-content: flex-end; /* Alinear acciones a la derecha */
+    }
+
+    .actividad-actions button nz-icon {
+        font-size: 14px; /* Íconos más pequeños */
+    }
+}

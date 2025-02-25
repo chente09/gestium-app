@@ -79,6 +79,10 @@ export class ItinerarioComponent implements OnInit {
 
   isHistorialVisible = false; // Controla la visibilidad del modal
   historialActual: any[] = []; // Almacena el historial actual
+  actividad: string = '';
+  actividades: string[] = [];
+  editIndex: number | null = null;
+  editActividad: string = '';
 
   @ViewChild('rowSelectionTable') rowSelectionTable!: NzTableComponent<Itinerario>;
 
@@ -118,10 +122,77 @@ export class ItinerarioComponent implements OnInit {
       this.loading = false;
     });
 
+    this.cargarDesdeLocalStorage();
+
     // Detectar cambios en los filtros
     this.selectedArea.valueChanges.subscribe(() => this.filterItinerarios());
     this.selectedDate.valueChanges.subscribe(() => this.filterItinerarios());
     this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
+  }
+
+  agregarActividad() {
+    if (this.actividad.trim() !== '') {
+      this.actividades.push(this.actividad);
+      this.actividad = ''; // Limpiar el input
+      this.guardarEnLocalStorage(); // Guardar en localStorage
+    }
+  }
+
+  eliminarActividad(index: number) {
+    this.actividades.splice(index, 1);
+    this.guardarEnLocalStorage(); // Guardar en localStorage
+  }
+
+  moverArriba(index: number) {
+    if (index > 0) {
+      [this.actividades[index], this.actividades[index - 1]] = [this.actividades[index - 1], this.actividades[index]];
+      this.guardarEnLocalStorage(); // Guardar en localStorage
+    }
+  }
+
+  moverAbajo(index: number) {
+    if (index < this.actividades.length - 1) {
+      [this.actividades[index], this.actividades[index + 1]] = [this.actividades[index + 1], this.actividades[index]];
+      this.guardarEnLocalStorage(); // Guardar en localStorage
+    }
+  }
+
+  editarActividad(index: number) {
+    this.editIndex = index;
+    this.editActividad = this.actividades[index];
+  }
+
+  guardarEdicion(index: number) {
+    if (this.editActividad.trim() !== '') {
+      this.actividades[index] = this.editActividad;
+      this.editIndex = null;
+      this.editActividad = '';
+      this.guardarEnLocalStorage(); // Guardar en localStorage
+    }
+  }
+
+  guardarEnLocalStorage() {
+    const actividadesConTimestamp = {
+      actividades: this.actividades,
+      timestamp: new Date().getTime(), // Guardamos la fecha/hora actual
+    };
+    localStorage.setItem('actividades', JSON.stringify(actividadesConTimestamp));
+  }
+
+  cargarDesdeLocalStorage() {
+    const actividadesGuardadas = localStorage.getItem('actividades');
+    if (actividadesGuardadas) {
+      const { actividades, timestamp } = JSON.parse(actividadesGuardadas);
+      const ahora = new Date().getTime();
+      const veinticuatroHoras = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+
+      // Verificar si han pasado menos de 24 horas
+      if (ahora - timestamp < veinticuatroHoras) {
+        this.actividades = actividades; // Cargar las actividades
+      } else {
+        localStorage.removeItem('actividades'); // Eliminar datos expirados
+      }
+    }
   }
 
   // Método para verificar si la fecha de término es hoy

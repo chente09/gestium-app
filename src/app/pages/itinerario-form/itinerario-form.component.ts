@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ItinerarioService } from '../../services/itinerario/itinerario.service';
 import { CommonModule } from '@angular/common';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -82,7 +82,7 @@ export class ItinerarioFormComponent implements OnInit {
       tramite: ['', Validators.required],
       solicita: [''],
       fechaSolicitud: [new Date().toISOString().split('T')[0], Validators.required],
-      fechaTermino: ['', Validators.required],
+      fechaTermino: ['', [Validators.required, this.fechaTerminoValidator]],
       estado: [Estado.PENDIENTE, Validators.required],
       observaciones: [''],
       area: [this.areas[0]],
@@ -98,17 +98,17 @@ export class ItinerarioFormComponent implements OnInit {
   onImageSelected(event: any) {
     const file = event.file?.originFileObj;
     if (file) {
-        this.selectedImage = file;
+      this.selectedImage = file;
     }
-}
+  }
 
   // 📂 Manejar selección de PDF
   onPDFSelected(event: any) {
     const file = event.file?.originFileObj;
     if (file) {
-        this.selectedPDF = file;
+      this.selectedPDF = file;
     }
-}
+  }
 
   // 🌟 Enviar formulario
   async submitForm(): Promise<void> {
@@ -157,6 +157,16 @@ export class ItinerarioFormComponent implements OnInit {
     this.imageFileList = [];
     this.pdfFileList = [];
 
+  }
+
+  private fechaTerminoValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) return null; // Si el campo está vacío, no validar
+  
+    const fechaTermino = new Date(control.value);
+    const fechaHoy = new Date();
+    fechaHoy.setHours(0, 0, 0, 0); // Eliminamos la hora para comparar solo la fecha
+  
+    return fechaTermino <= fechaHoy ? { fechaInvalida: true } : null;
   }
 
 

@@ -29,6 +29,7 @@
         <ul>
             <li *ngFor="let notificacion of notificaciones">
                 <div class="notification-item">
+                    <strong>{{ notificacion.area }}</strong>
                     <strong>{{ notificacion.tramite }}</strong>
                     <p>Fecha de término: {{ notificacion.fechaTermino }}</p>
                 </div>

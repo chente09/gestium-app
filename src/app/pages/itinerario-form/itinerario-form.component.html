@@ -65,7 +65,7 @@
             <nz-col nzSpan="12">
                 <nz-form-item>
                     <nz-form-label nzFor="fechaTermino" nzRequired nzWidth="200px">Fecha de Término</nz-form-label>
-                    <nz-form-control>
+                    <nz-form-control nzErrorTip="La fecha de término debe ser posterior a hoy.">
                         <input nz-input formControlName="fechaTermino" type="date" required />
                     </nz-form-control>
                 </nz-form-item>

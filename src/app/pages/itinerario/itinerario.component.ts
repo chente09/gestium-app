@@ -70,7 +70,7 @@ export class ItinerarioComponent implements OnInit {
   imageFileList: any[] = [];
   fechaActual: string = '';  // Variable para la fecha por defecto
   horaActual: string = '';
-  notificaciones: { tramite: string; fechaTermino: string }[] = [];
+  notificaciones: { area: string; tramite: string; fechaTermino: string }[] = [];
   mostrarNotificaciones = false; // Estado para mostrar/ocultar la lista
 
   isVisible = false; // Controla la visibilidad del modal
@@ -132,6 +132,7 @@ export class ItinerarioComponent implements OnInit {
 
   agregarNotificacion(item: Itinerario): void {
     const notificacion = {
+      area: item.area,
       tramite: item.tramite,
       fechaTermino: item.fechaTermino,
     };

@@ -21,11 +21,16 @@ export interface EntradaHistorial {
 
 export interface Itinerario {
   id: string;
+  creadoPor: string;
   juzgado: string;
+  materia: string;
+  diligencia: string;
   piso: string;
+  juez: string;
   tramite: string;
   solicita: string;
   fechaSolicitud: string;
+  horaSolicitud: string;
   fechaTermino: string;
   estado: Estado;
   observaciones?: string;
@@ -104,11 +109,16 @@ export class ItinerarioService {
       map((data: any[]) =>
         data.map(doc => ({
           id: doc.id,
+          creadoPor: doc.creadoPor || '',
           juzgado: doc.juzgado || '',
+          materia: doc.materia || '',
+          diligencia: doc.diligencia || '',
           piso: doc.piso || '',
+          juez: doc.juez || '',
           tramite: doc.tramite || '',
           solicita: doc.solicita || '',
           fechaSolicitud: doc.fechaSolicitud || '',
+          horaSolicitud: doc.horaSolicitud || '',
           fechaTermino: doc.fechaTermino || '',
           estado: doc.estado ?? false, // Si `estado` es boolean, usa `?? false`
           observaciones: doc.observaciones || '',

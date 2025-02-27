@@ -1,0 +1,20 @@
+.demanda-form {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.demanda-form nz-form-item {
+    margin-bottom: 16px;
+}
+
+.demanda-form nz-form-label {
+    font-weight: 500;
+}
+
+.demanda-form button {
+    margin-top: 24px;
+}

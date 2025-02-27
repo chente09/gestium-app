@@ -29,7 +29,7 @@ export class WelcomeComponent {
     { title: 'ISSFA', description: 'Registro de documentación para procesos', icon: 'file-text', route: '/issfa' },
     { title: 'Inmobiliaria', description: 'Registro de documentación inmobiliaria', icon: 'home', route: '/inmobiliaria' },
     { title: 'Banco Produbanco', description: 'Registro y elaboración de demandas', icon: 'bank', route: '/produbanco' },
-    { title: 'Banco Pichincha', description: 'Gestion de demandas', icon: 'bank', route: '/pichincha' },
+    { title: 'Banco Pichincha', description: 'Gestion de demandas', icon: 'bank', route: '/dmd-proc-ordinario' },
   ];
 
   sections2 = [

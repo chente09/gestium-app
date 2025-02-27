@@ -84,6 +84,11 @@ export class ItinerarioComponent implements OnInit {
   editIndex: number | null = null;
   editActividad: string = '';
 
+  unidadOrder: string[] = ['Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon','Notaria 1','SUPERCIAS', 'ANT', 'Registro Propiedad', 'Otro',''];
+  materiaOrder: string[] = ['Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales', 'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro', ''];
+  diligenciaOrder: string[] = ['Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro', ''];
+  pisoOrder: string[] = ['Pb', '5to', '8vo', 'Otro', ''];
+
   @ViewChild('rowSelectionTable') rowSelectionTable!: NzTableComponent<Itinerario>;
 
   // Filtros
@@ -110,12 +115,12 @@ export class ItinerarioComponent implements OnInit {
     this.setFechaHoraActual();
     this.itinerarioService.getItinerarios().subscribe(data => {
       this.itinerarios = data;
-      this.filterItinerarios();
+      this.filterItinerarios(); // Llamar a filterItinerarios después de obtener los datos
       this.itinerarios.forEach(item => {
         this.editCache[item.id] = { edit: false };
 
         // Verificar si la fecha de término es igual a la fecha actual
-        if (this.esFechaTerminoHoy(item.fechaTermino)) {
+        if (this.esFechaTerminoHoy(item.fechaTermino, item.estado)) {
           this.agregarNotificacion(item);
         }
       });
@@ -130,12 +135,80 @@ export class ItinerarioComponent implements OnInit {
     this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
   }
 
+  filterItinerarios(): void {
+    const selectedAreaValue = this.selectedArea.value;
+    const selectedEstadoValue = this.selectedEstado.value;
+    const [fechaInicio, fechaFin] = this.selectedDate.value || [null, null];
+
+    // Filtrar los datos
+    this.filteredItinerarios = this.itinerarios.filter(item => {
+      // Usar el enum Estado para filtrar los estados correctamente
+      const estado = item.estado; // Esto ya es el valor del enum
+      const estadoStr = String(item.estado).toLowerCase();
+      const isEstadoMatch = selectedEstadoValue ? estadoStr === String(selectedEstadoValue).toLowerCase() : true;
+      const isPendingOrIncomplete = estado === Estado.PENDIENTE || estado === Estado.INCOMPLETO;
+      const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
+      const fechaSolicitud = new Date(item.fechaSolicitud);
+      const isDateInRange =
+        (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
+        (!fechaFin || fechaSolicitud <= new Date(fechaFin));
+
+      return isPendingOrIncomplete && isAreaMatch && isDateInRange && isEstadoMatch;
+    });
+
+    // Ordenar los datos después de filtrar
+    this.filteredItinerarios = this.sortData(this.filteredItinerarios);
+  }
+
+  sortData(data: any[]): any[] {
+    return data.sort((a, b) => {
+      const unidadA = this.unidadOrder.indexOf(a.unidad);
+      const unidadB = this.unidadOrder.indexOf(b.unidad);
+      if (unidadA !== unidadB) {
+        return unidadA - unidadB;
+      }
+
+      const materiaA = this.materiaOrder.indexOf(a.materia);
+      const materiaB = this.materiaOrder.indexOf(b.materia);
+      if (materiaA !== materiaB) {
+        return materiaA - materiaB;
+      }
+
+      const diligenciaA = this.diligenciaOrder.indexOf(a.diligencia);
+      const diligenciaB = this.diligenciaOrder.indexOf(b.diligencia);
+      if (diligenciaA !== diligenciaB) {
+        return diligenciaA - diligenciaB;
+      }
+
+      const pisoA = this.pisoOrder.indexOf(a.piso);
+      const pisoB = this.pisoOrder.indexOf(b.piso);
+      return pisoA - pisoB;
+    });
+  }
+
   agregarActividad() {
     if (this.actividad.trim() !== '') {
       this.actividades.push(this.actividad);
       this.actividad = ''; // Limpiar el input
       this.guardarEnLocalStorage(); // Guardar en localStorage
     }
+  }
+
+  getDataFromService(): any[] {
+    // Simulación de datos obtenidos de un servicio
+    return [
+      { unidad: 'Iñaquito', materia: 'Familia', diligencia: 'Cop. Citar', piso: '5to' },
+      { unidad: 'Quitumbe', materia: 'Archivo', diligencia: 'Desglose', piso: 'Pb' },
+      { unidad: 'Quitumbe', materia: 'Archivo', diligencia: 'Desglose', piso: '8vo' },
+      { unidad: 'Calderon', materia: 'Penal', diligencia: 'Requerimiento', piso: '5to' },
+      // Más datos...
+    ];
+  }
+
+
+  onFilterChange() {
+    // Aplicar filtros y ordenar
+    this.filteredItinerarios = this.sortData(this.filteredItinerarios);
   }
 
   eliminarActividad(index: number) {
@@ -195,22 +268,26 @@ export class ItinerarioComponent implements OnInit {
     }
   }
 
-  // Método para verificar si la fecha de término es hoy
-  esFechaTerminoHoy(fechaTermino: string): boolean {
+  // Método para verificar si la fecha de término es hoy y el estado no es COMPLETADO
+  esFechaTerminoHoy(fechaTermino: string, estado: Estado): boolean {
     const fechaActual = new Date().toISOString().split('T')[0]; // Fecha actual en formato YYYY-MM-DD
-    return fechaTermino <= fechaActual;
+    return fechaTermino <= fechaActual && estado !== Estado.COMPLETADO;
   }
 
   agregarNotificacion(item: Itinerario): void {
-    const notificacion = {
-      area: item.area,
-      tramite: item.tramite,
-      fechaTermino: item.fechaTermino,
-    };
-    if (!this.notificaciones.some(n => n.tramite === notificacion.tramite && n.fechaTermino === notificacion.fechaTermino)) {
-      this.notificaciones.push(notificacion);
+    if (this.esFechaTerminoHoy(item.fechaTermino, item.estado)) {
+      const notificacion = {
+        area: item.area,
+        tramite: item.tramite,
+        fechaTermino: item.fechaTermino,
+      };
+
+      if (!this.notificaciones.some(n => n.tramite === notificacion.tramite && n.fechaTermino === notificacion.fechaTermino)) {
+        this.notificaciones.push(notificacion);
+      }
     }
   }
+
 
   descargarRegistrosPDF(): void {
     if (this.filteredItinerarios.length === 0) {
@@ -287,26 +364,7 @@ export class ItinerarioComponent implements OnInit {
     return user ? user.displayName : null;
   }
 
-  filterItinerarios(): void {
-    const selectedAreaValue = this.selectedArea.value;
-    const selectedEstadoValue = this.selectedEstado.value;
-    const [fechaInicio, fechaFin] = this.selectedDate.value || [null, null];
 
-    this.filteredItinerarios = this.itinerarios.filter(item => {
-      // Usar el enum Estado para filtrar los estados correctamente
-      const estado = item.estado; // Esto ya es el valor del enum
-      const estadoStr = String(item.estado).toLowerCase();
-      const isEstadoMatch = selectedEstadoValue ? estadoStr === String(selectedEstadoValue).toLowerCase() : true;
-      const isPendingOrIncomplete = estado === Estado.PENDIENTE || estado === Estado.INCOMPLETO;
-      const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
-      const fechaSolicitud = new Date(item.fechaSolicitud);
-      const isDateInRange =
-        (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
-        (!fechaFin || fechaSolicitud <= new Date(fechaFin));
-
-      return isPendingOrIncomplete && isAreaMatch && isDateInRange && isEstadoMatch;
-    });
-  }
 
   getEstadoColor(estado: Estado): string {
     switch (estado) {

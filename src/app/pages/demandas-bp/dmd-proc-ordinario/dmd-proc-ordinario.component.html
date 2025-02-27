@@ -1,0 +1,171 @@
+<form nz-form [formGroup]="demandaForm" (ngSubmit)="onSubmit()" class="demanda-form">
+    <!-- Nombre del Demandado -->
+    <nz-form-item>
+      <nz-form-label nzFor="demandadoNombre" nzRequired>Nombre del Demandado</nz-form-label>
+      <nz-form-control>
+        <input nz-input id="demandadoNombre" formControlName="demandadoNombre" />
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Cédula del Demandado -->
+    <nz-form-item>
+      <nz-form-label nzFor="demandadoCedula" nzRequired>Cédula del Demandado</nz-form-label>
+      <nz-form-control>
+        <input nz-input id="demandadoCedula" formControlName="demandadoCedula" />
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Número de Fojas Estado de Cuenta -->
+    <nz-form-item>
+      <nz-form-label nzFor="nroFojas">Número de Fojas Estado de Cuenta</nz-form-label>
+      <nz-form-control>
+        <input nz-input id="nroFojas" formControlName="nroFojas" />
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Número de Fojas Abonos -->
+    <nz-form-item>
+      <nz-form-label nzFor="nroFojasAbonos">Número de Fojas Abonos</nz-form-label>
+      <nz-form-control>
+        <input nz-input id="nroFojasAbonos" formControlName="nroFojasAbonos" />
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Fecha de Emisión -->
+    <nz-form-item>
+      <nz-form-label nzFor="fechaEmision">Fecha de Emisión</nz-form-label>
+      <nz-form-control>
+        <nz-date-picker id="fechaEmision" formControlName="fechaEmision"></nz-date-picker>
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Número de Tarjeta de Crédito -->
+    <nz-form-item>
+      <nz-form-label nzFor="nroTC">Número de Tarjeta de Crédito</nz-form-label>
+      <nz-form-control>
+        <input nz-input id="nroTC" formControlName="nroTC" />
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Tipo de Tarjeta de Crédito -->
+    <nz-form-item>
+      <nz-form-label nzFor="tipoTC">Tipo de Tarjeta de Crédito</nz-form-label>
+      <nz-form-control>
+        <input nz-input id="tipoTC" formControlName="tipoTC" />
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Fecha de Vencimiento -->
+    <nz-form-item>
+      <nz-form-label nzFor="fechaVencimiento">Fecha de Vencimiento</nz-form-label>
+      <nz-form-control>
+        <nz-date-picker id="fechaVencimiento" formControlName="fechaVencimiento"></nz-date-picker>
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Fecha de Liquidación -->
+    <nz-form-item>
+      <nz-form-label nzFor="fechaLiquidacion">Fecha de Liquidación</nz-form-label>
+      <nz-form-control>
+        <nz-date-picker id="fechaLiquidacion" formControlName="fechaLiquidacion"></nz-date-picker>
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Saldo de Capital -->
+    <nz-form-item>
+      <nz-form-label nzFor="saldoCapital">Saldo de Capital</nz-form-label>
+      <nz-form-control>
+        <input nz-input id="saldoCapital" formControlName="saldoCapital" (keyup)="onValueChange('saldoCapital')" />
+      </nz-form-control>
+      <p *ngIf="valoresEnLetras['saldoCapital']">Saldo en letras: {{ valoresEnLetras['saldoCapital'] | uppercase }}</p>
+    </nz-form-item>
+  
+    <!-- Fracción de Capital -->
+    <nz-form-item>
+      <nz-form-label nzFor="frcCapital">Fracción de Capital</nz-form-label>
+      <nz-form-control>
+        <input nz-input id="frcCapital" formControlName="frcCapital" (keyup)="onValueChange('frcCapital')" type="number" />
+      </nz-form-control>
+    </nz-form-item>
+  
+    <!-- Botón de Envío -->
+    <nz-form-item>
+      <nz-form-control>
+        <button nz-button nzType="primary" type="submit" [disabled]="!demandaForm.valid">Generar Documento</button>
+      </nz-form-control>
+    </nz-form-item>
+  </form>
+
+<form [formGroup]="demandaForm" (ngSubmit)="onSubmit()">
+    <label for="demandadoNombre">Nombre del Demandado:</label>
+    <input id="demandadoNombre" formControlName="demandadoNombre" />
+
+    <label for="demandadoCedula">Cédula del Demandado:</label>
+    <input id="demandadoCedula" formControlName="demandadoCedula" />
+
+    <label for="nroFojas">Número de Fojas Estado de Cuenta:</label>
+    <input id="nroFojas" formControlName="nroFojas" />
+
+    <label for="nroFojasAbonos">Número de Fojas Abonos:</label>
+    <input id="nroFojasAbonos" formControlName="nroFojasAbonos" />
+    
+    <label for="fechaEmision">Fecha de Emisión:</label>
+    <input id="fechaEmision" type="date" formControlName="fechaEmision" />
+
+    <label for="nroTC">Número de Tarjeta de Crédito:</label>
+    <input id="nroTC" formControlName="nroTC" />
+
+    <label for="tipoTC">Tipo de Tarjeta de Crédito:</label>
+    <input id="tipoTC" formControlName="tipoTC" />
+
+    <label for="fechaVencimiento">Fecha de Vencimiento:</label>
+    <input id="fechaVencimiento" type="date" formControlName="fechaVencimiento" />
+
+    <label for="fechaLiquidacion">Fecha de Liquidación:</label>
+    <input id="fechaLiquidacion" type="date" formControlName="fechaLiquidacion" />
+
+    <label for="saldoCapital">Saldo de Capital:</label>
+    <input id="saldoCapital" formControlName="saldoCapital" (keyup)="onValueChange('saldoCapital')" type="text" [value]="valoresFormateados['saldoCapital']" />
+    <p *ngIf="valoresEnLetras['saldoCapital']">Saldo en letras: {{ valoresEnLetras['saldoCapital'] | uppercase }}</p>
+
+    <label for="frcCapital">Fracción de Capital:</label>
+    <input id="frcCapital" formControlName="frcCapital" (keyup)="onValueChange('frcCapital')" type="number" />
+
+    <label for="interesFinanciado">Interés Financiado:</label>
+    <input id="interesFinanciado" formControlName="interesFinanciado" (keyup)="onValueChange('interesFinanciado')" type="text"  [value]="valoresFormateados['interesFinanciado']"/>
+    <p *ngIf="valoresEnLetras['interesFinanciado']">Interés Financiado en letras: {{valoresEnLetras['interesFinanciado'] | uppercase }}</p>
+
+    <label for="frcInteresFinanciado">Fracción de Interés Financiado:</label>
+    <input id="frcInteresFinanciado" formControlName="frcInteresFinanciado" (keyup)="onValueChange('frcInteresFinanciado')" type="number" />
+
+    <label for="interesDiferido">Interés Diferido:</label>
+    <input id="interesDiferido" formControlName="interesDiferido" (keyup)="onValueChange('interesDiferido')" type="text" [value]="valoresFormateados['interesDiferido']" />
+    <p *ngIf="valoresEnLetras['interesDiferido']">Interés Diferido en letras: {{ valoresEnLetras['interesDiferido'] | uppercase }}</p>
+
+    <label for="frcInteresDiferido">Fracción de Interés Diferido:</label>
+    <input id="frcInteresDiferido" formControlName="frcInteresDiferido" (keyup)="onValueChange('frcInteresDiferido')" type="number" />
+
+    <label for="interesMora">Interés de Mora:</label>
+    <input id="interesMora" formControlName="interesMora" (keyup)="onValueChange('interesMora')" type="text" [value]="valoresFormateados['interesMora']" />
+    <p *ngIf="valoresEnLetras['interesMora']">Interés de Mora en letras: {{ valoresEnLetras['interesMora'] | uppercase }}</p>
+
+    <label for="frcInteresMora">Fracción de Interés de Mora:</label>
+    <input id="frcInteresMora" formControlName="frcInteresMora" (keyup)="onValueChange('frcInteresMora')" type="number" />
+
+    <label for="costosOperativos">Costos Operativos:</label>
+    <input id="costosOperativos" formControlName="costosOperativos" (keyup)="onValueChange('costosOperativos')" type="text" [value]="valoresFormateados['costosOperativos']" />
+    <p *ngIf="valoresEnLetras['costosOperativos']">Costos Operativos en letras: {{ valoresEnLetras['costosOperativos'] | uppercase }}</p>
+
+    <label for="frcCostosOperativos">Fracción de Costos Operativos:</label>
+    <input id="frcCostosOperativos" formControlName="frcCostosOperativos" (keyup)="onValueChange('frcCostosOperativos')" type="number" />
+
+    <label for="totalAdeudado">Total Adeudado:</label>
+    <input id="totalAdeudado" formControlName="totalAdeudado" (keyup)="onValueChange('totalAdeudado')" type="text" [value]="valoresFormateados['totalAdeudado']" />
+    <p *ngIf="valoresEnLetras['totalAdeudado']">Total Adeudado en letras: {{ valoresEnLetras['totalAdeudado'] | uppercase }}</p>
+
+    <label for="frcTotalAdeudado">Fracción de Total Adeudado:</label>
+    <input id="frcTotalAdeudado" formControlName="frcTotalAdeudado" (keyup)="onValueChange('frcTotalAdeudado')" type="number" />
+
+
+    <button type="submit" [disabled]="!demandaForm.valid">Generar Documento</button>
+</form>

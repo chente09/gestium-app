@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ItinerarioService } from '../../services/itinerario/itinerario.service';
+import { UsersService } from '../../services/users/users.service';
 import { CommonModule } from '@angular/common';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -50,7 +51,21 @@ export class ItinerarioFormComponent implements OnInit {
   selectedPDF: File | null = null;
   isLoading = false;
   selectedArea: string | null = null;
+  slectedUnidad: string | null = null;
+  slectedMateria: string | null = null;
+  selectDiligencia: string | null = null;
+  selectPiso: string | null = null;
+  selectJuez: string | null = null;
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
+  unidad: string [] = ['', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Notaria 1', 'SUPERCIAS', 'ANT', 'Registro Propiedad', 'Otro'];
+  materia: string [] = ['','Archivo', 'Ingresos', 'Coordinación', 'Diligenicas no Penales', 'Oficina de Ciatciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro'];
+  diligencia: string [] = ['','Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro'];
+  piso: string [] = ['','Pb','5to','8vo', 'Otro'];
+  juecesPorPiso: { [key: string]: string[] } = {
+    '5to': ['', 'Alban Solano Diana', 'Altamirano Ruiz Santiago', 'Calero Sánchez Oscar', 'Chacón Ortiz Francisco', 'Eguiguren Bermeo Leonardo', 'Espinoza Venegas Celma','Landazuri Salazar Luis', 'Lemos Trujillo Gabriel', 'López Tapia Edison', 'Martínez Salazar Karina', 'Mogro Pérez Carlos', 'Molina Andrade Cintia' , 'Narváez Narváez Paul' , 'Ordóñez Pizarro Rita', 'Palacios Morillo Vinicio', 'Baño Palomino Patricio' , 'Romero Ramírez Carmen' , 'Ron Cadena Elizabeth', 'Simbaña Quispe Martha', 'Tafur Salazar Jenny', 'Vaca Duque Lucía' , 'Zambrano Ortiz Wilmer', 'Baño Palomino Patricio', 'Cevallos Ampudia Edwin'],
+    '8vo': ['','Silva Cristian', 'Miranda Calvache Jorge', 'Chango Baños Edith', 'Fuentes López Carlos', 'Tello Aymacaña Ángel', 'Rodas Sánchez Silvia', 'López Vargas Melany', 'Pila Avendaño Viviana', 'Erazo Navarrete Grimanesa', 'Vela Ribadeneira María', 'Torres Recalde Ana', 'Saltos Pinto Luis', 'Chinde Chamorro Richard', 'Salto Dávila luz','Flor Mónica']
+  };
+  jueces : string[] = [];
   selectedFileType: string = 'image';
   selectedFileName: string | null = null;
   imageFileList: any[] = [];
@@ -59,6 +74,7 @@ export class ItinerarioFormComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private itinerarioService: ItinerarioService,
+    private usersService: UsersService,
     private message: NzMessageService
   ) {
     this.itinerarioForm = this.fb.group({
@@ -75,13 +91,23 @@ export class ItinerarioFormComponent implements OnInit {
     });
   }
 
+  getCurrentUserName(): string | null {
+    const user = this.usersService.getCurrentUser();
+    return user ? user.displayName : null;
+  }
+
   private initForm(): void {
     this.itinerarioForm = this.fb.group({
-      juzgado: [''],
-      piso: [''],
+      creadoPor: [this.getCurrentUserName() || '', Validators.required],
+      juzgado: [this.unidad[0] ],
+      piso: [this.piso[0]],
+      juez: [this.jueces[0]],
       tramite: ['', Validators.required],
+      materia: [this.materia[0]],
+      diligencia: [this.diligencia[0]],
       solicita: [''],
       fechaSolicitud: [new Date().toISOString().split('T')[0], Validators.required],
+      horaSolicitud: [new Date().toLocaleTimeString(), Validators.required],
       fechaTermino: ['', [Validators.required, this.fechaTerminoValidator]],
       estado: [Estado.PENDIENTE, Validators.required],
       observaciones: [''],
@@ -89,12 +115,52 @@ export class ItinerarioFormComponent implements OnInit {
     });
 
     this.selectedArea = this.areas[0];
+    this.selectPiso = this.piso[0];
+    this.actualizarJueces(this.selectPiso);
+    this.slectedUnidad = this.unidad[0];
+    this.slectedMateria = this.materia[0];
+    this.selectDiligencia = this.diligencia[0];
   }
 
   onAreaChange(area: string): void {
     this.selectedArea = area;
     this.itinerarioForm.patchValue({ area });
   }
+
+  onPisoChange(piso: string): void {
+    this.selectPiso = piso;
+    this.itinerarioForm.patchValue({ piso });
+    this.actualizarJueces(piso);
+  }
+
+  private actualizarJueces(piso: string): void {
+    // Verificar si el piso tiene jueces asociados
+    if (this.juecesPorPiso[piso]) {
+      this.jueces = this.juecesPorPiso[piso]; // Asignar los jueces del piso
+      this.selectJuez = this.jueces[0]; // Seleccionar el primer juez del piso automáticamente
+      this.itinerarioForm.patchValue({ juez: this.selectJuez }); // Corregido: Actualiza el campo juez, no juzgado
+    } else {
+      this.jueces = [];
+      this.selectJuez = null;
+      this.itinerarioForm.patchValue({ juez: '' }); // Asegurar que el campo juez quede vacío si no hay jueces
+    }
+  }
+
+  onJuzgadoChange(juzgado: string): void {
+    this. slectedUnidad = juzgado;
+    this.itinerarioForm.patchValue({ juzgado });
+  }
+
+  onMateriaChange(materia: string): void {
+    this.slectedMateria = materia;
+    this.itinerarioForm.patchValue({ materia });
+  }
+
+  onDiligenciaChange(diligencia: string): void {
+    this.selectDiligencia = diligencia;
+    this.itinerarioForm.patchValue({ diligencia });
+  }
+
   onImageSelected(event: any) {
     const file = event.file?.originFileObj;
     if (file) {
@@ -121,7 +187,6 @@ export class ItinerarioFormComponent implements OnInit {
     this.message.loading('Guardando itinerario...', { nzDuration: 1000 });
 
     try {
-      const formData = this.itinerarioForm.value;
 
       await this.itinerarioService.createItinerario(
         this.itinerarioForm.value,
@@ -135,8 +200,19 @@ export class ItinerarioFormComponent implements OnInit {
       // 🔄 Reiniciar formulario
       this.itinerarioForm.reset({
         fechaSolicitud: new Date().toISOString().split('T')[0], // Mantiene la fecha actual por defecto
+        horaSolicitud: new Date().toLocaleTimeString(),
         area: currentArea,
-        estado: Estado.PENDIENTE
+        creadoPor: this.getCurrentUserName() || '',
+            juzgado: this.unidad[0],
+            piso: this.piso[0],
+            juez: this.jueces[0],
+            tramite: '',
+            materia: this.materia[0],
+            diligencia: this.diligencia[0],
+            solicita: '',
+            fechaTermino: '',
+            estado: Estado.PENDIENTE,
+            observaciones: '',
       });
       this.selectedImage = null;
       this.selectedPDF = null;

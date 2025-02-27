@@ -15,100 +15,151 @@
 <hr class="divider">
 <form nz-form [formGroup]="itinerarioForm" (ngSubmit)="submitForm()" class="itinerario-form">
     <!-- Selector de Área -->
-    <nz-form-item>
-        <nz-form-label nzFor="area" nzRequired nzWidth="200px">Área</nz-form-label>
-        <nz-form-control>
-            <nz-select formControlName="area">
-                <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
-            </nz-select>
-        </nz-form-control>
-    </nz-form-item>
+    <nz-row [nzGutter]="16">
+        <nz-col nzSpan="8">
+            <nz-form-item>
+                <nz-form-label nzFor="area" nzRequired>Solicita</nz-form-label>
+                <nz-form-control>
+                    <nz-select formControlName="area">
+                        <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+        </nz-col>
+        <nz-col nzSpan="16">
+                <nz-form-item>
+                    <nz-form-label nzFor="tramite" nzRequired>Trámite</nz-form-label>
+                    <nz-form-control>
+                        <input nz-input formControlName="tramite" placeholder="Ingrese el trámite o número de proceso" required />
+                    </nz-form-control>
+                </nz-form-item>
+        </nz-col>
+        
+    </nz-row>
+
+    <nz-row [nzGutter]="16">
+        <nz-col nzSpan="24">
+            <nz-form-item>
+                <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
+                <nz-form-control>
+                    <textarea nz-input formControlName="observaciones" placeholder="Ingrese observaciones"></textarea>
+                </nz-form-control>
+            </nz-form-item>
+        </nz-col>
+    </nz-row>
 
     <div *ngIf="selectedArea">
         <nz-row [nzGutter]="16">
             <nz-col nzSpan="12">
                 <nz-form-item>
-                    <nz-form-label nzFor="juzgado" nzWidth="200px">Juzgado</nz-form-label>
+                    <nz-form-label nzFor="juzgado">Unidad</nz-form-label>
                     <nz-form-control>
-                        <input nz-input formControlName="juzgado" placeholder="Ingrese el juzgado" />
+                        <nz-select formControlName="juzgado">
+                            <nz-option *ngFor="let juzgado of unidad" [nzValue]="juzgado" [nzLabel]="juzgado"></nz-option>
+                        </nz-select>
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
             <nz-col nzSpan="12">
                 <nz-form-item>
-                    <nz-form-label nzFor="piso" nzWidth="200px">Piso</nz-form-label>
+                    <nz-form-label nzFor="piso">Piso</nz-form-label>
                     <nz-form-control>
-                        <input nz-input formControlName="piso" placeholder="Ingrese el piso" />
+                        <nz-select formControlName="piso" (ngModelChange)="onPisoChange($event)">
+                            <nz-option *ngFor="let pisoItem of piso" [nzValue]="pisoItem" [nzLabel]="pisoItem"></nz-option>
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+            </nz-col>
+            
+        </nz-row>
+
+        <nz-row [nzGutter]="16" *ngIf="jueces.length > 0">
+            <nz-col nzSpan="12">
+                <nz-form-item>
+                    <nz-form-label nzFor="juez">Juez</nz-form-label>
+                    <nz-form-control>
+                        <nz-select formControlName="juez">
+                            <nz-option *ngFor="let juezItem of jueces" [nzValue]="juezItem" [nzLabel]="juezItem"></nz-option>
+                        </nz-select>
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
         </nz-row>
 
-        <nz-form-item>
-            <nz-form-label nzFor="tramite" nzRequired nzWidth="200px">Trámite</nz-form-label>
-            <nz-form-control>
-                <input nz-input formControlName="tramite"
-                    placeholder="Ingresar el número de proceso o describa el trámite a realizar " required />
-            </nz-form-control>
-        </nz-form-item>
+        <nz-row [nzGutter]="16">
+            <nz-col nzSpan="12">
+                <nz-form-item>
+                    <nz-form-label nzFor="materia">Área</nz-form-label>
+                    <nz-form-control>
+                        <nz-select formControlName="materia">
+                            <nz-option *ngFor="let materia of materia" [nzValue]="materia" [nzLabel]="materia"></nz-option>
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+            </nz-col>
+
+            <nz-col nzSpan="12">
+                <nz-form-item>
+                    <nz-form-label nzFor="diligencia">Diligencia</nz-form-label>
+                    <nz-form-control>
+                        <nz-select formControlName="diligencia">
+                            <nz-option *ngFor="let diligencia of diligencia" [nzValue]="diligencia" [nzLabel]="diligencia"></nz-option>
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+            </nz-col>
+        </nz-row>
 
         <nz-row [nzGutter]="16">
             <nz-col nzSpan="12">
                 <nz-form-item>
-                    <nz-form-label nzFor="solicita" nzWidth="200px">Solicita</nz-form-label>
+                    <nz-form-label nzFor="solicita">Recibe</nz-form-label>
                     <nz-form-control>
-                        <input nz-input formControlName="solicita"
-                            placeholder="Ingresar datos si es necesario especificar quien recibe el trámite" />
+                        <input nz-input formControlName="solicita" placeholder="Especificar quién recibe el trámite" />
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
             <nz-col nzSpan="12">
                 <nz-form-item>
-                    <nz-form-label nzFor="fechaTermino" nzRequired nzWidth="200px">Fecha de Término</nz-form-label>
-                    <nz-form-control nzErrorTip="La fecha de término debe ser posterior a hoy.">
+                    <nz-form-label nzFor="fechaTermino" nzRequired>Fecha de Término</nz-form-label>
+                    <nz-form-control nzErrorTip="Debe ser posterior a hoy">
                         <input nz-input formControlName="fechaTermino" type="date" required />
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
         </nz-row>
 
-        <nz-form-item>
-            <nz-form-label nzFor="observaciones" nzWidth="200px">Observaciones</nz-form-label>
-            <nz-form-control>
-                <textarea nz-input formControlName="observaciones" placeholder="Escriba las observaciones"></textarea>
-            </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-label>Archivos</nz-form-label>
-        <nz-row [nzGutter]="16" class="file-upload-container">
+        <nz-row [nzGutter]="16">
             <nz-col nzSpan="12">
-                <nz-form-item class="upload-item">
-                    <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
-                        [(nzFileList)]="imageFileList" (nzChange)="onImageSelected($event)">
+                <nz-form-item>
+                    <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true" [(nzFileList)]="imageFileList" (nzChange)="onImageSelected($event)">
                         <div class="upload-button"><i nz-icon nzType="upload"></i> Subir Imagen</div>
                     </nz-upload>
                 </nz-form-item>
             </nz-col>
             <nz-col nzSpan="12">
-                <nz-form-item class="upload-item">
-                    <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true"
-                        [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
+                <nz-form-item>
+                    <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true" [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
                         <div class="upload-button"><i nz-icon nzType="upload"></i> Subir PDF</div>
                     </nz-upload>
                 </nz-form-item>
             </nz-col>
         </nz-row>
 
-
-        <nz-form-item>
-            <nz-form-control>
-                <button class="save-button" nz-button nzBlock="true" [disabled]="isLoading"
-                    [nzLoading]="isLoading"><nz-icon [nzType]="'save'"></nz-icon> Guardar</button>
-            </nz-form-control>
-        </nz-form-item>
+        <nz-row>
+            <nz-col nzSpan="24">
+                <nz-form-item>
+                    <nz-form-control>
+                        <button class="save-button" nz-button nzBlock [disabled]="isLoading" [nzLoading]="isLoading">
+                            <nz-icon [nzType]="'save'"></nz-icon> Guardar
+                        </button>
+                    </nz-form-control>
+                </nz-form-item>
+            </nz-col>
+        </nz-row>
     </div>
-    <p *ngIf="isLoading">Guardando...</p>
 </form>
+
 <div class="header-grid">
     <div class="header-item">
         <a routerLink="/itinerario" class="link">Pendientes</a>

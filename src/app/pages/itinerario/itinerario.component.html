@@ -44,7 +44,8 @@
 <div>
     <div class="filters">
         <!-- Filtros existentes -->
-        <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()" nzPlaceHolder="Filtrar por área">
+        <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()"
+            nzPlaceHolder="Filtrar por área ofi">
             <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
         </nz-select>
 
@@ -61,25 +62,25 @@
         </button>
     </div>
 
-    <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered nzShowPagination
-        nzShowSizeChanger [nzData]="filteredItinerarios" [nzLoading]="loading"
+    <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered [nzFrontPagination]="false"
+        [nzShowPagination]="false" [nzData]="filteredItinerarios" [nzLoading]="loading"
         (nzCurrentPageDataChange)="onCurrentPageDataChange($event)">
         <thead>
             <tr>
-                <th nzWidth="5%">Estado</th>
-                <th nzWidth="10%">Área</th>
-                <th nzWidth="5%">Juzgado</th>
-                <th nzWidth="5%">Piso</th>
-                <th nzWidth="12%">Trámite</th>
-                <th nzWidth="10%">Solicitante</th>
-                <th nzWidth="10%">Fecha de Solicitud</th>
-                <th nzWidth="10%">Fecha de Término</th>
-                <th nzWidth="8%">Observaciones</th>
-                <th nzWidth="8%">Documentos</th>
-                <th nzWidth="6%">Fecha Completado</th>
-                <th nzWidth="5%">Hora Completado</th>
-                <th nzWidth="6%">Obs. Completado</th>
-                <th nzWidth="6%">Acciones</th>
+                <th nzWidth="10px">Estado</th>
+                <th nzWidth="150px">Área Oficina</th>
+                <th nzWidth="140px">Trámite</th>
+                <th nzWidth="auto">Unidad</th>
+                <th nzWidth="100px">Piso y Juez</th>
+                <th nzWidth="auto">Área</th>
+                <th nzWidth="auto">Diligencia</th>
+                <th nzWidth="auto">Recibe</th>
+                <th nzWidth="150px">Fechas</th>
+                <th nzWidth="auto">Observaciones</th>
+                <th nzWidth="auto">Documentos</th>
+                <th nzWidth="auto">Fecha y Hora Completado</th>
+                <th nzWidth="auto">Obs. Completado</th>
+                <th nzWidth="auto">Acciones</th>
             </tr>
         </thead>
         <tbody *ngIf="rowSelectionTable.data && rowSelectionTable.data.length > 0; else emptyTable">
@@ -89,13 +90,32 @@
                         {{ getEstadoTexto(item.estado) }}
                     </nz-tag>
                 </td>
-                <td>{{ item.area }}</td>
-                <td>{{ item.juzgado }}</td>
-                <td>{{ item.piso }}</td>
+                <td>
+                    <strong>Area: </strong>{{ item.area }}
+                    <br>
+                    <strong>Solicita: </strong> {{ item.creadoPor }}
+                </td>
                 <td>{{ item.tramite }}</td>
+                <td>{{ item.juzgado }}</td>
+                <td>
+                    <ng-container *ngIf="item.piso || item.juez">
+                        <strong>Piso: </strong>{{ item.piso }}
+                        <br>
+                        <strong>Juez: </strong>{{ item.juez }}
+                    </ng-container>
+                </td>
+                <td>{{ item.materia }}</td>
+                <td>{{ item.diligencia }}</td>
                 <td>{{ item.solicita }}</td>
-                <td>{{ item.fechaSolicitud }}</td>
-                <td>{{ item.fechaTermino }}</td>
+                <td>
+                    <ng-container *ngIf="item.fechaSolicitud || item.fechaTermino">
+                        <strong>Solicitud: </strong>{{ item.fechaSolicitud }}
+                        <br>
+                        <strong>Hora: </strong>{{ item.horaSolicitud }}
+                        <br>
+                        <strong>Término: </strong><span style="color: brown;">{{ item.fechaTermino }}</span>
+                    </ng-container>
+                </td>
                 <td>{{ item.observaciones }}</td>
                 <td>
                     <ng-container *ngIf="item.imagen || item.pdf; else noData">
@@ -119,10 +139,6 @@
                 <td>
                     <span *ngIf="item.historial && item.historial.length > 0">
                         {{ item.historial[item.historial.length - 1].fecha }}
-                    </span>
-                </td>
-                <td>
-                    <span *ngIf="item.historial && item.historial.length > 0">
                         {{ item.historial[item.historial.length - 1].hora }}
                     </span>
                 </td>
@@ -260,25 +276,29 @@
     </div>
 
     <ul class="list-group mt-3" *ngIf="actividades.length > 0">
-        <li *ngFor="let act of actividades; let i = index" 
+        <li *ngFor="let act of actividades; let i = index"
             class="list-group-item d-flex justify-content-between align-items-center actividad-item">
-            
+
             <div *ngIf="editIndex !== i" class="actividad-text">
                 {{ act }}
             </div>
             <input *ngIf="editIndex === i" [(ngModel)]="editActividad" class="form-control actividad-edit" />
 
             <div class="actividad-actions">
-                <button (click)="editarActividad(i)" *ngIf="editIndex !== i" class="btn btn-warning btn-sm" aria-label="Editar actividad">
+                <button (click)="editarActividad(i)" *ngIf="editIndex !== i" class="btn btn-warning btn-sm"
+                    aria-label="Editar actividad">
                     <nz-icon nzType="edit"></nz-icon>
                 </button>
-                <button (click)="guardarEdicion(i)" *ngIf="editIndex === i" class="btn btn-success btn-sm" aria-label="Guardar cambios">
+                <button (click)="guardarEdicion(i)" *ngIf="editIndex === i" class="btn btn-success btn-sm"
+                    aria-label="Guardar cambios">
                     <nz-icon nzType="check"></nz-icon>
                 </button>
-                <button (click)="moverArriba(i)" [disabled]="i === 0" class="btn btn-secondary btn-sm" aria-label="Mover actividad arriba">
+                <button (click)="moverArriba(i)" [disabled]="i === 0" class="btn btn-secondary btn-sm"
+                    aria-label="Mover actividad arriba">
                     <nz-icon nzType="arrow-up"></nz-icon>
                 </button>
-                <button (click)="moverAbajo(i)" [disabled]="i === actividades.length - 1" class="btn btn-secondary btn-sm" aria-label="Mover actividad abajo">
+                <button (click)="moverAbajo(i)" [disabled]="i === actividades.length - 1"
+                    class="btn btn-secondary btn-sm" aria-label="Mover actividad abajo">
                     <nz-icon nzType="arrow-down"></nz-icon>
                 </button>
                 <button (click)="eliminarActividad(i)" class="btn btn-danger btn-sm" aria-label="Eliminar actividad">
@@ -288,4 +308,3 @@
         </li>
     </ul>
 </div>
-

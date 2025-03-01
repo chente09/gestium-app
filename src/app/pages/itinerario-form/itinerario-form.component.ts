@@ -57,19 +57,25 @@ export class ItinerarioFormComponent implements OnInit {
   selectPiso: string | null = null;
   selectJuez: string | null = null;
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
-  unidad: string [] = ['', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Notaria 1', 'SUPERCIAS', 'ANT', 'Registro Propiedad', 'Otro'];
-  materia: string [] = ['','Archivo', 'Ingresos', 'Coordinación', 'Diligenicas no Penales', 'Oficina de Ciatciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro'];
-  diligencia: string [] = ['','Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro'];
-  piso: string [] = ['','Pb','5to','8vo', 'Otro'];
+  unidad: string[] = ['', 'ISSFA', 'Notaria', 'SUPERCIAS', 'ANT', 'Registro Propiedad', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro'];
+  materia: string[] = ['', 'Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales', 'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro'];
+  diligencia: string[] = ['','Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro'];
+  piso: string[] = ['', 'Pb', '5to', '8vo', 'Otro', ''];
   juecesPorPiso: { [key: string]: string[] } = {
-    '5to': ['', 'Alban Solano Diana', 'Altamirano Ruiz Santiago', 'Calero Sánchez Oscar', 'Chacón Ortiz Francisco', 'Eguiguren Bermeo Leonardo', 'Espinoza Venegas Celma','Landazuri Salazar Luis', 'Lemos Trujillo Gabriel', 'López Tapia Edison', 'Martínez Salazar Karina', 'Mogro Pérez Carlos', 'Molina Andrade Cintia' , 'Narváez Narváez Paul' , 'Ordóñez Pizarro Rita', 'Palacios Morillo Vinicio', 'Baño Palomino Patricio' , 'Romero Ramírez Carmen' , 'Ron Cadena Elizabeth', 'Simbaña Quispe Martha', 'Tafur Salazar Jenny', 'Vaca Duque Lucía' , 'Zambrano Ortiz Wilmer', 'Baño Palomino Patricio', 'Cevallos Ampudia Edwin'],
-    '8vo': ['','Silva Cristian', 'Miranda Calvache Jorge', 'Chango Baños Edith', 'Fuentes López Carlos', 'Tello Aymacaña Ángel', 'Rodas Sánchez Silvia', 'López Vargas Melany', 'Pila Avendaño Viviana', 'Erazo Navarrete Grimanesa', 'Vela Ribadeneira María', 'Torres Recalde Ana', 'Saltos Pinto Luis', 'Chinde Chamorro Richard', 'Salto Dávila luz','Flor Mónica']
+    '5to': ['', 'Alban Solano Diana', 'Altamirano Ruiz Santiago', 'Calero Sánchez Oscar', 'Chacón Ortiz Francisco', 'Eguiguren Bermeo Leonardo', 'Espinoza Venegas Celma', 'Landazuri Salazar Luis', 'Lemos Trujillo Gabriel', 'López Tapia Edison', 'Martínez Salazar Karina', 'Mogro Pérez Carlos', 'Molina Andrade Cintia', 'Narváez Narváez Paul', 'Ordóñez Pizarro Rita', 'Palacios Morillo Vinicio', 'Baño Palomino Patricio', 'Romero Ramírez Carmen', 'Ron Cadena Elizabeth', 'Simbaña Quispe Martha', 'Tafur Salazar Jenny', 'Vaca Duque Lucía', 'Zambrano Ortiz Wilmer', 'Baño Palomino Patricio', 'Cevallos Ampudia Edwin'],
+    '8vo': ['', 'Silva Cristian', 'Miranda Calvache Jorge', 'Chango Baños Edith', 'Fuentes López Carlos', 'Tello Aymacaña Ángel', 'Rodas Sánchez Silvia', 'López Vargas Melany', 'Pila Avendaño Viviana', 'Erazo Navarrete Grimanesa', 'Vela Ribadeneira María', 'Torres Recalde Ana', 'Saltos Pinto Luis', 'Chinde Chamorro Richard', 'Salto Dávila luz', 'Flor Mónica']
   };
-  jueces : string[] = [];
+  jueces: string[] = [];
   selectedFileType: string = 'image';
   selectedFileName: string | null = null;
   imageFileList: any[] = [];
   pdfFileList: any[] = [];
+
+  showManualAreaInput: boolean = false;
+  showManualUnidadInput: boolean = false;
+  showManualMateriaInput: boolean = false;
+  showManualDiligenciaInput: boolean = false;
+  showManualPisoInput: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -99,12 +105,17 @@ export class ItinerarioFormComponent implements OnInit {
   private initForm(): void {
     this.itinerarioForm = this.fb.group({
       creadoPor: [this.getCurrentUserName() || '', Validators.required],
-      juzgado: [this.unidad[0] ],
+      juzgado: [this.unidad[0]],
+      manualJuzgado: [''],
       piso: [this.piso[0]],
+      manualPiso: [''],
       juez: [this.jueces[0]],
+      manualJuez: [''],
       tramite: ['', Validators.required],
       materia: [this.materia[0]],
+      manualMateria: [''],
       diligencia: [this.diligencia[0]],
+      manualDiligencia: [''],
       solicita: [''],
       fechaSolicitud: [new Date().toISOString().split('T')[0], Validators.required],
       horaSolicitud: [new Date().toLocaleTimeString(), Validators.required],
@@ -112,6 +123,7 @@ export class ItinerarioFormComponent implements OnInit {
       estado: [Estado.PENDIENTE, Validators.required],
       observaciones: [''],
       area: [this.areas[0]],
+      manualArea: [''],
     });
 
     this.selectedArea = this.areas[0];
@@ -125,12 +137,14 @@ export class ItinerarioFormComponent implements OnInit {
   onAreaChange(area: string): void {
     this.selectedArea = area;
     this.itinerarioForm.patchValue({ area });
+    this.showManualAreaInput = this.selectedArea === 'Otro';
   }
 
   onPisoChange(piso: string): void {
     this.selectPiso = piso;
     this.itinerarioForm.patchValue({ piso });
     this.actualizarJueces(piso);
+    this.showManualPisoInput = this.selectPiso === 'Otro';
   }
 
   private actualizarJueces(piso: string): void {
@@ -147,18 +161,21 @@ export class ItinerarioFormComponent implements OnInit {
   }
 
   onJuzgadoChange(juzgado: string): void {
-    this. slectedUnidad = juzgado;
+    this.slectedUnidad = juzgado;
     this.itinerarioForm.patchValue({ juzgado });
+    this.showManualUnidadInput = this.slectedUnidad === 'Otro';
   }
 
   onMateriaChange(materia: string): void {
     this.slectedMateria = materia;
     this.itinerarioForm.patchValue({ materia });
+    this.showManualMateriaInput = this.slectedMateria === 'Otro';
   }
 
   onDiligenciaChange(diligencia: string): void {
     this.selectDiligencia = diligencia;
     this.itinerarioForm.patchValue({ diligencia });
+    this.showManualDiligenciaInput = this.selectDiligencia === 'Otro';
   }
 
   onImageSelected(event: any) {
@@ -203,16 +220,16 @@ export class ItinerarioFormComponent implements OnInit {
         horaSolicitud: new Date().toLocaleTimeString(),
         area: currentArea,
         creadoPor: this.getCurrentUserName() || '',
-            juzgado: this.unidad[0],
-            piso: this.piso[0],
-            juez: this.jueces[0],
-            tramite: '',
-            materia: this.materia[0],
-            diligencia: this.diligencia[0],
-            solicita: '',
-            fechaTermino: '',
-            estado: Estado.PENDIENTE,
-            observaciones: '',
+        juzgado: this.unidad[0],
+        piso: this.piso[0],
+        juez: this.jueces[0],
+        tramite: '',
+        materia: this.materia[0],
+        diligencia: this.diligencia[0],
+        solicita: '',
+        fechaTermino: '',
+        estado: Estado.PENDIENTE,
+        observaciones: '',
       });
       this.selectedImage = null;
       this.selectedPDF = null;
@@ -237,11 +254,11 @@ export class ItinerarioFormComponent implements OnInit {
 
   private fechaTerminoValidator(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null; // Si el campo está vacío, no validar
-  
+
     const fechaTermino = new Date(control.value);
     const fechaHoy = new Date();
     fechaHoy.setHours(0, 0, 0, 0); // Eliminamos la hora para comparar solo la fecha
-  
+
     return fechaTermino <= fechaHoy ? { fechaInvalida: true } : null;
   }
 

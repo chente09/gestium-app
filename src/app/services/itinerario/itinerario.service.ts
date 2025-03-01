@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Firestore, addDoc, collection, collectionData, doc, deleteDoc, updateDoc, getDoc, runTransaction, setDoc } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, collectionData, doc, deleteDoc, updateDoc, getDoc, runTransaction, setDoc, writeBatch } from '@angular/fire/firestore';
 import { Storage, ref, uploadBytesResumable, getDownloadURL, deleteObject, uploadBytes } from '@angular/fire/storage';
-import { map, Observable } from 'rxjs';
+import { firstValueFrom, map, Observable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
 enum Estado {
@@ -23,9 +23,13 @@ export interface Itinerario {
   id: string;
   creadoPor: string;
   juzgado: string;
+  manualJuzgado?: string;
   materia: string;
+  manualMateria?: string;
   diligencia: string;
+  manualDiligencia?: string;
   piso: string;
+  manualPiso?: string;
   juez: string;
   tramite: string;
   solicita: string;
@@ -37,6 +41,7 @@ export interface Itinerario {
   imagen?: string; //Guardar la URL de la imagen
   pdf?: string; //Guardar la URL del PDF
   area: string;
+  manualArea?: string;
   fechaCompletado?: string;
   horaCompletado?: string;
   obsCompletado?: string;
@@ -45,11 +50,19 @@ export interface Itinerario {
   historial?: EntradaHistorial[];
 }
 
+export interface RutaDiaria {
+  id : string;
+  fecha: string;
+  lugar: string[];
+  orden: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ItinerarioService {
   private collectionName = 'itinerarios';
+  private collecionrute = 'rutasDiarias';
 
   constructor(private firestore: Firestore, private storage: Storage) { }
 
@@ -101,7 +114,6 @@ export class ItinerarioService {
     }
   }
 
-
   // 📌 Obtener todos los itinerarios como Observable
   getItinerarios(): Observable<Itinerario[]> {
     const itinerariosRef = collection(this.firestore, this.collectionName);
@@ -111,9 +123,13 @@ export class ItinerarioService {
           id: doc.id,
           creadoPor: doc.creadoPor || '',
           juzgado: doc.juzgado || '',
+          manualJuzgado: doc.manualJuzgado || '',
           materia: doc.materia || '',
+          manualMateria: doc.manualMateria || '',
           diligencia: doc.diligencia || '',
+          manualDiligencia: doc.manualDiligencia || '',
           piso: doc.piso || '',
+          manualPiso: doc.manualPiso || '',
           juez: doc.juez || '',
           tramite: doc.tramite || '',
           solicita: doc.solicita || '',
@@ -125,6 +141,7 @@ export class ItinerarioService {
           imagen: doc.imagen || '',
           pdf: doc.pdf || '',
           area: doc.area || '',
+          manualArea: doc.manualArea || '',
           fechaCompletado: doc.fechaCompletado || '',
           horaCompletado: doc.horaCompletado || '',
           obsCompletado: doc.obsCompletado || '',
@@ -135,7 +152,6 @@ export class ItinerarioService {
       )
     ) as Observable<Itinerario[]>;
   }
-
 
   // 📌 Obtener un itinerario por ID
   async getItinerarioById(id: string): Promise<Itinerario | undefined> {
@@ -267,6 +283,66 @@ export class ItinerarioService {
     } catch (error: any) {
       throw new Error(`Error al eliminar el itinerario ${id}: ${error.message}`);
     }
+  }
+
+   // 🟢 Métodos para Rutas Diarias
+
+  async createRutaDiaria(rutaDiaria: Omit<RutaDiaria, 'id' | 'orden'>): Promise<string> {
+    const rutaDiariaRef = collection(this.firestore, this.collecionrute);
+  
+    // Obtener el número de documentos existentes para asignar el orden
+    const actividades = await firstValueFrom(this.getRutasDiarias());
+    const orden = actividades ? actividades.length + 1 : 1;
+  
+    // Guardar todas las actividades en un solo documento
+    const newDoc = await addDoc(rutaDiariaRef, {
+      ...rutaDiaria,
+      orden,
+    });
+  
+    return newDoc.id;
+  }
+
+  getRutasDiarias(): Observable<RutaDiaria[]> {
+    const rutaDiariaRef = collection(this.firestore, this.collecionrute);
+    console.log('Referencia a la colección:', rutaDiariaRef); // Depuración
+  
+    return collectionData(rutaDiariaRef, { idField: 'id' }).pipe(
+      map((data: any[]) => {
+        console.log('Datos obtenidos de Firestore:', data); // Depuración
+        return data.map(doc => ({
+          id: doc.id,
+          fecha: doc.fecha || '',
+          lugar: doc.lugar || [],
+          orden: doc.orden || 0,
+        }));
+      })
+    ) as Observable<RutaDiaria[]>;
+  }
+
+  async getRutaDiariaById(id: string): Promise<RutaDiaria | null> {
+    const docRef = doc(this.firestore, this.collecionrute, id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as RutaDiaria : null;
+  }
+
+  async updateRutaDiaria(id: string, rutaDiaria: Partial<RutaDiaria>): Promise<void> {
+    const docRef = doc(this.firestore, this.collecionrute, id);
+    await updateDoc(docRef, rutaDiaria);
+  }
+
+  async deleteRutaDiaria(id: string): Promise<void> {
+    const docRef = doc(this.firestore, this.collecionrute, id);
+    await deleteDoc(docRef);
+  }
+
+  async updateOrdenActividades(actividades: RutaDiaria[]): Promise<void> {
+    const batch = writeBatch(this.firestore); // Usar un batch para actualizar múltiples documentos
+    actividades.forEach((act) => {
+      const docRef = doc(this.firestore, this.collecionrute, act.id);
+      batch.update(docRef, { orden: act.orden });
+    });
+    await batch.commit(); // Guardar todos los cambios
   }
 
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -6,7 +6,7 @@ import { NzTableComponent, NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 
-import { ItinerarioService, Itinerario } from '../../services/itinerario/itinerario.service';
+import { ItinerarioService, Itinerario, RutaDiaria } from '../../services/itinerario/itinerario.service';
 import { UsersService } from '../../services/users/users.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
@@ -79,15 +79,16 @@ export class ItinerarioComponent implements OnInit {
 
   isHistorialVisible = false; // Controla la visibilidad del modal
   historialActual: any[] = []; // Almacena el historial actual
+
   actividad: string = '';
   actividades: string[] = [];
+
+  nuevaActividad: string = '';
+  actividadesTemporales: string[] = [];
   editIndex: number | null = null;
   editActividad: string = '';
-
-  unidadOrder: string[] = ['Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon','Notaria 1','SUPERCIAS', 'ANT', 'Registro Propiedad', 'Otro',''];
-  materiaOrder: string[] = ['Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales', 'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro', ''];
-  diligenciaOrder: string[] = ['Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro', ''];
-  pisoOrder: string[] = ['Pb', '5to', '8vo', 'Otro', ''];
+  actividadesGuardadas: string[] = []; // Almacena las actividades guardadas
+  rutaSeleccionada: RutaDiaria | null = null; // Almacena la ruta seleccionada
 
   @ViewChild('rowSelectionTable') rowSelectionTable!: NzTableComponent<Itinerario>;
 
@@ -107,6 +108,7 @@ export class ItinerarioComponent implements OnInit {
     private itinerarioService: ItinerarioService,
     private usersService: UsersService,
     private message: NzMessageService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   private destroy$ = new Subject<void>();
@@ -114,8 +116,15 @@ export class ItinerarioComponent implements OnInit {
   ngOnInit(): void {
     this.setFechaHoraActual();
     this.itinerarioService.getItinerarios().subscribe(data => {
+      if (!Array.isArray(data)) {
+        console.warn("Los datos obtenidos no son un array:", data);
+        this.loading = false;
+        return;
+      }
+
       this.itinerarios = data;
-      this.filterItinerarios(); // Llamar a filterItinerarios después de obtener los datos
+      this.filterItinerarios(); // Filtrar datos después de obtenerlos
+
       this.itinerarios.forEach(item => {
         this.editCache[item.id] = { edit: false };
 
@@ -124,10 +133,14 @@ export class ItinerarioComponent implements OnInit {
           this.agregarNotificacion(item);
         }
       });
+
       this.loading = false;
     });
 
-    this.cargarDesdeLocalStorage();
+
+
+    this.cargarActividades();
+    this.cargarActividadesGuardadas();
 
     // Detectar cambios en los filtros
     this.selectedArea.valueChanges.subscribe(() => this.filterItinerarios());
@@ -158,115 +171,186 @@ export class ItinerarioComponent implements OnInit {
 
     // Ordenar los datos después de filtrar
     this.filteredItinerarios = this.sortData(this.filteredItinerarios);
+
+    this.cdr.detectChanges();
   }
 
-  sortData(data: any[]): any[] {
-    return data.sort((a, b) => {
-      const unidadA = this.unidadOrder.indexOf(a.unidad);
-      const unidadB = this.unidadOrder.indexOf(b.unidad);
-      if (unidadA !== unidadB) {
-        return unidadA - unidadB;
-      }
+  private sortData(itinerarios: Itinerario[]): Itinerario[] {
+    const unidadOrder: string[] = [
+      'Notaria', 'SUPERCIAS', 'ANT', 'Registro Propiedad', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''
+    ];
+    const pisoOrder: string[] = ['Pb', '5to', '8vo', 'Otro', ''];
+    const materiaOrder: string[] = [
+      'Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales',
+      'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro', ''
+    ];
+    const diligenciaOrder: string[] = [
+      'Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro', ''
+    ];
 
-      const materiaA = this.materiaOrder.indexOf(a.materia);
-      const materiaB = this.materiaOrder.indexOf(b.materia);
-      if (materiaA !== materiaB) {
-        return materiaA - materiaB;
-      }
+    return itinerarios.sort((a, b) => {
+      // Obtener los índices en cada orden
+      const indexUnidadA = unidadOrder.indexOf(a.manualJuzgado || a.juzgado);
+      const indexUnidadB = unidadOrder.indexOf(b.manualJuzgado || b.juzgado);
 
-      const diligenciaA = this.diligenciaOrder.indexOf(a.diligencia);
-      const diligenciaB = this.diligenciaOrder.indexOf(b.diligencia);
-      if (diligenciaA !== diligenciaB) {
-        return diligenciaA - diligenciaB;
-      }
+      const indexPisoA = pisoOrder.indexOf(a.piso);
+      const indexPisoB = pisoOrder.indexOf(b.piso);
 
-      const pisoA = this.pisoOrder.indexOf(a.piso);
-      const pisoB = this.pisoOrder.indexOf(b.piso);
-      return pisoA - pisoB;
+      const indexMateriaA = materiaOrder.indexOf(a.materia);
+      const indexMateriaB = materiaOrder.indexOf(b.materia);
+
+      const indexDiligenciaA = diligenciaOrder.indexOf(a.diligencia);
+      const indexDiligenciaB = diligenciaOrder.indexOf(b.diligencia);
+
+      // Función para manejar valores no encontrados
+      const getSafeIndex = (index: number, orderArray: string[]) =>
+        index === -1 ? orderArray.length : index;
+
+      // Comparar según la jerarquía
+      return (
+        getSafeIndex(indexUnidadA, unidadOrder) - getSafeIndex(indexUnidadB, unidadOrder) ||
+        getSafeIndex(indexPisoA, pisoOrder) - getSafeIndex(indexPisoB, pisoOrder) ||
+        getSafeIndex(indexMateriaA, materiaOrder) - getSafeIndex(indexMateriaB, materiaOrder) ||
+        getSafeIndex(indexDiligenciaA, diligenciaOrder) - getSafeIndex(indexDiligenciaB, diligenciaOrder)
+      );
     });
   }
 
-  agregarActividad() {
-    if (this.actividad.trim() !== '') {
-      this.actividades.push(this.actividad);
-      this.actividad = ''; // Limpiar el input
-      this.guardarEnLocalStorage(); // Guardar en localStorage
+
+  async cargarActividades() {
+    const rutasDiarias = await this.itinerarioService.getRutasDiarias().toPromise();
+    if (rutasDiarias) {
+      this.actividades = rutasDiarias.map(ruta => ruta.lugar.join(', '));
     }
   }
 
-  getDataFromService(): any[] {
-    // Simulación de datos obtenidos de un servicio
-    return [
-      { unidad: 'Iñaquito', materia: 'Familia', diligencia: 'Cop. Citar', piso: '5to' },
-      { unidad: 'Quitumbe', materia: 'Archivo', diligencia: 'Desglose', piso: 'Pb' },
-      { unidad: 'Quitumbe', materia: 'Archivo', diligencia: 'Desglose', piso: '8vo' },
-      { unidad: 'Calderon', materia: 'Penal', diligencia: 'Requerimiento', piso: '5to' },
-      // Más datos...
-    ];
-  }
-
-
-  onFilterChange() {
-    // Aplicar filtros y ordenar
-    this.filteredItinerarios = this.sortData(this.filteredItinerarios);
-  }
-
-  eliminarActividad(index: number) {
-    this.actividades.splice(index, 1);
-    this.guardarEnLocalStorage(); // Guardar en localStorage
-  }
-
-  moverArriba(index: number) {
-    if (index > 0) {
-      [this.actividades[index], this.actividades[index - 1]] = [this.actividades[index - 1], this.actividades[index]];
-      this.guardarEnLocalStorage(); // Guardar en localStorage
+  agregarActividadTemporal() {
+    if (this.nuevaActividad.trim()) {
+      this.actividadesTemporales.push(this.nuevaActividad.trim());
+      this.nuevaActividad = ''; // Limpia el input
     }
   }
 
-  moverAbajo(index: number) {
-    if (index < this.actividades.length - 1) {
-      [this.actividades[index], this.actividades[index + 1]] = [this.actividades[index + 1], this.actividades[index]];
-      this.guardarEnLocalStorage(); // Guardar en localStorage
+  // Elimina una actividad del arreglo temporal
+  eliminarActividadTemporal(index: number) {
+    this.actividadesTemporales.splice(index, 1);
+  }
+
+  async agregarActividad() {
+    if (this.actividad.trim()) {
+      const nuevaRuta: Omit<RutaDiaria, 'id' | 'orden'> = {
+        fecha: new Date().toISOString(),
+        lugar: [this.actividad.trim()]
+      };
+      await this.itinerarioService.createRutaDiaria(nuevaRuta);
+      this.actividad = '';
+      this.cargarActividades();
+    }
+  }
+
+  // Guarda todas las actividades en Firestore
+  async guardarTodasLasActividades() {
+    if (this.actividadesTemporales.length > 0) {
+      const rutaDiaria: Omit<RutaDiaria, 'id' | 'orden'> = {
+        fecha: new Date().toISOString(), // Fecha actual
+        lugar: this.actividadesTemporales, // Todas las actividades
+      };
+
+      try {
+        await this.itinerarioService.createRutaDiaria(rutaDiaria);
+        this.message.success('Actividades guardadas correctamente.');
+        this.actividadesTemporales = []; // Limpia el arreglo temporal
+      } catch (error) {
+        console.error('Error al guardar las actividades:', error);
+        this.message.error('Hubo un error al guardar las actividades.');
+      }
     }
   }
 
   editarActividad(index: number) {
     this.editIndex = index;
-    this.editActividad = this.actividades[index];
+    this.editActividad = this.actividadesTemporales[index];
   }
 
   guardarEdicion(index: number) {
-    if (this.editActividad.trim() !== '') {
-      this.actividades[index] = this.editActividad;
-      this.editIndex = null;
-      this.editActividad = '';
-      this.guardarEnLocalStorage(); // Guardar en localStorage
+    if (this.editActividad.trim()) {
+      this.actividadesTemporales[index] = this.editActividad.trim();
+      this.editIndex = null; // Finaliza la edición
+      this.editActividad = ''; // Limpia el campo de edición
     }
   }
 
-  guardarEnLocalStorage() {
-    const actividadesConTimestamp = {
-      actividades: this.actividades,
-      timestamp: new Date().getTime(), // Guardamos la fecha/hora actual
-    };
-    localStorage.setItem('actividades', JSON.stringify(actividadesConTimestamp));
+  async eliminarActividad(index: number) {
+    const rutaDiaria = await this.itinerarioService.getRutasDiarias().toPromise();
+    if (rutaDiaria) {
+      const ruta = rutaDiaria[index];
+      await this.itinerarioService.deleteRutaDiaria(ruta.id);
+      this.cargarActividades();
+    }
   }
 
-  cargarDesdeLocalStorage() {
-    const actividadesGuardadas = localStorage.getItem('actividades');
-    if (actividadesGuardadas) {
-      const { actividades, timestamp } = JSON.parse(actividadesGuardadas);
-      const ahora = new Date().getTime();
-      const veinticuatroHoras = 24 * 60 * 60 * 1000; // 24 horas en milisegundos
+  moverArriba(index: number) {
+    if (index > 0) {
+      const temp = this.actividadesTemporales[index];
+      this.actividadesTemporales[index] = this.actividadesTemporales[index - 1];
+      this.actividadesTemporales[index - 1] = temp;
+    }
+  }
 
-      // Verificar si han pasado menos de 24 horas
-      if (ahora - timestamp < veinticuatroHoras) {
-        this.actividades = actividades; // Cargar las actividades
+  moverAbajo(index: number) {
+    if (index < this.actividadesTemporales.length - 1) {
+      const temp = this.actividadesTemporales[index];
+      this.actividadesTemporales[index] = this.actividadesTemporales[index + 1];
+      this.actividadesTemporales[index + 1] = temp;
+    }
+  }
+
+  // Cargar actividades desde Firestore
+  async cargarActividadesGuardadas() {
+    try {
+      const rutasDiarias = await this.itinerarioService.getRutasDiarias().toPromise();
+      console.log('Rutas diarias obtenidas:', rutasDiarias); // Depuración
+
+      if (rutasDiarias && rutasDiarias.length > 0) {
+        // Ordenar rutas por fecha (más reciente primero)
+        rutasDiarias.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+        this.rutaSeleccionada = rutasDiarias[0]; // Selecciona la más reciente
+        console.log('Última ruta seleccionada:', this.rutaSeleccionada); // Depuración
+
+        this.actividadesGuardadas = this.rutaSeleccionada.lugar;
+        console.log('Actividades guardadas:', this.actividadesGuardadas); // Depuración
       } else {
-        localStorage.removeItem('actividades'); // Eliminar datos expirados
+        console.log('No hay rutas diarias en Firestore.'); // Depuración
+      }
+    } catch (error) {
+      console.error('Error al cargar las actividades guardadas:', error);
+      alert('Hubo un error al cargar las actividades guardadas.');
+    }
+  }
+
+  // Eliminar una actividad guardada (opcional)
+  async eliminarActividadGuardada(index: number) {
+    if (confirm('¿Estás seguro de eliminar esta actividad?')) {
+      try {
+        if (this.rutaSeleccionada) {
+          // Elimina la actividad del arreglo `lugar`
+          this.rutaSeleccionada.lugar.splice(index, 1);
+
+          // Actualiza la ruta en Firestore
+          await this.itinerarioService.updateRutaDiaria(this.rutaSeleccionada.id, {
+            lugar: this.rutaSeleccionada.lugar,
+          });
+
+          // Actualiza la vista
+          this.actividadesGuardadas = this.rutaSeleccionada.lugar;
+        }
+      } catch (error) {
+        console.error('Error al eliminar la actividad:', error);
+        this.message.error('Hubo un error al eliminar la actividad.');
       }
     }
   }
+
 
   // Método para verificar si la fecha de término es hoy y el estado no es COMPLETADO
   esFechaTerminoHoy(fechaTermino: string, estado: Estado): boolean {
@@ -363,8 +447,6 @@ export class ItinerarioComponent implements OnInit {
     const user = this.usersService.getCurrentUser();
     return user ? user.displayName : null;
   }
-
-
 
   getEstadoColor(estado: Estado): string {
     switch (estado) {

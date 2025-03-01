@@ -63,7 +63,7 @@
         <tbody *ngIf="itinerarios.length > 0">
             <tr *ngFor="let item of filteredItinerarios; trackBy: trackById">
                 <!-- Modo lectura -->
-                <td *ngIf="!editCache[item.id]?.edit">{{ item.area }}</td>
+                <td *ngIf="!editCache[item.id]?.edit">{{ item.manualArea || item.area }} </td>
                 <td *ngIf="!editCache[item.id]?.edit">
                     <nz-tag [nzColor]="getEstadoColor(item.estado)">
                         {{ getEstadoTexto(item.estado) }}

@@ -176,9 +176,7 @@ export class ItinerarioComponent implements OnInit {
   }
 
   private sortData(itinerarios: Itinerario[]): Itinerario[] {
-    const unidadOrder: string[] = [
-      'Notaria', 'SUPERCIAS', 'ANT', 'Registro Propiedad', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''
-    ];
+    const unidadOrder: string[] = ['Municipio', 'Notaria', 'SUPERCIAS', 'ANT','SRI','ISSFA', 'Consejo Provincial', 'Registro Propiedad','Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''];
     const pisoOrder: string[] = ['Pb', '5to', '8vo', 'Otro', ''];
     const materiaOrder: string[] = [
       'Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales',
@@ -309,18 +307,20 @@ export class ItinerarioComponent implements OnInit {
   async cargarActividadesGuardadas() {
     try {
       const rutasDiarias = await this.itinerarioService.getRutasDiarias().toPromise();
-      console.log('Rutas diarias obtenidas:', rutasDiarias); // Depuración
-
+      console.log('Rutas diarias obtenidas:', rutasDiarias);
+  
       if (rutasDiarias && rutasDiarias.length > 0) {
-        // Ordenar rutas por fecha (más reciente primero)
         rutasDiarias.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-        this.rutaSeleccionada = rutasDiarias[0]; // Selecciona la más reciente
-        console.log('Última ruta seleccionada:', this.rutaSeleccionada); // Depuración
-
+        this.rutaSeleccionada = rutasDiarias[0];
+        console.log('Última ruta seleccionada:', this.rutaSeleccionada);
+  
         this.actividadesGuardadas = this.rutaSeleccionada.lugar;
-        console.log('Actividades guardadas:', this.actividadesGuardadas); // Depuración
+        console.log('Actividades guardadas:', this.actividadesGuardadas);
+  
+        // Forzar detección de cambios
+        this.cdr.detectChanges();
       } else {
-        console.log('No hay rutas diarias en Firestore.'); // Depuración
+        console.log('No hay rutas diarias en Firestore.');
       }
     } catch (error) {
       console.error('Error al cargar las actividades guardadas:', error);
@@ -349,6 +349,10 @@ export class ItinerarioComponent implements OnInit {
         this.message.error('Hubo un error al eliminar la actividad.');
       }
     }
+  }
+
+  trackByFn(index: number, item: any): any {
+    return index; // O puedes usar `item.id` si cada actividad tiene un ID único
   }
 
 

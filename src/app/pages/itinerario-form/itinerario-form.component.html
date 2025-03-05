@@ -13,35 +13,47 @@
     <nz-breadcrumb-item>Registro de Actividades</nz-breadcrumb-item>
 </nz-breadcrumb>
 <hr class="divider">
-<form nz-form [formGroup]="itinerarioForm" (ngSubmit)="submitForm()" class="itinerario-form">
+<form nz-form [formGroup]="itinerarioForm" class="itinerario-form">
     <!-- Selector de Área -->
     <nz-row [nzGutter]="16">
-        <nz-col nzSpan="8">
+        <nz-col nzSpan="10">
             <nz-form-item>
                 <nz-form-label nzFor="area" nzRequired>Solicita</nz-form-label>
                 <nz-form-control>
-                    <nz-select formControlName="area" (ngModelChange)="onAreaChange($event)">
+                    <nz-select formControlName="area">
                         <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
                     </nz-select>
-                    <input *ngIf="showManualAreaInput" nz-input formControlName="manualArea" placeholder="Ingrese el área manualmente" />
+                    <input *ngIf="showManualAreaInput" nz-input formControlName="manualArea"
+                        placeholder="Ingrese el área manualmente" />
                 </nz-form-control>
             </nz-form-item>
         </nz-col>
-        <nz-col nzSpan="16">
-                <nz-form-item>
-                    <nz-form-label nzFor="tramite" nzRequired>Trámite</nz-form-label>
-                    <nz-form-control>
-                        <textarea nz-input formControlName="tramite" placeholder="Ingrese el trámite, número de proceso o actividad puntual a realizar" required ></textarea>
-                    </nz-form-control>
-                </nz-form-item>
+        <nz-col nzSpan="14">
+            <nz-form-item>
+                <nz-form-label nzFor="tramite" nzRequired>Trámite</nz-form-label>
+                <nz-form-control>
+                    <textarea nz-input formControlName="tramite"
+                        placeholder="Ingrese el trámite, número de proceso o actividad puntual a realizar"
+                        required></textarea>
+                </nz-form-control>
+            </nz-form-item>
         </nz-col>
     </nz-row>
     <nz-row [nzGutter]="16">
-        <nz-col nzSpan="24">
+        <nz-col nzSpan="10">
+            <nz-form-item>
+                <nz-form-label nzFor="nroProceso">N°. Juicio</nz-form-label>
+                <nz-form-control>
+                    <input nz-input formControlName="nroProceso" placeholder="Ingrese el N° de proceso para validar duplicados" />
+                </nz-form-control>
+            </nz-form-item>
+        </nz-col>
+        <nz-col nzSpan="14">
             <nz-form-item>
                 <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
                 <nz-form-control>
-                    <textarea nz-input formControlName="observaciones" placeholder="Ingrese observaciones o detalles generales de la actividad"></textarea>
+                    <textarea nz-input formControlName="observaciones"
+                        placeholder="Ingrese observaciones o detalles generales de la actividad"></textarea>
                 </nz-form-control>
             </nz-form-item>
         </nz-col>
@@ -50,12 +62,14 @@
         <nz-row [nzGutter]="16">
             <nz-col nzSpan="12">
                 <nz-form-item>
-                    <nz-form-label nzFor="juzgado">Selecciona una Unidad, Juzgado o Entidad</nz-form-label>
+                    <nz-form-label nzFor="juzgado">Unidad, Juzgado o Entidad</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="juzgado" (ngModelChange)="onJuzgadoChange($event)">
-                            <nz-option *ngFor="let juzgado of unidad" [nzValue]="juzgado" [nzLabel]="juzgado"></nz-option>
+                        <nz-select formControlName="juzgado">
+                            <nz-option *ngFor="let juzgado of unidad" [nzValue]="juzgado"
+                                [nzLabel]="juzgado"></nz-option>
                         </nz-select>
-                        <input *ngIf="showManualUnidadInput" nz-input formControlName="manualJuzgado" placeholder="Ingrese la unidad manualmente" />
+                        <input *ngIf="showManualUnidadInput" nz-input formControlName="manualJuzgado"
+                            placeholder="Ingrese la unidad manualmente" />
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
@@ -63,14 +77,16 @@
                 <nz-form-item>
                     <nz-form-label nzFor="piso">Selecciona el piso</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="piso" (ngModelChange)="onPisoChange($event)">
-                            <nz-option *ngFor="let pisoItem of piso" [nzValue]="pisoItem" [nzLabel]="pisoItem"></nz-option>
+                        <nz-select formControlName="piso">
+                            <nz-option *ngFor="let pisoItem of piso" [nzValue]="pisoItem"
+                                [nzLabel]="pisoItem"></nz-option>
                         </nz-select>
-                        <input *ngIf="showManualPisoInput" nz-input formControlName="manualPiso" placeholder="Ingrese el piso manualmente" />
+                        <input *ngIf="showManualPisoInput" nz-input formControlName="manualPiso"
+                            placeholder="Ingrese el piso manualmente" />
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
-            
+
         </nz-row>
 
         <nz-row [nzGutter]="16" *ngIf="jueces.length > 0">
@@ -79,7 +95,8 @@
                     <nz-form-label nzFor="juez">Puedes asignar un Juez</nz-form-label>
                     <nz-form-control>
                         <nz-select formControlName="juez">
-                            <nz-option *ngFor="let juezItem of jueces" [nzValue]="juezItem" [nzLabel]="juezItem"></nz-option>
+                            <nz-option *ngFor="let juezItem of jueces" [nzValue]="juezItem"
+                                [nzLabel]="juezItem"></nz-option>
                         </nz-select>
                     </nz-form-control>
                 </nz-form-item>
@@ -91,10 +108,12 @@
                 <nz-form-item>
                     <nz-form-label nzFor="materia">Selecciona el área</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="materia" (ngModelChange)="onMateriaChange($event)">
-                            <nz-option *ngFor="let materia of materia" [nzValue]="materia" [nzLabel]="materia"></nz-option>
+                        <nz-select formControlName="materia">
+                            <nz-option *ngFor="let materia of materia" [nzValue]="materia"
+                                [nzLabel]="materia"></nz-option>
                         </nz-select>
-                        <input *ngIf="showManualMateriaInput" nz-input formControlName="manualMateria" placeholder="Ingrese la materia manualmente" />
+                        <input *ngIf="showManualMateriaInput" nz-input formControlName="manualMateria"
+                            placeholder="Ingrese la materia manualmente" />
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
@@ -103,10 +122,12 @@
                 <nz-form-item>
                     <nz-form-label nzFor="diligencia">Seleciona la diligencia</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="diligencia" (ngModelChange)="onDiligenciaChange($event)">
-                            <nz-option *ngFor="let diligencia of diligencia" [nzValue]="diligencia" [nzLabel]="diligencia"></nz-option>
+                        <nz-select formControlName="diligencia">
+                            <nz-option *ngFor="let diligencia of diligencia" [nzValue]="diligencia"
+                                [nzLabel]="diligencia"></nz-option>
                         </nz-select>
-                        <input *ngIf="showManualDiligenciaInput" nz-input formControlName="manualDiligencia" placeholder="Ingrese la diligencia manualmente" />
+                        <input *ngIf="showManualDiligenciaInput" nz-input formControlName="manualDiligencia"
+                            placeholder="Ingrese la diligencia manualmente" />
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>
@@ -134,14 +155,16 @@
         <nz-row [nzGutter]="16">
             <nz-col nzSpan="12">
                 <nz-form-item>
-                    <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true" [(nzFileList)]="imageFileList" (nzChange)="onImageSelected($event)">
+                    <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
+                        [(nzFileList)]="imageFileList" (nzChange)="onImageSelected($event)">
                         <div class="upload-button"><i nz-icon nzType="upload"></i> Subir Imagen</div>
                     </nz-upload>
                 </nz-form-item>
             </nz-col>
             <nz-col nzSpan="12">
                 <nz-form-item>
-                    <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true" [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
+                    <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true"
+                        [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
                         <div class="upload-button"><i nz-icon nzType="upload"></i> Subir PDF</div>
                     </nz-upload>
                 </nz-form-item>
@@ -152,9 +175,9 @@
             <nz-col nzSpan="24">
                 <nz-form-item>
                     <nz-form-control>
-                        <button class="save-button" nz-button nzBlock [disabled]="isLoading" [nzLoading]="isLoading">
-                            <nz-icon [nzType]="'save'"></nz-icon> Guardar
-                        </button>
+                        <div class="save-button" nzBlock  (click)="submitForm()">
+                            <span>Guardar... </span><nz-icon [nzType]="'save'"></nz-icon>
+                        </div>
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>

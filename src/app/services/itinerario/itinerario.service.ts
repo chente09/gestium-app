@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Firestore, addDoc, collection, collectionData, doc, deleteDoc, updateDoc, getDoc, runTransaction, setDoc, writeBatch } from '@angular/fire/firestore';
-import { Storage, ref, uploadBytesResumable, getDownloadURL, deleteObject, uploadBytes } from '@angular/fire/storage';
+import { Firestore, addDoc, collection, collectionData, doc, deleteDoc, updateDoc, getDoc, runTransaction, setDoc, writeBatch, query, where, getDocs } from '@angular/fire/firestore';
+import { Storage, ref, getDownloadURL, deleteObject, uploadBytes } from '@angular/fire/storage';
 import { firstValueFrom, map, Observable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -32,6 +32,7 @@ export interface Itinerario {
   manualPiso?: string;
   juez: string;
   tramite: string;
+  nroProceso?: string;
   solicita: string;
   fechaSolicitud: string;
   horaSolicitud: string;
@@ -51,7 +52,7 @@ export interface Itinerario {
 }
 
 export interface RutaDiaria {
-  id : string;
+  id: string;
   fecha: string;
   lugar: string[];
   orden: number;
@@ -64,7 +65,10 @@ export class ItinerarioService {
   private collectionName = 'itinerarios';
   private collecionrute = 'rutasDiarias';
 
-  constructor(private firestore: Firestore, private storage: Storage) { }
+  constructor(
+    private firestore: Firestore,
+    private storage: Storage,
+  ) { }
 
   // 📌 Crear un nuevo itinerario con imagen y PDF opcionales
   async createItinerario(itinerario: Omit<Itinerario, 'id'>, imageFile?: File, pdfFile?: File, selectedImage2?: File): Promise<string> {
@@ -72,6 +76,7 @@ export class ItinerarioService {
     const id = uuidv4(); // Genera un ID único
 
     try {
+
       let imageUrl = '';
       let pdfUrl = '';
       let image2Url = '';
@@ -81,7 +86,7 @@ export class ItinerarioService {
         const imagePath = `itinerarios/images/${id}.jpg`;
         const imageRef = ref(this.storage, imagePath);
         await uploadBytes(imageRef, imageFile);
-        imageUrl = await getDownloadURL(imageRef); // 🔹 Obtener la URL completa
+        imageUrl = await getDownloadURL(imageRef);
       }
 
       // 📂 Subir PDF si existe y obtener URL
@@ -89,7 +94,7 @@ export class ItinerarioService {
         const pdfPath = `itinerarios/pdfs/${id}.pdf`;
         const pdfRef = ref(this.storage, pdfPath);
         await uploadBytes(pdfRef, pdfFile);
-        pdfUrl = await getDownloadURL(pdfRef); // 🔹 Obtener la URL completa
+        pdfUrl = await getDownloadURL(pdfRef);
       }
 
       // 📂 Subir imagen 2 si existe y obtener URL
@@ -97,7 +102,7 @@ export class ItinerarioService {
         const image2Path = `itinerarios/imagesComplete/${id}.jpg`;
         const image2Ref = ref(this.storage, image2Path);
         await uploadBytes(image2Ref, selectedImage2);
-        image2Url = await getDownloadURL(image2Ref); // 🔹 Obtener la URL completa
+        image2Url = await getDownloadURL(image2Ref);
       }
 
       // 📄 Guardar en Firestore con las URL de los archivos
@@ -105,7 +110,7 @@ export class ItinerarioService {
         ...itinerario,
         ...(imageUrl ? { imagen: imageUrl } : {}),
         ...(pdfUrl ? { pdf: pdfUrl } : {}),
-        ...(image2Url ? { imgcompletado: image2Url } : {})
+        ...(image2Url ? { imgcompletado: image2Url } : {}),
       });
 
       return newDoc.id;
@@ -114,44 +119,55 @@ export class ItinerarioService {
     }
   }
 
+  async getItinerarioByNroProceso(nroProceso: string) {
+    const itinerarioRef = collection(this.firestore, 'itinerarios');
+    const q = query(itinerarioRef, where('nroProceso', '==', nroProceso));
+    return await getDocs(q);
+  }
+
   // 📌 Obtener todos los itinerarios como Observable
   getItinerarios(): Observable<Itinerario[]> {
     const itinerariosRef = collection(this.firestore, this.collectionName);
-    return collectionData(itinerariosRef, { idField: 'id' }).pipe(
-      map((data: any[]) =>
-        data.map(doc => ({
-          id: doc.id,
-          creadoPor: doc.creadoPor || '',
-          juzgado: doc.juzgado || '',
-          manualJuzgado: doc.manualJuzgado || '',
-          materia: doc.materia || '',
-          manualMateria: doc.manualMateria || '',
-          diligencia: doc.diligencia || '',
-          manualDiligencia: doc.manualDiligencia || '',
-          piso: doc.piso || '',
-          manualPiso: doc.manualPiso || '',
-          juez: doc.juez || '',
-          tramite: doc.tramite || '',
-          solicita: doc.solicita || '',
-          fechaSolicitud: doc.fechaSolicitud || '',
-          horaSolicitud: doc.horaSolicitud || '',
-          fechaTermino: doc.fechaTermino || '',
-          estado: doc.estado ?? false, // Si `estado` es boolean, usa `?? false`
-          observaciones: doc.observaciones || '',
-          imagen: doc.imagen || '',
-          pdf: doc.pdf || '',
-          area: doc.area || '',
-          manualArea: doc.manualArea || '',
-          fechaCompletado: doc.fechaCompletado || '',
-          horaCompletado: doc.horaCompletado || '',
-          obsCompletado: doc.obsCompletado || '',
-          completPor: doc.completPor || '',
-          imgcompletado: doc.imgcompletado || '',
-          historial: doc.historial || []
-        }))
-      )
-    ) as Observable<Itinerario[]>;
+    return collectionData(itinerariosRef, { idField: 'id' }) as Observable<Itinerario[]>;
   }
+  // getItinerarios(): Observable<Itinerario[]> {
+  //   const itinerariosRef = collection(this.firestore, this.collectionName);
+  //   return collectionData(itinerariosRef, { idField: 'id' }).pipe(
+  //     map((data: any[]) =>
+  //       data.map(doc => ({
+  //         id: doc.id,
+  //         creadoPor: doc.creadoPor || '',
+  //         juzgado: doc.juzgado || '',
+  //         manualJuzgado: doc.manualJuzgado || '',
+  //         materia: doc.materia || '',
+  //         manualMateria: doc.manualMateria || '',
+  //         diligencia: doc.diligencia || '',
+  //         manualDiligencia: doc.manualDiligencia || '',
+  //         piso: doc.piso || '',
+  //         manualPiso: doc.manualPiso || '',
+  //         juez: doc.juez || '',
+  //         tramite: doc.tramite || '',
+  //         nroProceso: doc.nroProceso || '',
+  //         solicita: doc.solicita || '',
+  //         fechaSolicitud: doc.fechaSolicitud || '',
+  //         horaSolicitud: doc.horaSolicitud || '',
+  //         fechaTermino: doc.fechaTermino || '',
+  //         estado: doc.estado ?? false, // Si `estado` es boolean, usa `?? false`
+  //         observaciones: doc.observaciones || '',
+  //         imagen: doc.imagen || '',
+  //         pdf: doc.pdf || '',
+  //         area: doc.area || '',
+  //         manualArea: doc.manualArea || '',
+  //         fechaCompletado: doc.fechaCompletado || '',
+  //         horaCompletado: doc.horaCompletado || '',
+  //         obsCompletado: doc.obsCompletado || '',
+  //         completPor: doc.completPor || '',
+  //         imgcompletado: doc.imgcompletado || '',
+  //         historial: doc.historial || []
+  //       }))
+  //     )
+  //   ) as Observable<Itinerario[]>;
+  // }
 
   // 📌 Obtener un itinerario por ID
   async getItinerarioById(id: string): Promise<Itinerario | undefined> {
@@ -179,15 +195,15 @@ export class ItinerarioService {
     newPdfFile?: File,
   ): Promise<void> {
     const docRef = doc(this.firestore, `${this.collectionName}/${id}`);
-  
+
     try {
       let updatedData: Partial<Itinerario> = { ...itinerario };
-  
+
       // 📂 Subir nueva imagen si se proporciona
       if (newImageFile) {
         const imagePath = `itinerarios/images/${id}.jpg`;
         const imageRef = ref(this.storage, imagePath);
-  
+
         // 🗑️ Eliminar imagen anterior si existe
         if (itinerario.imagen) {
           const oldImageRef = ref(this.storage, itinerario.imagen);
@@ -195,16 +211,16 @@ export class ItinerarioService {
             console.error('Error al eliminar la imagen anterior:', error)
           );
         }
-  
+
         await uploadBytes(imageRef, newImageFile);
         updatedData.imagen = await getDownloadURL(imageRef); // 🔹 Obtener la URL completa
       }
-  
+
       // 📂 Subir nuevo PDF si se proporciona
       if (newPdfFile) {
         const pdfPath = `itinerarios/pdfs/${id}.pdf`;
         const pdfRef = ref(this.storage, pdfPath);
-  
+
         // 🗑️ Eliminar PDF anterior si existe
         if (itinerario.pdf) {
           const oldPdfRef = ref(this.storage, itinerario.pdf);
@@ -212,15 +228,15 @@ export class ItinerarioService {
             console.error('Error al eliminar el PDF anterior:', error)
           );
         }
-  
+
         await uploadBytes(pdfRef, newPdfFile);
         updatedData.pdf = await getDownloadURL(pdfRef); // 🔹 Obtener la URL completa
       }
-  
+
       // 📄 Obtener el historial actual desde Firestore
       const docSnapshot = await getDoc(docRef);
       const historialActual: EntradaHistorial[] = docSnapshot.data()?.['historial'] || [];
-  
+
       // 📄 Verificar si hay un nuevo historial para agregar
       if (updatedData.historial) {
         // Filtrar entradas duplicadas
@@ -232,13 +248,13 @@ export class ItinerarioService {
             entradaExistente.hora === nuevaEntrada.hora
           );
         });
-  
+
         // Combinar el historial actual con el nuevo historial filtrado
         updatedData.historial = [...historialActual, ...nuevoHistorialFiltrado];
       } else {
         updatedData.historial = historialActual; // Mantener el historial actual
       }
-  
+
       // 📄 Actualizar en Firestore solo si hay cambios
       if (Object.keys(updatedData).length > 0) {
         await updateDoc(docRef, updatedData);
@@ -285,28 +301,26 @@ export class ItinerarioService {
     }
   }
 
-   // 🟢 Métodos para Rutas Diarias
+  // 🟢 Métodos para Rutas Diarias
 
   async createRutaDiaria(rutaDiaria: Omit<RutaDiaria, 'id' | 'orden'>): Promise<string> {
     const rutaDiariaRef = collection(this.firestore, this.collecionrute);
-  
+
     // Obtener el número de documentos existentes para asignar el orden
     const actividades = await firstValueFrom(this.getRutasDiarias());
     const orden = actividades ? actividades.length + 1 : 1;
-  
+
     // Guardar todas las actividades en un solo documento
     const newDoc = await addDoc(rutaDiariaRef, {
       ...rutaDiaria,
       orden,
     });
-  
+
     return newDoc.id;
   }
 
   getRutasDiarias(): Observable<RutaDiaria[]> {
     const rutaDiariaRef = collection(this.firestore, this.collecionrute);
-    console.log('Referencia a la colección:', rutaDiariaRef); // Depuración
-  
     return collectionData(rutaDiariaRef, { idField: 'id' }).pipe(
       map((data: any[]) => {
         console.log('Datos obtenidos de Firestore:', data); // Depuración

@@ -95,7 +95,13 @@
                     <br>
                     <strong>Solicita: </strong> {{ item.creadoPor }}
                 </td>
-                <td>{{ item.tramite }}</td>
+                <td>
+                    <strong>Actividad: </strong> {{ item.tramite}}
+                    <br>
+                    <ng-container *ngIf="item && item.nroProceso">
+                        <strong>N° Juicio: </strong> {{ item.nroProceso }}
+                    </ng-container>
+                </td>
                 <td>{{ item.manualJuzgado || item.juzgado }}</td>
                 <td>
                     <ng-container *ngIf="item.piso || item.juez">
@@ -339,6 +345,7 @@
         <!-- Mostrar texto de la actividad -->
         <div class="actividad-text">
           {{ actividad }}
+          <pre>{{ actividadesGuardadas | json }}</pre>
         </div>
   
         <!-- Botón para eliminar (opcional) -->

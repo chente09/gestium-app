@@ -189,19 +189,27 @@ export class DmdProcOrdinarioComponent {
     }
   }
 
-  formatearFecha(fecha: string): string {
+  formatearFecha(fecha: string | Date): string {
     const meses = [
       'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
       'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
     ];
   
-    // Dividir la fecha en año, mes y día
-    const [anio, mes, dia] = fecha.split('-');
+    // Verifica si fecha es un objeto Date, y si es así, convierte a formato 'YYYY-MM-DD'
+    let fechaObj: Date;
+    if (fecha instanceof Date) {
+      fechaObj = fecha;
+    } else {
+      fechaObj = new Date(fecha); // Convierte la cadena 'YYYY-MM-DD' a Date
+    }
   
-    // Convertir el mes a número y obtener el nombre del mes
-    const nombreMes = meses[Number(mes) - 1]; // Los meses en JavaScript son base 0
+    const dia = fechaObj.getDate().toString().padStart(2, '0');
+    const mes = fechaObj.getMonth(); // Mes en base 0
+    const anio = fechaObj.getFullYear();
   
-    // Devolver la fecha en el formato deseado
+    const nombreMes = meses[mes]; // Nombre del mes en español
+  
     return `${dia} de ${nombreMes} de ${anio}`;
   }
+  
 }

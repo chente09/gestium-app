@@ -34,12 +34,16 @@
 
     <button nz-button nzType="default" (click)="showAllAreas()">Mostrar todas</button>
 </div>
-<!-- <div class="search-container">
-    <input nz-input [(ngModel)]="searchTerm" (input)="highlightText()" placeholder="Buscar en la página..." />
-</div> -->
+<nz-input-group [nzSuffix]="suffixIconSearch">
+    <input nz-input placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="onSearch()" />
+</nz-input-group>
+<ng-template #suffixIconSearch>
+    <span nz-icon nzType="search"></span>
+</ng-template>
+<hr class="divider">
 
 <!-- Tabla con scroll horizontal -->
-<div  class="table-container">
+<div class="table-container">
     <nz-table class="itinerario-table" #itinerarioTable nzBordered [nzFrontPagination]="false"
         [nzShowPagination]="false" [nzData]="filteredItinerarios" nzTableLayout="fixed">
         <thead>

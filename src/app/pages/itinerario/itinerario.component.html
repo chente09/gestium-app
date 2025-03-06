@@ -60,7 +60,17 @@
         <button nz-button class="download-button" (click)="descargarRegistrosPDF()">
             <i nz-icon nzType="download"></i> Descargar Registros (PDF)
         </button>
+
+        <button nz-button  (click)="irASeccion()">Ruta de Actividades</button>
     </div>
+
+    <nz-input-group [nzSuffix]="suffixIconSearch">
+        <input nz-input placeholder="Buscar..." [(ngModel)]="searchTerm" (input)="onSearch()" />
+    </nz-input-group>
+    <ng-template #suffixIconSearch>
+        <span nz-icon nzType="search"></span>
+    </ng-template>
+    <hr class="divider">
 
     <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered [nzFrontPagination]="false"
         [nzShowPagination]="false" [nzData]="filteredItinerarios" [nzLoading]="loading"
@@ -271,55 +281,138 @@
     </ng-container>
 </nz-modal>
 
+<br>
+<div #rutaActividades style="background-color: #f8f9fa; border-radius: 5px;">
+    <br>
+    <div class="gestion-rutas-container">
+        <h3 class="gestion-title">Ruta diaria de Actividades</h3>
 
-<div class="gestion-rutas-container">
-    <h3 class="gestion-title">Ruta diaria de Actividades</h3>
+        <div class="input-group actividad-input">
+            <input [(ngModel)]="nuevaActividad" type="text" placeholder="Escribe una actividad" class="form-control">
+            <button (click)="agregarActividadTemporal()" class="btn btn-primary" aria-label="Agregar actividad">
+                <nz-icon nzType="plus"></nz-icon> Agregar
+            </button>
+        </div>
 
-    <div class="input-group actividad-input">
-        <input [(ngModel)]="nuevaActividad" type="text" placeholder="Escribe una actividad" class="form-control">
-        <button (click)="agregarActividadTemporal()" class="btn btn-primary" aria-label="Agregar actividad">
-            <nz-icon nzType="plus"></nz-icon> Agregar
-        </button>
+        <ul class="list-group mt-3" *ngIf="actividadesTemporales.length > 0">
+            <li *ngFor="let act of actividadesTemporales; let i = index"
+                class="list-group-item d-flex justify-content-between align-items-center actividad-item">
+
+                <!-- Mostrar texto de la actividad o campo de edición -->
+                <div *ngIf="editIndex !== i" class="actividad-text">
+                    {{ act }}
+                </div>
+                <input *ngIf="editIndex === i" [(ngModel)]="editActividad" class="form-control actividad-edit" />
+
+                <!-- Botones de acciones -->
+                <div class="actividad-actions">
+                    <!-- Botón de editar -->
+                    <button (click)="editarActividad(i)" *ngIf="editIndex !== i" class="btn btn-warning btn-sm"
+                        aria-label="Editar actividad">
+                        <nz-icon nzType="edit"></nz-icon>
+                    </button>
+
+                    <!-- Botón de guardar edición -->
+                    <button (click)="guardarEdicion(i)" *ngIf="editIndex === i" class="btn btn-success btn-sm"
+                        aria-label="Guardar cambios">
+                        <nz-icon nzType="check"></nz-icon>
+                    </button>
+
+                    <!-- Botón de mover arriba -->
+                    <button (click)="moverArriba(i)" [disabled]="i === 0" class="btn btn-secondary btn-sm"
+                        aria-label="Mover actividad arriba">
+                        <nz-icon nzType="arrow-up"></nz-icon>
+                    </button>
+
+                    <!-- Botón de mover abajo -->
+                    <button (click)="moverAbajo(i)" [disabled]="i === actividadesTemporales.length - 1"
+                        class="btn btn-secondary btn-sm" aria-label="Mover actividad abajo">
+                        <nz-icon nzType="arrow-down"></nz-icon>
+                    </button>
+
+                    <!-- Botón de eliminar -->
+                    <button (click)="eliminarActividadTemporal(i)" class="btn btn-danger btn-sm"
+                        aria-label="Eliminar actividad">
+                        <nz-icon nzType="delete"></nz-icon>
+                    </button>
+                </div>
+            </li>
+        </ul>
+
+        <!-- Botón para guardar todas las actividades -->
+        <div class="actividad-input"
+            style="display: flex; justify-content: center; align-items: center; margin: 20px 0 0 0;">
+            <button (click)="guardarTodasLasActividades()" nzBlock aria-label="Guardar todas las actividades"
+                [disabled]="actividadesTemporales.length === 0" style="font-size: 15px;">
+                <nz-icon nzType="save"></nz-icon> Guardar todas las actividades
+            </button>
+        </div>
     </div>
 
-    <ul class="list-group mt-3" *ngIf="actividadesTemporales.length > 0">
-        <li *ngFor="let act of actividadesTemporales; let i = index"
+    <hr class="divider">
+
+    <br>
+
+    <nz-row style="display: flex; justify-content: space-evenly;">
+        <h3 class="gestion-title">Actividades Guardadas</h3>
+        <!-- Botón "Ver todos" o "Ver menos" -->
+        <div class="actividad-input">
+            <button nz-button nzType="primary" nzShape="round" (click)="toggleMostrarTodos()">
+                {{ mostrarTodos ? 'Ver menos' : 'Ver todos' }}
+            </button>
+        </div>
+    </nz-row>
+    <hr class="divider">
+
+    <nz-row *ngIf="actividadesGuardadas.length > 0" [nzGutter]="16" class="actividad-container">
+        <nz-col *ngFor="let actividad of getActividadesAMostrar(); let i = index" [nzXs]="24" [nzSm]="24" [nzMd]="12"
+            [nzLg]="6" [nzXl]="6" class="actividad-col">
+            <nz-card [nzBordered]="true" class="actividad-card">
+                <span style="display: flex; justify-content: flex-end;">
+                    <button nzSize="small" (click)="eliminarActividadGuardada(i)" class="delete-btn">
+                        <nz-icon nz-icon nzType="delete"></nz-icon>
+                    </button>
+                </span>
+                <div class="card-content">
+                    <p><strong>Fecha:</strong> {{ actividad.fecha | date: 'medium' }}</p>
+                    <hr>
+                    <p><strong>Lugares:</strong></p>
+                    <ul>
+                        <li *ngFor="let lugar of actividad.lugar">{{ lugar }}</li>
+                    </ul>
+                </div>
+            </nz-card>
+        </nz-col>
+    </nz-row>
+
+    <!-- Mensaje si no hay actividades guardadas -->
+    <div *ngIf="actividadesGuardadas.length === 0" class="alert alert-info mt-3">
+        No hay actividades guardadas.
+    </div>
+</div>
+
+
+
+<!-- <div class="gestion-rutas-container">
+    <h3 class="gestion-title">Actividades Guardadas</h3>
+
+    
+    <ul class="list-group mt-3" *ngIf="actividadesGuardadas.length > 0">
+        <li *ngFor="let actividad of actividadesGuardadas; let i = index"
             class="list-group-item d-flex justify-content-between align-items-center actividad-item">
 
-            <!-- Mostrar texto de la actividad o campo de edición -->
-            <div *ngIf="editIndex !== i" class="actividad-text">
-                {{ act }}
+            
+            <div class="actividad-text">
+                <p><strong>Fecha:</strong> {{ actividad.fecha | date: 'medium' }}</p>
+                <p><strong>Lugares:</strong></p>
+                <ul>
+                    <li *ngFor="let lugar of actividad.lugar">{{ lugar }}</li>
+                </ul>
             </div>
-            <input *ngIf="editIndex === i" [(ngModel)]="editActividad" class="form-control actividad-edit" />
 
-            <!-- Botones de acciones -->
+            
             <div class="actividad-actions">
-                <!-- Botón de editar -->
-                <button (click)="editarActividad(i)" *ngIf="editIndex !== i" class="btn btn-warning btn-sm"
-                    aria-label="Editar actividad">
-                    <nz-icon nzType="edit"></nz-icon>
-                </button>
-
-                <!-- Botón de guardar edición -->
-                <button (click)="guardarEdicion(i)" *ngIf="editIndex === i" class="btn btn-success btn-sm"
-                    aria-label="Guardar cambios">
-                    <nz-icon nzType="check"></nz-icon>
-                </button>
-
-                <!-- Botón de mover arriba -->
-                <button (click)="moverArriba(i)" [disabled]="i === 0" class="btn btn-secondary btn-sm"
-                    aria-label="Mover actividad arriba">
-                    <nz-icon nzType="arrow-up"></nz-icon>
-                </button>
-
-                <!-- Botón de mover abajo -->
-                <button (click)="moverAbajo(i)" [disabled]="i === actividadesTemporales.length - 1"
-                    class="btn btn-secondary btn-sm" aria-label="Mover actividad abajo">
-                    <nz-icon nzType="arrow-down"></nz-icon>
-                </button>
-
-                <!-- Botón de eliminar -->
-                <button (click)="eliminarActividadTemporal(i)" class="btn btn-danger btn-sm"
+                <button (click)="eliminarActividadGuardada(i)" class="btn btn-danger btn-sm"
                     aria-label="Eliminar actividad">
                     <nz-icon nzType="delete"></nz-icon>
                 </button>
@@ -327,39 +420,8 @@
         </li>
     </ul>
 
-    <!-- Botón para guardar todas las actividades -->
-    <button (click)="guardarTodasLasActividades()" class="btn btn-success mt-3"
-        [disabled]="actividadesTemporales.length === 0">
-        Guardar todas las actividades
-    </button>
-</div>
-
-<div class="gestion-rutas-container">
-    <h3 class="gestion-title">Actividades Guardadas</h3>
-  
-    <!-- Lista de actividades guardadas -->
-    <ul class="list-group mt-3" *ngIf="actividadesGuardadas.length > 0">
-      <li *ngFor="let actividad of actividadesGuardadas; let i = index"
-          class="list-group-item d-flex justify-content-between align-items-center actividad-item">
-  
-        <!-- Mostrar texto de la actividad -->
-        <div class="actividad-text">
-          {{ actividad }}
-          <pre>{{ actividadesGuardadas | json }}</pre>
-        </div>
-  
-        <!-- Botón para eliminar (opcional) -->
-        <div class="actividad-actions">
-          <button (click)="eliminarActividadGuardada(i)" class="btn btn-danger btn-sm"
-                  aria-label="Eliminar actividad">
-            <nz-icon nzType="delete"></nz-icon>
-          </button>
-        </div>
-      </li>
-    </ul>
-  
-    <!-- Mensaje si no hay actividades guardadas -->
+    
     <div *ngIf="actividadesGuardadas.length === 0" class="alert alert-info mt-3">
-      No hay actividades guardadas.
+        No hay actividades guardadas.
     </div>
-  </div>
+</div> -->

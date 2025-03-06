@@ -375,7 +375,7 @@ ul.list-group li {
     margin-bottom: 20px;
     color: #032341;
     font-weight: lighter;
-    font-size: 24px;
+    font-size: 20px;
 }
 
 .actividad-input {
@@ -520,3 +520,88 @@ ul.list-group li {
     }
 }
 
+.actividad-input {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.actividad-input button {
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.actividad-input button:hover {
+    transform: translateY(-2px);
+}
+
+/* Contenedor de las tarjetas */
+.actividad-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Centrar las tarjetas */
+    margin: -8px; /* Compensar el gutter */
+}
+
+/* Columnas de las tarjetas */
+.actividad-col {
+    padding: 8px; /* Añadir padding para el gutter */
+    flex: 1 1 100%; /* Por defecto, ocupa todo el ancho */
+    max-width: 100%; /* Por defecto, ocupa todo el ancho */
+    display: flex;
+    justify-content: center; /* Centrar la tarjeta dentro de la columna */
+}
+
+/* Estilos para las tarjetas */
+.actividad-card {
+    
+    width: 100%; /* Ocupar todo el ancho disponible */
+    min-height: 300px; /* Altura mínima para consistencia */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Espaciado entre contenido y botón */
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra para mejor apariencia */
+    border-radius: 8px; /* Bordes redondeados */
+}
+
+
+
+/* Botón de eliminar */
+.delete-btn{
+    font-weight: 500;
+    background: #8f1d21c0;
+    color: white;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    
+}
+
+
+/* Ajustes responsivos */
+@media (min-width: 576px) { /* Tablets y móviles grandes */
+    .actividad-col {
+        flex: 1 1 50%; /* Dos columnas */
+        max-width: 50%;
+    }
+}
+
+@media (min-width: 768px) { /* Tablets grandes y pantallas pequeñas */
+    .actividad-col {
+        flex: 1 1 33.333%; /* Tres columnas */
+        max-width: 33.333%;
+    }
+}
+
+@media (min-width: 992px) { /* Pantallas grandes */
+    .actividad-col {
+        flex: 1 1 25%; /* Cuatro columnas */
+        max-width: 25%;
+    }
+}

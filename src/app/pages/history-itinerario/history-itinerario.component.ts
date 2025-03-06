@@ -17,6 +17,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzListModule } from 'ng-zorro-antd/list';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
+import { NzInputModule } from 'ng-zorro-antd/input';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -42,7 +43,8 @@ enum Estado {
     NzModalModule,
     NzListModule,
     NzBreadCrumbModule,
-    NzEmptyModule
+    NzEmptyModule,
+    NzInputModule
   ],
   templateUrl: './history-itinerario.component.html',
   styleUrl: './history-itinerario.component.css'
@@ -66,14 +68,12 @@ export class HistoryItinerarioComponent implements OnInit {
   historialActual: any[] = []; // Almacena el historial actual
 
   searchTerm: string = '';
-  
+
 
   constructor(
     private itinerarioService: ItinerarioService,
     private message: NzMessageService,
     private cdr: ChangeDetectorRef,
-    private renderer: Renderer2,
-    private el: ElementRef
   ) { }
 
   private destroy$ = new Subject<void>();
@@ -88,21 +88,12 @@ export class HistoryItinerarioComponent implements OnInit {
     this.initEditCache();
 
     this.selectedArea.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
-  this.selectedDate.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
-  this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
+    this.selectedDate.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
+    this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
   }
 
-  highlightText() {
-    const content = this.el.nativeElement.querySelector("#searchable-content");
-    if (!content) return;
-
-    // Resetear el contenido para eliminar resaltados previos
-    content.innerHTML = content.innerHTML.replace(/<mark class="highlight">(.*?)<\/mark>/g, '$1');
-
-    if (!this.searchTerm.trim()) return; // No buscar si está vacío
-
-    const regex = new RegExp(`(${this.searchTerm})`, 'gi'); // Buscar sin importar mayúsculas/minúsculas
-    content.innerHTML = content.innerHTML.replace(regex, '<mark class="highlight">$1</mark>');
+  onSearch(): void {
+    this.filterItinerarios();
   }
 
   ngOnDestroy(): void {
@@ -114,49 +105,104 @@ export class HistoryItinerarioComponent implements OnInit {
     const selectedAreaValue = this.selectedArea.value;
     const selectedEstadoValue = this.selectedEstado.value;
     const [fechaInicio, fechaFin] = this.selectedDate.value || [null, null];
+    const searchTermLower = this.searchTerm.toLowerCase();
 
     // Filtra los itinerarios
     this.filteredItinerarios = this.itinerarios.filter(item => {
-        const estadoStr = String(item.estado).toLowerCase();
-        const isEstadoMatch = selectedEstadoValue ? estadoStr === String(selectedEstadoValue).toLowerCase() : true;
-        const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
+      const estadoStr = String(item.estado).toLowerCase();
+      const isEstadoMatch = selectedEstadoValue ? estadoStr === String(selectedEstadoValue).toLowerCase() : true;
+      const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
 
-        const fechaSolicitud = new Date(item.fechaSolicitud);
-        const isDateInRange =
-            (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
-            (!fechaFin || fechaSolicitud <= new Date(fechaFin));
+      const fechaSolicitud = new Date(item.fechaSolicitud);
+      const isDateInRange =
+        (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
+        (!fechaFin || fechaSolicitud <= new Date(fechaFin));
 
-        return isEstadoMatch && isAreaMatch && isDateInRange;
+      // Busca coincidencias en todos los campos relevantes
+      const isSearchMatch = searchTermLower === '' ||
+        Object.values(item).some(value =>
+          String(value).toLowerCase().includes(searchTermLower)
+        );
+
+      return isEstadoMatch && isAreaMatch && isDateInRange && isSearchMatch;
     });
 
     // Ordena los itinerarios por fecha y hora (los más recientes primero)
     this.filteredItinerarios.sort((a, b) => {
-        const fechaA = new Date(a.fechaSolicitud);
-        const fechaB = new Date(b.fechaSolicitud);
+      const fechaA = new Date(a.fechaSolicitud);
+      const fechaB = new Date(b.fechaSolicitud);
 
-        // Primero ordenamos por fecha (más reciente primero)
-        const fechaDiff = fechaB.getTime() - fechaA.getTime();
-        if (fechaDiff !== 0) {
-            return fechaDiff;
-        }
+      // Primero ordenamos por fecha (más reciente primero)
+      const fechaDiff = fechaB.getTime() - fechaA.getTime();
+      if (fechaDiff !== 0) {
+        return fechaDiff;
+      }
 
-        // Convertir horaSolicitud a minutos totales para comparar
-        const horaToMinutes = (hora: string | undefined | null) => {
-            if (!hora) return 0; // Si la hora no está definida, devolver 0
-            const partes = hora.split(":");
-            if (partes.length < 2) return 0; // Si el formato no es correcto, devolver 0
-            const [horas, minutos] = partes.map(Number);
-            return horas * 60 + minutos; // Convierte a minutos totales
-        };
+      // Convertir horaSolicitud a minutos totales para comparar
+      const horaToMinutes = (hora: string | undefined | null) => {
+        if (!hora) return 0; // Si la hora no está definida, devolver 0
+        const partes = hora.split(":");
+        if (partes.length < 2) return 0; // Si el formato no es correcto, devolver 0
+        const [horas, minutos] = partes.map(Number);
+        return horas * 60 + minutos; // Convierte a minutos totales
+      };
 
-        const horaA = horaToMinutes(a.horaSolicitud);
-        const horaB = horaToMinutes(b.horaSolicitud);
+      const horaA = horaToMinutes(a.horaSolicitud);
+      const horaB = horaToMinutes(b.horaSolicitud);
 
-        return horaA - horaB; // Orden descendente por hora
+      return horaA - horaB; // Orden descendente por hora
     });
 
     this.cdr.detectChanges();
-}
+  }
+
+  // filterItinerarios(): void {
+  //   const selectedAreaValue = this.selectedArea.value;
+  //   const selectedEstadoValue = this.selectedEstado.value;
+  //   const [fechaInicio, fechaFin] = this.selectedDate.value || [null, null];
+
+  //   // Filtra los itinerarios
+  //   this.filteredItinerarios = this.itinerarios.filter(item => {
+  //     const estadoStr = String(item.estado).toLowerCase();
+  //     const isEstadoMatch = selectedEstadoValue ? estadoStr === String(selectedEstadoValue).toLowerCase() : true;
+  //     const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
+
+  //     const fechaSolicitud = new Date(item.fechaSolicitud);
+  //     const isDateInRange =
+  //       (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
+  //       (!fechaFin || fechaSolicitud <= new Date(fechaFin));
+
+  //     return isEstadoMatch && isAreaMatch && isDateInRange;
+  //   });
+
+  //   // Ordena los itinerarios por fecha y hora (los más recientes primero)
+  //   this.filteredItinerarios.sort((a, b) => {
+  //     const fechaA = new Date(a.fechaSolicitud);
+  //     const fechaB = new Date(b.fechaSolicitud);
+
+  //     // Primero ordenamos por fecha (más reciente primero)
+  //     const fechaDiff = fechaB.getTime() - fechaA.getTime();
+  //     if (fechaDiff !== 0) {
+  //       return fechaDiff;
+  //     }
+
+  //     // Convertir horaSolicitud a minutos totales para comparar
+  //     const horaToMinutes = (hora: string | undefined | null) => {
+  //       if (!hora) return 0; // Si la hora no está definida, devolver 0
+  //       const partes = hora.split(":");
+  //       if (partes.length < 2) return 0; // Si el formato no es correcto, devolver 0
+  //       const [horas, minutos] = partes.map(Number);
+  //       return horas * 60 + minutos; // Convierte a minutos totales
+  //     };
+
+  //     const horaA = horaToMinutes(a.horaSolicitud);
+  //     const horaB = horaToMinutes(b.horaSolicitud);
+
+  //     return horaA - horaB; // Orden descendente por hora
+  //   });
+
+  //   this.cdr.detectChanges();
+  // }
 
   showAllAreas(): void {
     this.selectedArea.setValue('');
@@ -216,17 +262,17 @@ export class HistoryItinerarioComponent implements OnInit {
   }
   async saveEdit(id: string): Promise<void> {
     if (!this.editCache[id]) return;
-  
+
     const updatedItinerario = this.editCache[id].data;
     const index = this.itinerarios.findIndex(item => item.id === id);
     if (index === -1) return;
-  
+
     if (JSON.stringify(this.itinerarios[index]) === JSON.stringify(updatedItinerario)) {
       this.message.info('No se han realizado cambios.');
       this.editCache[id].edit = false;
       return;
     }
-  
+
     try {
       await this.itinerarioService.updateItinerario(id, updatedItinerario);
       this.itinerarios[index] = { ...updatedItinerario };
@@ -237,7 +283,7 @@ export class HistoryItinerarioComponent implements OnInit {
       console.error('Error al actualizar el itinerario', error);
     }
   }
-  
+
   updateEditCache(itinerarios: Itinerario[]): void {
     itinerarios.forEach(item => {
       if (!this.editCache[item.id]) { // Solo agregar si no existe

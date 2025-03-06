@@ -323,7 +323,6 @@ export class ItinerarioService {
     const rutaDiariaRef = collection(this.firestore, this.collecionrute);
     return collectionData(rutaDiariaRef, { idField: 'id' }).pipe(
       map((data: any[]) => {
-        console.log('Datos obtenidos de Firestore:', data); // Depuración
         return data.map(doc => ({
           id: doc.id,
           fecha: doc.fecha || '',

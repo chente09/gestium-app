@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -22,6 +22,10 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzEmptyModule } from 'ng-zorro-antd/empty';
+import { NzGridModule } from 'ng-zorro-antd/grid';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -50,6 +54,10 @@ enum Estado {
     NzBreadCrumbModule,
     NzMenuModule,
     NzDropDownModule,
+    NzInputModule,
+    NzCardModule,
+    NzEmptyModule,
+    NzGridModule
   ],
   templateUrl: './itinerario.component.html',
   styleUrl: './itinerario.component.css'
@@ -87,10 +95,11 @@ export class ItinerarioComponent implements OnInit {
   actividadesTemporales: string[] = [];
   editIndex: number | null = null;
   editActividad: string = '';
-  actividadesGuardadas: string[] = []; // Almacena las actividades guardadas
-  rutaSeleccionada: RutaDiaria | null = null; // Almacena la ruta seleccionada
+  actividadesGuardadas: RutaDiaria[] = [];  // Almacena las actividades guardadas
+  mostrarTodos: boolean = false;
 
   @ViewChild('rowSelectionTable') rowSelectionTable!: NzTableComponent<Itinerario>;
+  @ViewChild('rutaActividades') rutaActividades!: ElementRef;
 
   // Filtros
   selectedArea = new FormControl('');
@@ -103,6 +112,8 @@ export class ItinerarioComponent implements OnInit {
   listOfCurrentPageData: Itinerario[] = [];
   checked = false;
   indeterminate = false;
+
+  searchTerm: string = '';
 
   constructor(
     private itinerarioService: ItinerarioService,
@@ -140,12 +151,19 @@ export class ItinerarioComponent implements OnInit {
 
 
     this.cargarActividades();
-    this.cargarActividadesGuardadas();
+    this.obtenerActividadesGuardadas();
 
     // Detectar cambios en los filtros
     this.selectedArea.valueChanges.subscribe(() => this.filterItinerarios());
     this.selectedDate.valueChanges.subscribe(() => this.filterItinerarios());
     this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
+  }
+
+  onSearch(): void {
+    this.filterItinerarios();
+  }
+  irASeccion() {
+    this.rutaActividades.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   filterItinerarios(): void {
@@ -162,12 +180,22 @@ export class ItinerarioComponent implements OnInit {
       const isPendingOrIncomplete = estado === Estado.PENDIENTE || estado === Estado.INCOMPLETO;
       const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
       const fechaSolicitud = new Date(item.fechaSolicitud);
+      const searchTermLower = this.searchTerm.toLowerCase();
+
       const isDateInRange =
         (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
         (!fechaFin || fechaSolicitud <= new Date(fechaFin));
 
-      return isPendingOrIncomplete && isAreaMatch && isDateInRange && isEstadoMatch;
+      // Busca coincidencias en todos los campos relevantes
+      const isSearchMatch = searchTermLower === '' ||
+        Object.values(item).some(value =>
+          String(value).toLowerCase().includes(searchTermLower)
+        );
+
+      return isPendingOrIncomplete && isAreaMatch && isDateInRange && isEstadoMatch && isSearchMatch;
     });
+
+
 
     // Ordenar los datos después de filtrar
     this.filteredItinerarios = this.sortData(this.filteredItinerarios);
@@ -176,7 +204,7 @@ export class ItinerarioComponent implements OnInit {
   }
 
   private sortData(itinerarios: Itinerario[]): Itinerario[] {
-    const unidadOrder: string[] = ['Municipio', 'Notaria', 'SUPERCIAS', 'ANT','SRI','ISSFA', 'Consejo Provincial', 'Registro Propiedad','Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''];
+    const unidadOrder: string[] = ['Municipio', 'Notaria', 'SUPERCIAS', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''];
     const pisoOrder: string[] = ['Pb', '5to', '8vo', 'Otro', ''];
     const materiaOrder: string[] = [
       'Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales',
@@ -304,56 +332,74 @@ export class ItinerarioComponent implements OnInit {
   }
 
   // Cargar actividades desde Firestore
-  async cargarActividadesGuardadas() {
-    try {
-      const rutasDiarias = await this.itinerarioService.getRutasDiarias().toPromise();
-      console.log('Rutas diarias obtenidas:', rutasDiarias);
-  
-      if (rutasDiarias && rutasDiarias.length > 0) {
-        rutasDiarias.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-        this.rutaSeleccionada = rutasDiarias[0];
-        console.log('Última ruta seleccionada:', this.rutaSeleccionada);
-  
-        this.actividadesGuardadas = this.rutaSeleccionada.lugar;
-        console.log('Actividades guardadas:', this.actividadesGuardadas);
-  
-        // Forzar detección de cambios
-        this.cdr.detectChanges();
-      } else {
-        console.log('No hay rutas diarias en Firestore.');
+  // obtenerActividadesGuardadas(): void {
+  //   this.itinerarioService.getRutasDiarias().subscribe({
+  //     next: (data) => {
+  //       this.actividadesGuardadas = data.sort((a, b) =>
+  //         new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+  //       );
+  //     },
+  //     error: (error) => {
+  //       console.error('Error al obtener las actividades guardadas:', error);
+  //       this.message.error('Error al cargar las actividades guardadas.');
+  //     },
+  //   });
+  // }
+
+  obtenerActividadesGuardadas(): void {
+    this.itinerarioService.getRutasDiarias().subscribe({
+      next: (data) => {
+        // Ordenar por fecha (más reciente primero)
+        this.actividadesGuardadas = data.sort((a, b) =>
+          new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+        );
+      },
+      error: (error) => {
+        console.error('Error al obtener las actividades guardadas:', error);
+        this.message.error('Error al cargar las actividades guardadas.');
+      },
+      complete: () => {
+        this.cdr.detectChanges(); // Detecta los cambios en la vista
       }
-    } catch (error) {
-      console.error('Error al cargar las actividades guardadas:', error);
-      alert('Hubo un error al cargar las actividades guardadas.');
-    }
+    });
   }
+
+  // Función para obtener las actividades a mostrar
+  getActividadesAMostrar(): any[] {
+    return this.mostrarTodos ? this.actividadesGuardadas : [this.actividadesGuardadas[0]];
+
+  }
+
+  toggleMostrarTodos(): void {
+    this.mostrarTodos = !this.mostrarTodos; // Cambia el estado de "mostrarTodos"
+    this.cdr.detectChanges();
+  }
+
 
   // Eliminar una actividad guardada (opcional)
-  async eliminarActividadGuardada(index: number) {
-    if (confirm('¿Estás seguro de eliminar esta actividad?')) {
-      try {
-        if (this.rutaSeleccionada) {
-          // Elimina la actividad del arreglo `lugar`
-          this.rutaSeleccionada.lugar.splice(index, 1);
+  async eliminarActividadGuardada(index: number): Promise<void> {
+    const actividad = this.actividadesGuardadas[index]; // Obtén la actividad a eliminar
+    const id = actividad.id; // Obtén el ID de la actividad
 
-          // Actualiza la ruta en Firestore
-          await this.itinerarioService.updateRutaDiaria(this.rutaSeleccionada.id, {
-            lugar: this.rutaSeleccionada.lugar,
-          });
+    try {
+      // Elimina la actividad de Firestore
+      await this.itinerarioService.deleteRutaDiaria(id);
 
-          // Actualiza la vista
-          this.actividadesGuardadas = this.rutaSeleccionada.lugar;
-        }
-      } catch (error) {
-        console.error('Error al eliminar la actividad:', error);
-        this.message.error('Hubo un error al eliminar la actividad.');
-      }
+      // Elimina la actividad del array local
+      this.actividadesGuardadas.splice(index, 1);
+
+      // Muestra un mensaje de éxito
+      this.message.success('Actividad eliminada correctamente.');
+    } catch (error) {
+      console.error('Error al eliminar la actividad:', error);
+
+      // Muestra un mensaje de error
+      this.message.error('Error al eliminar la actividad. Inténtalo de nuevo.');
     }
+
+    this.cdr.detectChanges();
   }
 
-  trackByFn(index: number, item: any): any {
-    return index; // O puedes usar `item.id` si cada actividad tiene un ID único
-  }
 
 
   // Método para verificar si la fecha de término es hoy y el estado no es COMPLETADO

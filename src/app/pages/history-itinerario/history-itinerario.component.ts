@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, Renderer2 } from '@angular/core';
 import { ItinerarioService, Itinerario } from '../../services/itinerario/itinerario.service';// Asegúrate de que la ruta sea correcta
 import { CommonModule } from '@angular/common';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -8,7 +8,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { ChangeDetectorRef } from '@angular/core';
@@ -16,6 +16,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzListModule } from 'ng-zorro-antd/list';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -40,7 +41,8 @@ enum Estado {
     NzSelectModule,
     NzModalModule,
     NzListModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    NzEmptyModule
   ],
   templateUrl: './history-itinerario.component.html',
   styleUrl: './history-itinerario.component.css'
@@ -63,10 +65,15 @@ export class HistoryItinerarioComponent implements OnInit {
   isHistorialVisible = false; // Controla la visibilidad del modal
   historialActual: any[] = []; // Almacena el historial actual
 
+  searchTerm: string = '';
+  
+
   constructor(
     private itinerarioService: ItinerarioService,
     private message: NzMessageService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private renderer: Renderer2,
+    private el: ElementRef
   ) { }
 
   private destroy$ = new Subject<void>();
@@ -85,6 +92,19 @@ export class HistoryItinerarioComponent implements OnInit {
   this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
   }
 
+  highlightText() {
+    const content = this.el.nativeElement.querySelector("#searchable-content");
+    if (!content) return;
+
+    // Resetear el contenido para eliminar resaltados previos
+    content.innerHTML = content.innerHTML.replace(/<mark class="highlight">(.*?)<\/mark>/g, '$1');
+
+    if (!this.searchTerm.trim()) return; // No buscar si está vacío
+
+    const regex = new RegExp(`(${this.searchTerm})`, 'gi'); // Buscar sin importar mayúsculas/minúsculas
+    content.innerHTML = content.innerHTML.replace(regex, '<mark class="highlight">$1</mark>');
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -95,21 +115,48 @@ export class HistoryItinerarioComponent implements OnInit {
     const selectedEstadoValue = this.selectedEstado.value;
     const [fechaInicio, fechaFin] = this.selectedDate.value || [null, null];
 
+    // Filtra los itinerarios
     this.filteredItinerarios = this.itinerarios.filter(item => {
-      const estadoStr = String(item.estado).toLowerCase();
-      const isEstadoMatch = selectedEstadoValue ? estadoStr === String(selectedEstadoValue).toLowerCase() : true;
-      const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
+        const estadoStr = String(item.estado).toLowerCase();
+        const isEstadoMatch = selectedEstadoValue ? estadoStr === String(selectedEstadoValue).toLowerCase() : true;
+        const isAreaMatch = selectedAreaValue ? item.area === selectedAreaValue : true;
 
-      const fechaSolicitud = new Date(item.fechaSolicitud);
-      const isDateInRange =
-        (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
-        (!fechaFin || fechaSolicitud <= new Date(fechaFin));
+        const fechaSolicitud = new Date(item.fechaSolicitud);
+        const isDateInRange =
+            (!fechaInicio || fechaSolicitud >= new Date(fechaInicio)) &&
+            (!fechaFin || fechaSolicitud <= new Date(fechaFin));
 
-      return isEstadoMatch && isAreaMatch && isDateInRange;
+        return isEstadoMatch && isAreaMatch && isDateInRange;
+    });
+
+    // Ordena los itinerarios por fecha y hora (los más recientes primero)
+    this.filteredItinerarios.sort((a, b) => {
+        const fechaA = new Date(a.fechaSolicitud);
+        const fechaB = new Date(b.fechaSolicitud);
+
+        // Primero ordenamos por fecha (más reciente primero)
+        const fechaDiff = fechaB.getTime() - fechaA.getTime();
+        if (fechaDiff !== 0) {
+            return fechaDiff;
+        }
+
+        // Convertir horaSolicitud a minutos totales para comparar
+        const horaToMinutes = (hora: string | undefined | null) => {
+            if (!hora) return 0; // Si la hora no está definida, devolver 0
+            const partes = hora.split(":");
+            if (partes.length < 2) return 0; // Si el formato no es correcto, devolver 0
+            const [horas, minutos] = partes.map(Number);
+            return horas * 60 + minutos; // Convierte a minutos totales
+        };
+
+        const horaA = horaToMinutes(a.horaSolicitud);
+        const horaB = horaToMinutes(b.horaSolicitud);
+
+        return horaA - horaB; // Orden descendente por hora
     });
 
     this.cdr.detectChanges();
-  }
+}
 
   showAllAreas(): void {
     this.selectedArea.setValue('');

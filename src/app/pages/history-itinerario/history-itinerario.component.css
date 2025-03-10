@@ -35,6 +35,11 @@
     width: 100%;
 }
 
+::ng-deep .ant-table-tbody>tr:hover td {
+    background-color: #bdbaba !important;
+    transition: background-color 0.3s ease-in-out;
+}
+
 .itinerario-table th,
 .itinerario-table td {
     text-align: left;

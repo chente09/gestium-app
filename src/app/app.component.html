@@ -1,21 +1,20 @@
 <nz-layout class="app-layout">
-  <nz-sider class="menu-sidebar" nzCollapsible nzWidth="256px" nzBreakpoint="md" [(nzCollapsed)]="isCollapsed"
+  <!-- Menú lateral (Sider) -->
+  <nz-sider class="menu-sidebar" nzCollapsible nzWidth="180px" nzBreakpoint="md" [(nzCollapsed)]="isCollapsed"
     [nzTrigger]="null">
     <div class="sidebar-logo">
-      <a href="">
+      <a routerLink="/">
         <img src="https://i.postimg.cc/qM5m65P4/image.png" alt="logo">
         <h1>Gestium SLI</h1>
       </a>
     </div>
-
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
-      <!-- Opción corregida para colapsar el menú -->
       <li nz-menu-item class="menu-collapse" (click)="toggleMenu()">
-        <nz-icon class="trigger" [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></nz-icon>
+        <nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></nz-icon>
         <span>{{ isCollapsed ? 'Abrir menú' : 'Cerrar menú' }}</span>
       </li>
-      <li nz-menu-item class="menu-collapse" (click)="irWelcome()">
-        <nz-icon [nzType]="'home'"></nz-icon> <span>Inicio</span>
+      <li nz-menu-item (click)="irWelcome()">
+        <nz-icon nzType="home"></nz-icon> <span>Inicio</span>
       </li>
       <li nz-submenu nzOpen nzTitle="Áreas" nzIcon="container">
         <ul>
@@ -39,47 +38,88 @@
       </li>
     </ul>
   </nz-sider>
+
+  <!-- Drawer para pantallas pequeñas -->
+  <nz-drawer 
+    [nzVisible]="isDrawerOpen" 
+    [nzPlacement]="'left'" 
+    [nzClosable]="true" 
+    (nzOnClose)="closeDrawer()"
+    [nzWidth]="180"
+    [nzBodyStyle]="{ padding: '0', background: '#001529' }"
+    nzTitle="Cerrar menú"
+    [nzMask]="false"
+    >
+    <ng-container *nzDrawerContent>
+      <ul nz-menu nzTheme="dark" nzMode="inline">
+        <li nz-menu-item (click)="irWelcome(); closeDrawer()">
+          <nz-icon nzType="home"></nz-icon> <span>Inicio</span>
+        </li>
+        <li nz-submenu nzOpen nzTitle="Áreas" nzIcon="container">
+          <ul>
+            <li nz-menu-item *ngFor="let item of menuItems" [nzSelected]="activeRoute === item.route"
+              (click)="setActive(item.route); closeDrawer()">
+              <a *ngIf="item.route; else noRoute" [routerLink]="item.route" routerLinkActive="active-link">
+                {{ item.title }}
+              </a>
+              <ng-template #noRoute>
+                <span>{{ item.title }}</span>
+              </ng-template>
+            </li>
+          </ul>
+        </li>
+        <li nz-submenu nzOpen nzTitle="Utilidades" nzIcon="form">
+          <ul>
+            <li nz-menu-item (click)="closeDrawer()">
+              <a routerLink="/itinerario">Itinerario</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </ng-container>
+  </nz-drawer>
+
   <nz-layout>
+    <!-- Header -->
     <nz-header>
       <div class="app-header">
+        <a class="menu-button" (click)="openDrawer()">
+          <nz-icon nzType="menu"></nz-icon>
+        </a>
+
         <span class="header-title">GESTIUM - SERVICIOS LEGALES INTEGRALES</span>
-    
+
         <!-- Avatar para iniciar sesión (cuando NO está logueado) -->
-        <nz-avatar 
-            *ngIf="!isLogged(); else isLoggedIn"
-            nzTooltipTitle="Iniciar Sesión" 
-            nzTooltipPlacement="bottomRight" 
-            nz-tooltip
-            nzIcon="user" 
-            routerLink="/login"
-            class="login-avatar"
-        ></nz-avatar>
-    
+        <nz-avatar *ngIf="!isLogged(); else isLoggedIn" nzTooltipTitle="Iniciar Sesión" nzTooltipPlacement="bottomRight"
+          nz-tooltip nzIcon="user" routerLink="/login" class="login-avatar">
+        </nz-avatar>
+
         <!-- Cuando está logueado -->
         <ng-template #isLoggedIn>
-            <button nz-button nz-dropdown [nzDropdownMenu]="menu" class="user-dropdown">
-                <nz-avatar 
-                    [nzSrc]="registersService.currentRegister?.photoURL || 'https://i.postimg.cc/qM5m65P4/image.png'" 
-                    nzIcon="user" 
-                    class="user-avatar">
-                </nz-avatar>
-                <span nz-icon nzType="down"></span>
-            </button>
-    
-            <nz-dropdown-menu #menu="nzDropdownMenu">
-                <ul nz-menu>
-                    <li nz-menu-item>
-                        <a (click)="logout()" style="color: brown;"><span nz-icon nzType="logout" style="color: brown;"></span> Cerrar Sesión</a>
-                    </li>
-                </ul>
-            </nz-dropdown-menu>
+          <button nz-button nz-dropdown [nzDropdownMenu]="menu" class="user-dropdown">
+            <nz-avatar [nzSrc]="registersService.currentRegister?.photoURL || 'https://i.postimg.cc/qM5m65P4/image.png'"
+              nzIcon="user" class="user-avatar">
+            </nz-avatar>
+            <span nz-icon nzType="down"></span>
+          </button>
+
+          <nz-dropdown-menu #menu="nzDropdownMenu">
+            <ul nz-menu>
+              <li nz-menu-item>
+                <strong>¡Hola, {{ getCurrentUserName() }}!</strong>
+              </li>
+              <li nz-menu-item>
+                <a (click)="logout()" style="color: brown;"><span nz-icon nzType="logout" style="color: brown;"></span>
+                  Cerrar Sesión</a>
+              </li>
+            </ul>
+          </nz-dropdown-menu>
         </ng-template>
-    </div>    
-    </nz-header>
-    <nz-content>
-      <div class="inner-content">
-        <router-outlet></router-outlet>
       </div>
-    </nz-content>
+    </nz-header>
+
+    <div class="inner-content">
+      <router-outlet></router-outlet>
+    </div>
   </nz-layout>
 </nz-layout>

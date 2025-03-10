@@ -8,6 +8,7 @@ import { RegistersService } from './services/registers/registers.service';
 import { UsersService } from './services/users/users.service';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 
 
 import { NzFlexModule } from 'ng-zorro-antd/flex';
@@ -27,28 +28,35 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     NzAvatarModule,
     NzDropDownModule,
     NzFlexModule,
-    NzToolTipModule
+    NzToolTipModule,
+    NzDrawerModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent {
   isCollapsed = false;
-
+  isDrawerOpen = false;
   activeRoute = '';
+ 
 
   menuItems = [
     { title: 'ISSFA', route: '/issfa' },
     { title: 'Inmobiliaria', route: '/inmobiliaria' },
-    { title: 'Banco Produbanco', route: '/produbanco' },
-    { title: 'Banco Pichincha', route: null } // Este no tiene ruta
+    { title: 'Bco Produbanco', route: '/produbanco' },
+    { title: 'Bco Pichincha', route: null } // Este no tiene ruta
   ];
 
   constructor(
     private router: Router,
     public registersService: RegistersService,
-    private usersService: UsersService  
+    public usersService: UsersService  
   ) {}
+
+  getCurrentUserName(): string | null {
+    const user = this.usersService.getCurrentUser();
+    return user ? user.displayName : null;
+  }
 
   ngOnInit() {
     this.activeRoute = this.router.url; // Captura la ruta activa al iniciar
@@ -75,5 +83,13 @@ export class AppComponent {
     this.usersService.logout();
     localStorage.clear();  // O sessionStorage.clear();
     this.router.navigate(['/login']);
+  }
+
+  openDrawer() {
+    this.isDrawerOpen = true;
+  }
+  
+  closeDrawer() {
+    this.isDrawerOpen = false;
   }
 }

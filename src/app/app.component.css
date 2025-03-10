@@ -7,6 +7,11 @@
   font-size: 20px;
 }
 
+.site-layout {
+  border: none;
+  padding: none;
+}
+
 .app-layout {
   height: 100vh;
   display: flex;
@@ -25,7 +30,7 @@
   align-items: center;
   justify-content: center; /* Centra el título */
   height: 64px;
-  padding: 0 24px;
+  padding: 0 11px;
   background: #001529;
   position: relative;
 }
@@ -83,6 +88,36 @@ li {
 .sidebar-logo h1:hover {
   color: #d3272c;
 }
+
+@media (max-width: 431px) {
+  .menu-sidebar {
+    display: none; /* Oculta el sidebar en pantallas pequeñas */
+  }
+}
+nz-drawer .ant-drawer-body {
+  overflow: visible; /* Asegúrate de que el contenido no esté oculto */
+  padding: 20px; /* Añade un padding para que el contenido no esté pegado a los bordes */
+}
+
+.ant-drawer-header {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.menu-button {
+  position: absolute;
+  left: 0;
+  margin-left: 2vh;
+  font-size: 24px;
+  color: #d3272daf;
+  cursor: pointer;
+}
+@media (min-width: 431px) {
+  .menu-button  {
+    display: none; /* Oculta el sidebar en pantallas pequeñas */
+  }
+}
+
 nz-header {
   padding: 0;
   width: 100%;
@@ -91,12 +126,6 @@ nz-header {
 
 nz-content {
   margin: 24px;
-}
-
-.inner-content {
-  padding: 24px;
-  background: #fff;
-  height: 100%;
 }
 
 nz-layout {
@@ -114,6 +143,8 @@ nz-content {
 
 .inner-content {
   flex-grow: 1;
+  padding: 10px;
+  background: #fff;
   height: 100%;
   overflow-y: auto; /* Permite el scroll dentro del área de contenido sin afectar el header */
   scrollbar-width: none;
@@ -165,3 +196,4 @@ button.ant-dropdown-trigger.ng-star-inserted {
   object-fit: cover;
   border-radius: 50%;
 }
+

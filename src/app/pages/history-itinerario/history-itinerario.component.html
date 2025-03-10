@@ -45,7 +45,7 @@
 <!-- Tabla con scroll horizontal -->
 <div class="table-container">
     <nz-table class="itinerario-table" #itinerarioTable nzBordered [nzFrontPagination]="false"
-        [nzShowPagination]="false" [nzData]="filteredItinerarios" nzTableLayout="fixed">
+        [nzShowPagination]="false" [nzData]="filteredItinerarios" nzTableLayout="fixed" [nzScroll]="{ y: '500px' }">
         <thead>
             <tr>
                 <th nzWidth="145px">Área Oficina</th>

@@ -72,126 +72,132 @@
     </ng-template>
     <hr class="divider">
 
-    <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered [nzFrontPagination]="false"
-        [nzShowPagination]="false" [nzData]="filteredItinerarios" [nzLoading]="loading"
-        (nzCurrentPageDataChange)="onCurrentPageDataChange($event)">
+    <div class="table-container">
+        <nz-table 
+            id="tabla-itinerarios" 
+            class="itinerario-table" 
+            #rowSelectionTable 
+            nzBordered 
+            [nzFrontPagination]="false"
+            [nzShowPagination]="false" 
+            [nzData]="filteredItinerarios" 
+            [nzLoading]="loading"
+            (nzCurrentPageDataChange)="onCurrentPageDataChange($event)" 
+            [nzScroll]="{ y: '450px' }" >
         <thead>
-            <tr>
-                <th nzWidth="10px">Estado</th>
+            <tr >
+                <th nzWidth="80px">Estado</th>
                 <th nzWidth="150px">Área Oficina</th>
                 <th nzWidth="140px">Trámite</th>
-                <th nzWidth="auto">Unidad</th>
+                <th nzWidth="80px">Unidad</th>
                 <th nzWidth="100px">Piso y Juez</th>
                 <th nzWidth="auto">Área</th>
                 <th nzWidth="auto">Diligencia</th>
                 <th nzWidth="auto">Recibe</th>
                 <th nzWidth="150px">Fechas</th>
-                <th nzWidth="auto">Observaciones</th>
+                <th nzWidth="150px">Observaciones</th>
                 <th nzWidth="auto">Adjuntos</th>
-                <th nzWidth="auto">Fecha y Hora Completado</th>
-                <th nzWidth="auto">Obs. Completado</th>
-                <th nzWidth="auto">Acciones</th>
+                <th nzWidth="100px">Fecha y Hora Completado</th>
+                <th nzWidth="100px">Obs. Completado</th>
+                <th nzWidth="130px">Acciones</th>
             </tr>
         </thead>
         <tbody *ngIf="rowSelectionTable.data && rowSelectionTable.data.length > 0; else emptyTable">
-            <tr *ngFor="let item of rowSelectionTable.data; trackBy: trackById">
-                <td>
-                    <nz-tag [nzColor]="getEstadoColor(item.estado)">
-                        {{ getEstadoTexto(item.estado) }}
-                    </nz-tag>
-                </td>
-                <td>
-                    <strong>Area: </strong> {{ item.manualArea || item.area }}
-                    <br>
-                    <strong>Solicita: </strong> {{ item.creadoPor }}
-                </td>
-                <td>
-                    <strong>Actividad: </strong> {{ item.tramite}}
-                    <br>
-                    <ng-container *ngIf="item && item.nroProceso">
-                        <strong>N° Juicio: </strong> {{ item.nroProceso }}
-                    </ng-container>
-                </td>
-                <td>{{ item.manualJuzgado || item.juzgado }}</td>
-                <td>
-                    <ng-container *ngIf="item.piso || item.juez">
-                        <strong>Piso: </strong>{{ item.manualPiso || item.piso }}
+            @for (item of rowSelectionTable.data; track item.id) {
+                <tr>
+                    <td >
+                        <nz-tag [nzColor]="getEstadoColor(item.estado)">
+                            {{ getEstadoTexto(item.estado) }}
+                        </nz-tag>
+                    </td>
+                    <td >
+                        <strong>Área: </strong> {{ item.manualArea || item.area }}
                         <br>
-                        <strong>Juez: </strong>{{ item.juez }}
-                    </ng-container>
-                </td>
-                <td>{{ item.manualMateria || item.materia }}</td>
-                <td>{{ item.manualDiligencia || item.diligencia }}</td>
-                <td>{{ item.solicita }}</td>
-                <td>
-                    <ng-container *ngIf="item.fechaSolicitud || item.fechaTermino">
-                        <strong>Solicitud: </strong>{{ item.fechaSolicitud }}
+                        <strong>Solicita: </strong> {{ item.creadoPor }}
+                    </td>
+                    <td>
+                        <strong>Actividad: </strong> {{ item.tramite }}
                         <br>
-                        <strong>Hora: </strong>{{ item.horaSolicitud }}
-                        <br>
-                        <strong>Término: </strong><span style="color: brown;">{{ item.fechaTermino }}</span>
-                    </ng-container>
-                </td>
-                <td>{{ item.observaciones }}</td>
-                <td>
-                    <ng-container *ngIf="item.imagen || item.pdf; else noData">
-                        <!-- Mostrar imagen si existe -->
-                        <a *ngIf="item.imagen" [href]="item.imagen" target="_blank">
-                            <img [src]="item.imagen" alt="Imagen" width="60" style="cursor: pointer;">
-                        </a>
-
-                        <!-- Mostrar enlace de descarga si hay PDF -->
-                        <a *ngIf="item.pdf" [href]="item.pdf" download="documento.pdf" target="_blank"
-                            style="color: rgb(190, 31, 31);">
-                            <i nz-icon nzType="download"></i>Descargar PDF
-                        </a>
-                    </ng-container>
-
-                    <!-- Caso cuando no hay imagen ni PDF -->
-                    <ng-template #noData>
-                        N/A
-                    </ng-template>
-                </td>
-                <td>
-                    <span *ngIf="item.historial && item.historial.length > 0">
-                        {{ item.historial[item.historial.length - 1].fecha }}
-                        {{ item.historial[item.historial.length - 1].hora }}
-                    </span>
-                </td>
-                <td>
-                    <!-- Mostrar la última observación del historial -->
-                    <span *ngIf="item.historial && item.historial.length > 0">
-                        {{ item.historial[item.historial.length - 1].observacion }}
-                    </span>
-
-                    <!-- Mostrar el botón solo si hay historial -->
-                    <button nz-button nzType="link" style="color: #bf8220" (click)="verHistorial(item)"
-                        *ngIf="item.historial && item.historial.length > 0">
-                        Ver Historial
-                    </button>
-                </td>
-                <td>
-                    <ng-container class="action-buttons">
-                        <button nz-button class="btn-completado" (click)="completarItem(item)">
-                            <i nz-icon nzType="check"></i> Completado
+                        <ng-container *ngIf="item && item.nroProceso">
+                            <strong>N° Juicio: </strong> {{ item.nroProceso }}
+                        </ng-container>
+                    </td>
+                    <td>{{ item.manualJuzgado || item.juzgado }}</td>
+                    <td>
+                        <ng-container *ngIf="item.piso || item.juez">
+                            <strong>Piso: </strong> {{ item.manualPiso || item.piso }}
+                            <br>
+                            <strong>Juez: </strong> {{ item.juez }}
+                        </ng-container>
+                    </td>
+                    <td>{{ item.manualMateria || item.materia }}</td>
+                    <td>{{ item.manualDiligencia || item.diligencia }}</td>
+                    <td>{{ item.solicita }}</td>
+                    <td>
+                        <ng-container *ngIf="item.fechaSolicitud || item.fechaTermino">
+                            <strong>Solicitud: </strong> {{ item.fechaSolicitud }}
+                            <br>
+                            <strong>Hora: </strong> {{ item.horaSolicitud }}
+                            <br>
+                            <strong>Término: </strong> <span style="color: brown;">{{ item.fechaTermino }}</span>
+                        </ng-container>
+                    </td>
+                    <td>{{ item.observaciones }}</td>
+                    <td>
+                        <ng-container *ngIf="item.imagen || item.pdf; else noData">
+                            <a *ngIf="item.imagen" [href]="item.imagen" target="_blank">
+                                <img [src]="item.imagen" alt="Imagen" width="60" style="cursor: pointer;">
+                            </a>
+        
+                            <a *ngIf="item.pdf" [href]="item.pdf" download="documento.pdf" target="_blank"
+                                style="color: rgb(190, 31, 31);">
+                                <i nz-icon nzType="download"></i> Descargar PDF
+                            </a>
+                        </ng-container>
+        
+                        <ng-template #noData>
+                            N/A
+                        </ng-template>
+                    </td>
+                    <td>
+                        <span *ngIf="item.historial && item.historial.length > 0">
+                            {{ item.historial[item.historial.length - 1].fecha }}
+                            {{ item.historial[item.historial.length - 1].hora }}
+                        </span>
+                    </td>
+                    <td>
+                        <span *ngIf="item.historial && item.historial.length > 0">
+                            {{ item.historial[item.historial.length - 1].observacion }}
+                        </span>
+        
+                        <button nz-button nzType="link" style="color: #bf8220" (click)="verHistorial(item)"
+                            *ngIf="item.historial && item.historial.length > 0">
+                            Ver Historial
                         </button>
-
-                        <button nz-button class="btn-proceso" (click)="enProcesoItem(item)">
-                            <i nz-icon nzType="hourglass"></i> En Proceso
-                        </button>
-                    </ng-container>
-                </td>
-            </tr>
+                    </td>
+                    <td>
+                        <ng-container class="action-buttons">
+                            <button nz-button class="btn-completado" (click)="completarItem(item)">
+                                <i nz-icon nzType="check"></i> Completado
+                            </button>
+        
+                            <button nz-button class="btn-proceso" (click)="enProcesoItem(item)">
+                                <i nz-icon nzType="hourglass"></i> En Proceso
+                            </button>
+                        </ng-container>
+                    </td>
+                </tr>
+            }
         </tbody>
+        
 
         <!-- Template para cuando no hay datos -->
         <ng-template #emptyTable>
             <tbody></tbody>
         </ng-template>
     </nz-table>
+    </div>
 </div>
-
-<hr class="divider">
 
 <!-- Modal Completado -->
 
@@ -281,8 +287,8 @@
     </ng-container>
 </nz-modal>
 
-<br>
 <div #rutaActividades style="background-color: #f8f9fa; border-radius: 5px;">
+    <br>
     <br>
     <div class="gestion-rutas-container">
         <h3 class="gestion-title">Ruta diaria de Actividades</h3>

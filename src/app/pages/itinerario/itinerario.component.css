@@ -38,15 +38,40 @@
     }
 }
 
-
-.itinerario-table {
+/* Contenedor de la tabla con scroll horizontal */
+.table-container {
     width: 100%;
     overflow-x: auto;
     /* Permite el desplazamiento horizontal */
+    -ms-overflow-style: auto;
     scrollbar-width: thin;
     /* Para navegadores compatibles con esta propiedad */
     -webkit-overflow-scrolling: touch;
     /* Suaviza el desplazamiento en dispositivos móviles */
+}
+
+/* Personalizar la barra de desplazamiento en navegadores WebKit (Chrome, Edge, Safari) */
+.table-container::-webkit-scrollbar {
+    height: 6px;
+    /* Ajusta la altura de la barra de desplazamiento */
+    background-color: #f1f1f1;
+    border-radius: 3px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background-color: #888;
+    /* Color del scroll */
+    border-radius: 3px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background-color: #555;
+}
+
+.itinerario-table {
+    overflow-x: auto;
+    min-width: 1500px;
+    width: 100%;
 }
 
 /* Personalizar la barra de desplazamiento en navegadores WebKit (Chrome, Edge, Safari) */
@@ -85,6 +110,11 @@
     /* Ajusta el ancho del input a la celda */
     box-sizing: border-box;
     /* Evita que el padding afecte el tamaño */
+}
+
+::ng-deep .ant-table-tbody>tr:hover td {
+    background-color: #bdbaba !important;
+    transition: background-color 0.3s ease-in-out;
 }
 
 
@@ -186,7 +216,7 @@ textarea {
     .filters nz-select,
     .filters nz-range-picker,
     .filters button {
-        width: 10px;
+        width: 100%;
     }
 }
 
@@ -351,14 +381,18 @@ textarea {
 /* Estilos base (para pantallas grandes) */
 /* Resetear estilos predeterminados de listas */
 ul.list-group {
-    padding-left: 2px; /* Eliminar el padding-left predeterminado */
-    margin-left: 0;  /* Eliminar el margin-left predeterminado */
-    
+    padding-left: 2px;
+    /* Eliminar el padding-left predeterminado */
+    margin-left: 0;
+    /* Eliminar el margin-left predeterminado */
+
 }
 
 ul.list-group li {
-    padding-left: 5px; /* Asegurarse de que no haya padding-left en los elementos de la lista */
-    margin-left: 0;  /* Asegurarse de que no haya margin-left en los elementos de la lista */
+    padding-left: 5px;
+    /* Asegurarse de que no haya padding-left en los elementos de la lista */
+    margin-left: 0;
+    /* Asegurarse de que no haya margin-left en los elementos de la lista */
 }
 
 .gestion-rutas-container {
@@ -448,75 +482,94 @@ ul.list-group li {
 /* Pantallas medianas (tablets, hasta 768px) */
 @media (max-width: 768px) {
     .gestion-rutas-container {
-        max-width: 90%; /* Reducir el ancho del contenedor */
+        max-width: 90%;
+        /* Reducir el ancho del contenedor */
         padding: 15px;
     }
 
     .gestion-title {
-        font-size: 22px; /* Reducir el tamaño del título */
+        font-size: 22px;
+        /* Reducir el tamaño del título */
     }
 
     .actividad-input input {
-        font-size: 14px; /* Reducir el tamaño del texto del input */
+        font-size: 14px;
+        /* Reducir el tamaño del texto del input */
     }
 
     .actividad-input button {
-        padding: 8px 16px; /* Reducir el tamaño del botón */
+        padding: 8px 16px;
+        /* Reducir el tamaño del botón */
         font-size: 14px;
     }
 
     .actividad-text {
-        font-size: 16px; /* Reducir el tamaño del texto de la actividad */
+        font-size: 16px;
+        /* Reducir el tamaño del texto de la actividad */
     }
 
     .actividad-actions button nz-icon {
-        font-size: 14px; /* Reducir el tamaño de los íconos */
+        font-size: 14px;
+        /* Reducir el tamaño de los íconos */
     }
 }
 
 /* Pantallas pequeñas (móviles, hasta 480px) */
 @media (max-width: 480px) {
     .gestion-rutas-container {
-        max-width: 100%; /* Ocupar todo el ancho disponible */
+        max-width: 100%;
+        /* Ocupar todo el ancho disponible */
         padding: 10px;
     }
 
     .gestion-title {
-        font-size: 20px; /* Título más pequeño */
+        font-size: 20px;
+        /* Título más pequeño */
     }
 
     .actividad-input {
-        flex-direction: column; /* Cambiar a disposición vertical */
+        flex-direction: column;
+        /* Cambiar a disposición vertical */
         gap: 8px;
     }
 
     .actividad-input input {
-        width: 100%; /* Input ocupa todo el ancho */
+        width: 100%;
+        /* Input ocupa todo el ancho */
     }
 
     .actividad-input button {
-        width: 100%; /* Botón ocupa todo el ancho */
+        width: 100%;
+        /* Botón ocupa todo el ancho */
         padding: 10px;
     }
 
     .actividad-item {
-        flex-direction: column; /* Cambiar a disposición vertical */
-        align-items: flex-start; /* Alinear el texto a la izquierda */
-        gap: 10px; /* Espacio entre texto y acciones */
+        flex-direction: column;
+        /* Cambiar a disposición vertical */
+        align-items: flex-start;
+        /* Alinear el texto a la izquierda */
+        gap: 10px;
+        /* Espacio entre texto y acciones */
     }
 
     .actividad-text {
-        margin-right: 0; /* Eliminar margen derecho */
-        font-size: 16px; /* Tamaño de texto más pequeño */
+        margin-right: 0;
+        /* Eliminar margen derecho */
+        font-size: 16px;
+        /* Tamaño de texto más pequeño */
     }
 
     .actividad-actions {
-        width: 100%; /* Acciones ocupan todo el ancho */
-        justify-content: flex-end; /* Alinear acciones a la derecha */
+        width: 100%;
+        /* Acciones ocupan todo el ancho */
+        justify-content: flex-end;
+        /* Alinear acciones a la derecha */
     }
 
     .actividad-actions button nz-icon {
-        font-size: 14px; /* Íconos más pequeños */
+        font-size: 14px;
+        /* Íconos más pequeños */
     }
 }
 
@@ -539,36 +592,47 @@ ul.list-group li {
 .actividad-container {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center; /* Centrar las tarjetas */
-    margin: -8px; /* Compensar el gutter */
+    justify-content: center;
+    /* Centrar las tarjetas */
+    margin: -8px;
+    /* Compensar el gutter */
 }
 
 /* Columnas de las tarjetas */
 .actividad-col {
-    padding: 8px; /* Añadir padding para el gutter */
-    flex: 1 1 100%; /* Por defecto, ocupa todo el ancho */
-    max-width: 100%; /* Por defecto, ocupa todo el ancho */
+    padding: 8px;
+    /* Añadir padding para el gutter */
+    flex: 1 1 100%;
+    /* Por defecto, ocupa todo el ancho */
+    max-width: 100%;
+    /* Por defecto, ocupa todo el ancho */
     display: flex;
-    justify-content: center; /* Centrar la tarjeta dentro de la columna */
+    justify-content: center;
+    /* Centrar la tarjeta dentro de la columna */
 }
 
 /* Estilos para las tarjetas */
 .actividad-card {
-    
-    width: 100%; /* Ocupar todo el ancho disponible */
-    min-height: 300px; /* Altura mínima para consistencia */
+
+    width: 100%;
+    /* Ocupar todo el ancho disponible */
+    min-height: 300px;
+    /* Altura mínima para consistencia */
     display: flex;
     flex-direction: column;
-    justify-content: space-between; /* Espaciado entre contenido y botón */
+    justify-content: space-between;
+    /* Espaciado entre contenido y botón */
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra para mejor apariencia */
-    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    /* Sombra para mejor apariencia */
+    border-radius: 8px;
+    /* Bordes redondeados */
 }
 
 
 
 /* Botón de eliminar */
-.delete-btn{
+.delete-btn {
     font-weight: 500;
     background: #8f1d21c0;
     color: white;
@@ -580,28 +644,37 @@ ul.list-group li {
 .delete-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    
+
 }
 
 
 /* Ajustes responsivos */
-@media (min-width: 576px) { /* Tablets y móviles grandes */
+@media (min-width: 576px) {
+
+    /* Tablets y móviles grandes */
     .actividad-col {
-        flex: 1 1 50%; /* Dos columnas */
+        flex: 1 1 50%;
+        /* Dos columnas */
         max-width: 50%;
     }
 }
 
-@media (min-width: 768px) { /* Tablets grandes y pantallas pequeñas */
+@media (min-width: 768px) {
+
+    /* Tablets grandes y pantallas pequeñas */
     .actividad-col {
-        flex: 1 1 33.333%; /* Tres columnas */
+        flex: 1 1 33.333%;
+        /* Tres columnas */
         max-width: 33.333%;
     }
 }
 
-@media (min-width: 992px) { /* Pantallas grandes */
+@media (min-width: 992px) {
+
+    /* Pantallas grandes */
     .actividad-col {
-        flex: 1 1 25%; /* Cuatro columnas */
+        flex: 1 1 25%;
+        /* Cuatro columnas */
         max-width: 25%;
     }
 }

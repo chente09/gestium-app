@@ -375,7 +375,7 @@
             [nzLg]="6" [nzXl]="6" class="actividad-col">
             <nz-card [nzBordered]="true" class="actividad-card">
                 <span style="display: flex; justify-content: flex-end;">
-                    <button nzSize="small" (click)="eliminarActividadGuardada(i)" class="delete-btn">
+                    <button nzSize="small" nz-popconfirm nzPopconfirmTitle="¿Seguro que quieres eliminar?" (nzOnConfirm)="eliminarActividadGuardada(i)"  class="delete-btn">
                         <nz-icon nz-icon nzType="delete"></nz-icon>
                     </button>
                 </span>

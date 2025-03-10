@@ -26,6 +26,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -57,7 +58,8 @@ enum Estado {
     NzInputModule,
     NzCardModule,
     NzEmptyModule,
-    NzGridModule
+    NzGridModule,
+    NzPopconfirmModule
   ],
   templateUrl: './itinerario.component.html',
   styleUrl: './itinerario.component.css'
@@ -262,6 +264,7 @@ export class ItinerarioComponent implements OnInit {
     this.actividadesTemporales.splice(index, 1);
   }
 
+
   async agregarActividad() {
     if (this.actividad.trim()) {
       const nuevaRuta: Omit<RutaDiaria, 'id' | 'orden'> = {
@@ -380,26 +383,27 @@ export class ItinerarioComponent implements OnInit {
   async eliminarActividadGuardada(index: number): Promise<void> {
     const actividad = this.actividadesGuardadas[index]; // Obtén la actividad a eliminar
     const id = actividad.id; // Obtén el ID de la actividad
-
     try {
-      // Elimina la actividad de Firestore
       await this.itinerarioService.deleteRutaDiaria(id);
-
-      // Elimina la actividad del array local
       this.actividadesGuardadas.splice(index, 1);
-
-      // Muestra un mensaje de éxito
       this.message.success('Actividad eliminada correctamente.');
     } catch (error) {
       console.error('Error al eliminar la actividad:', error);
-
-      // Muestra un mensaje de error
       this.message.error('Error al eliminar la actividad. Inténtalo de nuevo.');
     }
-
     this.cdr.detectChanges();
   }
 
+  // eliminar(id: string): void {
+  //   this.itinerarioService.deleteItinerario(id).then(() => {
+  //     this.message.success('Itinerario eliminado correctamente.');
+  //     this.itinerarios = this.itinerarios.filter(it => it.id !== id);
+  //     this.filterItinerarios(); // Asegurar que la vista refleje la eliminación
+  //   }).catch(error => {
+  //     this.message.error('Error al eliminar el itinerario.');
+  //     console.error(error);
+  //   });
+  // }
 
 
   // Método para verificar si la fecha de término es hoy y el estado no es COMPLETADO

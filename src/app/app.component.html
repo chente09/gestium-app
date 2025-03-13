@@ -18,14 +18,10 @@
       </li>
       <li nz-submenu nzOpen nzTitle="Áreas" nzIcon="container">
         <ul>
-          <li nz-menu-item *ngFor="let item of menuItems" [nzSelected]="activeRoute === item.route"
-            (click)="setActive(item.route)">
-            <a *ngIf="item.route; else noRoute" [routerLink]="item.route" routerLinkActive="active-link">
+          <li nz-menu-item *ngFor="let item of menuItems" [nzSelected]="activeRoute === item.route">
+            <a [routerLink]="item.route" routerLinkActive="active-link" [routerLinkActiveOptions]="{ exact: true }">
               {{ item.title }}
             </a>
-            <ng-template #noRoute>
-              <span>{{ item.title }}</span>
-            </ng-template>
           </li>
         </ul>
       </li>

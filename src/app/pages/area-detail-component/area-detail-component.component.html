@@ -1,0 +1,51 @@
+<nz-breadcrumb>
+    <nz-breadcrumb-item>
+        <a routerLink="/welcome">
+            <nz-icon nzType="home" />
+        </a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>{{ areaId | uppercase }}</nz-breadcrumb-item>
+</nz-breadcrumb>
+<hr class="divider">
+<div class="external-links-container" *ngFor="let option of options">
+    <div *ngIf="option.externalLinks && option.externalLinks.length > 0">
+        <nz-layout class="area-container">
+            <nz-card class="external-links-card">
+                <h2 class="title">{{ option.title }}</h2>
+                <hr class="divider">
+                <nz-row [nzGutter]="16" class="external-links-row">
+                    <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="6" *ngFor="let link of option.externalLinks">
+                        <a [href]="link.url" target="_blank" class="external-link">
+                            <nz-card class="external-link-card" [nzBordered]="true" [nzHoverable]="true">
+                                <div class="external-link-content">
+                                    <img [src]="link.img" alt="Imagen de {{ link.name }}" class="external-link-img">
+                                    <span class="external-link-text">{{ link.name }}</span>
+                                </div>
+                            </nz-card>
+                        </a>
+                    </nz-col>
+                </nz-row>
+            </nz-card>
+        </nz-layout>
+    </div>
+</div>
+
+
+<nz-layout class="area-container">
+    <nz-card [nzBordered]="true">
+        <h2 class="title">Acciones de {{ areaId | uppercase }}</h2>
+        <hr class="divider">
+        <nz-row [nzGutter]="16" justify="center">
+            <nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="12" *ngFor="let option of options">
+                <a [routerLink]="option.route" class="option-link">
+                    <nz-card class="option-card" [nzBordered]="false" [nzHoverable]="true">
+                        <div class="option-icon">
+                            <i nz-icon [nzType]="option.icon"></i>
+                        </div>
+                        <nz-card-meta [nzTitle]="option.title" [nzDescription]="option.description"></nz-card-meta>
+                    </nz-card>
+                </a>
+            </nz-col>
+        </nz-row>
+    </nz-card>
+</nz-layout>

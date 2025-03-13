@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { Router, RouterLink, RouterModule, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterModule, RouterOutlet } from '@angular/router';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
@@ -29,7 +29,7 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     NzDropDownModule,
     NzFlexModule,
     NzToolTipModule,
-    NzDrawerModule
+    NzDrawerModule,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
@@ -41,10 +41,10 @@ export class AppComponent {
  
 
   menuItems = [
-    { title: 'ISSFA', route: '/issfa' },
-    { title: 'Inmobiliaria', route: '/inmobiliaria' },
-    { title: 'Bco Produbanco', route: '/produbanco' },
-    { title: 'Bco Pichincha', route: null } // Este no tiene ruta
+    { title: 'ISSFA', route: '/area/issfa' },
+    { title: 'Inmobiliaria', route: '/area/inmobiliaria' },
+    { title: 'Bco Produbanco', route: '/area/produbanco' },
+    { title: 'Bco Pichincha', route: '/area/pichincha' } // Este no tiene ruta
   ];
 
   constructor(
@@ -59,7 +59,11 @@ export class AppComponent {
   }
 
   ngOnInit() {
-    this.activeRoute = this.router.url; // Captura la ruta activa al iniciar
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.activeRoute = event.url; // Captura la ruta actual
+      }
+    }); // Captura la ruta activa al iniciar
   }
 
   setActive(route: string | null) {

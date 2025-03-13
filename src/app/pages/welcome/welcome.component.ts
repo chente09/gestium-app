@@ -26,15 +26,15 @@ export class WelcomeComponent {
   constructor() {}
 
   sections = [
-    { title: 'ISSFA', description: 'Registro de documentación para procesos', icon: 'file-text', route: '/issfa' },
-    { title: 'Inmobiliaria', description: 'Registro de documentación inmobiliaria', icon: 'home', route: '/inmobiliaria' },
-    { title: 'Banco Produbanco', description: 'Registro y elaboración de demandas', icon: 'bank', route: '/produbanco' },
-    { title: 'Banco Pichincha', description: 'Gestion de demandas', icon: 'bank', route: '/dmd-proc-ordinario' },
+    { title: 'ISSFA', description: 'Registro de documentación para procesos', icon: 'file-text', route: '/area/issfa' },
+    { title: 'Inmobiliaria', description: 'Registro de documentación inmobiliaria', icon: 'home', route: '/area/inmobiliaria' },
+    { title: 'Banco Produbanco', description: 'Registro y elaboración de demandas', icon: 'bank', route: '/area/produbanco' },
+    { title: 'Banco Pichincha', description: 'Gestion de demandas', icon: 'bank', route: '/area/pichincha' },
   ];
 
   sections2 = [
     { title: 'Itinerario', description: 'Control de actividades del tramitador', icon: 'schedule', route: '/itinerario' },
-    { title: 'Control de Gastos', description: 'Control de gastos por área', icon: 'credit-card', route: '/gastos' },
+    { title: 'Control de Gastos', description: 'Control de gastos por área', icon: 'credit-card', route: '/area/gastos' },
   ];
 
   

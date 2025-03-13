@@ -1,0 +1,131 @@
+.area-container {
+    text-align: center;
+    padding: 20px;
+}
+.divider {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px;
+}
+
+.title {
+    text-align: left;
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Ajustes de las tarjetas de opciones */
+.option-card {
+    background-color: #f8f9fa; /* Color claro para destacar las opciones */
+    padding: 16px;
+    margin: 12px 0;
+    font-size: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border-radius: 8px;
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.option-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Ícono dentro de la tarjeta */
+.option-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+/* Enlace estilizado */
+.option-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
+}
+
+/* Mejorando el diseño responsivo */
+@media (max-width: 1024px) {
+    .option-card {
+        font-size: 16px; /* Reduce el tamaño del texto en pantallas medianas */
+    }
+}
+
+@media (max-width: 768px) {
+    .option-card {
+        width: 100%; /* Asegura que las tarjetas ocupen todo el ancho */
+        font-size: 14px; /* Reduce el tamaño del texto */
+        padding: 12px;
+    }
+
+    .option-icon {
+        font-size: 24px; /* Ajusta el tamaño del icono */
+    }
+}
+
+@media (max-width: 480px) {
+    .option-card {
+        font-size: 12px; /* Texto más pequeño en dispositivos muy pequeños */
+        padding: 8px;
+    }
+
+    .option-icon {
+        font-size: 20px;
+    }
+
+    .ant-card-meta-title {
+        font-size: 10px;
+    }
+}
+.external-links-container {
+    margin-bottom: 20px;
+}
+
+.external-links-card {
+    padding: 2px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+.external-links-row {
+    margin-top: 10px;
+}
+
+.external-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.external-link-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.external-link-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.external-link-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.external-link-img {
+    height: 50px;
+    border-radius: 5px;
+}
+
+.external-link-text {
+    font-size: 16px;
+    font-weight: 500;
+}

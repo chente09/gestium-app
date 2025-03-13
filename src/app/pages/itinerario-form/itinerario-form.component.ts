@@ -49,7 +49,6 @@ export class ItinerarioFormComponent implements OnInit {
 
   itinerarioForm: FormGroup = new FormGroup({});
   selectedImage: File | null = null; // 🌟 Ahora manejamos imagen y PDF por separado
-  selectedImage2: File | null = null;
   selectedPDF: File | null = null;
   isLoading = false;
   selectedArea: string | null = null;
@@ -186,7 +185,7 @@ export class ItinerarioFormComponent implements OnInit {
       manualDiligencia: [''],
       solicita: [''],
       fechaSolicitud: [new Date().toISOString().split('T')[0], Validators.required],
-      horaSolicitud: [new Date().toLocaleTimeString(), Validators.required],
+      horaSolicitud: [new Date().toTimeString().slice(0, 5), Validators.required],
       fechaTermino: ['', [Validators.required, this.fechaTerminoValidator]],
       estado: [Estado.PENDIENTE, Validators.required],
       observaciones: [''],

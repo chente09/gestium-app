@@ -334,20 +334,6 @@ export class ItinerarioComponent implements OnInit {
     }
   }
 
-  // Cargar actividades desde Firestore
-  // obtenerActividadesGuardadas(): void {
-  //   this.itinerarioService.getRutasDiarias().subscribe({
-  //     next: (data) => {
-  //       this.actividadesGuardadas = data.sort((a, b) =>
-  //         new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-  //       );
-  //     },
-  //     error: (error) => {
-  //       console.error('Error al obtener las actividades guardadas:', error);
-  //       this.message.error('Error al cargar las actividades guardadas.');
-  //     },
-  //   });
-  // }
 
   obtenerActividadesGuardadas(): void {
     this.itinerarioService.getRutasDiarias().subscribe({
@@ -393,18 +379,6 @@ export class ItinerarioComponent implements OnInit {
     }
     this.cdr.detectChanges();
   }
-
-  // eliminar(id: string): void {
-  //   this.itinerarioService.deleteItinerario(id).then(() => {
-  //     this.message.success('Itinerario eliminado correctamente.');
-  //     this.itinerarios = this.itinerarios.filter(it => it.id !== id);
-  //     this.filterItinerarios(); // Asegurar que la vista refleje la eliminación
-  //   }).catch(error => {
-  //     this.message.error('Error al eliminar el itinerario.');
-  //     console.error(error);
-  //   });
-  // }
-
 
   // Método para verificar si la fecha de término es hoy y el estado no es COMPLETADO
   esFechaTerminoHoy(fechaTermino: string, estado: Estado): boolean {

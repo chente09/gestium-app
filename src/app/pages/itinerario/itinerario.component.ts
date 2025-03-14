@@ -543,11 +543,14 @@ export class ItinerarioComponent implements OnInit {
       && !!this.imageFileList?.length;
   }
 
-  async onFileSelected(event: any): Promise<void> {
-    const file = event.file?.originFileObj || null;
-    this.imagenSeleccionada = file;
-
-    this.validarFormulario();
+  onFileSelected(event: any) {
+    const file = event.target?.files?.[0] || null;
+    if (file) {
+      console.log('Archivo seleccionado:', file);
+      this.imageFileList = [{ uid: '-1', name: file.name, status: 'done', originFileObj: file }];
+    } else {
+      console.warn('No se seleccionó ningún archivo.');
+    }
   }
 
   async guardarEstado(): Promise<void> {

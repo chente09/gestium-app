@@ -219,12 +219,17 @@
             <nz-form-item>
                 <nz-form-label nzFor="fotografia">Fotografía</nz-form-label>
                 <nz-form-control>
-                    <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
-                        [(nzFileList)]="imageFileList" (nzChange)="onFileSelected($event)" style="width: 100%;">
-                        <button nz-button>
-                            <i nz-icon nzType="upload"></i> Subir Imagen
-                        </button>
-                    </nz-upload>
+                    <input 
+                        type="file" 
+                        accept="image/*" 
+                        capture="environment" 
+                        (change)="onFileSelected($event)" 
+                        #fileInput 
+                        style="display: none;"
+                    />
+                    <button nz-button (click)="fileInput.click()">
+                        <i nz-icon nzType="upload"></i> Subir Imagen
+                    </button>
                 </nz-form-control>
             </nz-form-item>
         </form>

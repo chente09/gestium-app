@@ -540,18 +540,32 @@ export class ItinerarioComponent implements OnInit {
   validarFormulario(): void {
     // Validar que la imagen y la observación estén presentes
     this.formularioValido = !!this.selectedItem?.obsCompletado?.trim()
-      && !!this.imageFileList?.length;
+      && !!this.imagenSeleccionada;
   }
 
   onFileSelected(event: any) {
     const file = event.target?.files?.[0] || null;
     if (file) {
       console.log('Archivo seleccionado:', file);
-      this.imageFileList = [{ uid: '-1', name: file.name, status: 'done', originFileObj: file }];
+      
+      // Guardar el archivo para la subida
+      this.imagenSeleccionada = file; 
+  
+      // Actualizar la lista de imágenes para la vista
+      this.imageFileList = [{ 
+        uid: '-1', 
+        name: file.name, 
+        status: 'done', 
+        originFileObj: file 
+      }];
+  
+      // Validar el formulario después de seleccionar la imagen
+      this.validarFormulario();
     } else {
       console.warn('No se seleccionó ningún archivo.');
     }
   }
+  
 
   async guardarEstado(): Promise<void> {
     if (!this.selectedItem) return;

@@ -1,185 +1,202 @@
 <form nz-form [formGroup]="demandaForm" (ngSubmit)="onSubmit()" class="demanda-form">
-    <!-- Nombre del Demandado -->
-    <nz-form-item>
-      <nz-form-label nzFor="demandadoNombre" >Nombre del Demandado</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="demandadoNombre" formControlName="demandadoNombre" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Cédula del Demandado -->
-    <nz-form-item>
-      <nz-form-label nzFor="demandadoCedula" >Cédula del Demandado</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="demandadoCedula" formControlName="demandadoCedula" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Número de Fojas Estado de Cuenta -->
-    <nz-form-item>
-      <nz-form-label nzFor="nroFojas">Número de Fojas Estado de Cuenta</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="nroFojas" formControlName="nroFojas" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Número de Fojas Abonos -->
-    <nz-form-item>
-      <nz-form-label nzFor="nroFojasAbonos">Número de Fojas Abonos</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="nroFojasAbonos" formControlName="nroFojasAbonos" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Fecha de Emisión -->
-    <nz-form-item>
-      <nz-form-label nzFor="fechaEmision">Fecha de Emisión</nz-form-label>
-      <nz-form-control>
-        <nz-date-picker id="fechaEmision" formControlName="fechaEmision"></nz-date-picker>
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Número de Tarjeta de Crédito -->
-    <nz-form-item>
-      <nz-form-label nzFor="nroTC">Número de Tarjeta de Crédito</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="nroTC" formControlName="nroTC" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Tipo de Tarjeta de Crédito -->
-    <nz-form-item>
-      <nz-form-label nzFor="tipoTC">Tipo de Tarjeta de Crédito</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="tipoTC" formControlName="tipoTC" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Fecha de Vencimiento -->
-    <nz-form-item>
-      <nz-form-label nzFor="fechaVencimiento">Fecha de Vencimiento</nz-form-label>
-      <nz-form-control>
-        <nz-date-picker id="fechaVencimiento" formControlName="fechaVencimiento"></nz-date-picker>
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Fecha de Liquidación -->
-    <nz-form-item>
-      <nz-form-label nzFor="fechaLiquidacion">Fecha de Liquidación</nz-form-label>
-      <nz-form-control>
-        <nz-date-picker id="fechaLiquidacion" formControlName="fechaLiquidacion"></nz-date-picker>
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Saldo de Capital -->
-    <nz-form-item>
-      <nz-form-label nzFor="saldoCapital">Saldo de Capital</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="saldoCapital" formControlName="saldoCapital" (keyup)="onValueChange('saldoCapital')" />
-      </nz-form-control>
-      <p *ngIf="valoresEnLetras['saldoCapital']">Saldo en letras: {{ valoresEnLetras['saldoCapital'] | uppercase }}</p>
-    </nz-form-item>
-  
-    <!-- Fracción de Capital -->
-    <nz-form-item>
-      <nz-form-label nzFor="frcCapital">Fracción de Capital</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="frcCapital" formControlName="frcCapital" (keyup)="onValueChange('frcCapital')" type="number" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Interés Financiado -->
-    <nz-form-item>
-      <nz-form-label nzFor="interesFinanciado">Interés Financiado</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="interesFinanciado" formControlName="interesFinanciado" (keyup)="onValueChange('interesFinanciado')" type="text" [value]="valoresFormateados['interesFinanciado']"/>
-        <p *ngIf="valoresEnLetras['interesFinanciado']">Interés Financiado en letras: {{valoresEnLetras['interesFinanciado'] | uppercase }}</p>
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Fracción de Interés Financiado -->
-    <nz-form-item>
-      <nz-form-label nzFor="frcInteresFinanciado">Fracción de Interés Financiado</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="frcInteresFinanciado" formControlName="frcInteresFinanciado" (keyup)="onValueChange('frcInteresFinanciado')" type="number" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Interes Diferido -->
-    <nz-form-item>
-      <nz-form-label nzFor="interesDiferido">Interés Diferido</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="interesDiferido" formControlName="interesDiferido" (keyup)="onValueChange('interesDiferido')" type="text" [value]="valoresFormateados['interesDiferido']"/>
-        <p *ngIf="valoresEnLetras['interesDiferido']">Interés Diferido en letras: {{valoresEnLetras['interesDiferido'] | uppercase }}</p>
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Fracción de Interés Diferido -->
-    <nz-form-item>
-      <nz-form-label nzFor="frcInteresDiferido">Fracción de Interés Diferido</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="frcInteresDiferido" formControlName="frcInteresDiferido" (keyup)="onValueChange('frcInteresDiferido')" type="number" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Interés de Mora -->
-    <nz-form-item>
-      <nz-form-label nzFor="interesMora">Interés de Mora</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="interesMora" formControlName="interesMora" (keyup)="onValueChange('interesMora')" type="text" [value]="valoresFormateados['interesMora']"/>
-        <p *ngIf="valoresEnLetras['interesMora']">Interés de Mora en letras: {{valoresEnLetras['interesMora'] | uppercase }}</p>
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Fracción de Interés de Mora -->
-    <nz-form-item>
-      <nz-form-label nzFor="frcInteresMora">Fracción de Interés de Mora</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="frcInteresMora" formControlName="frcInteresMora" (keyup)="onValueChange('frcInteresMora')" type="number" />
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Costos Operativos -->
-    <nz-form-item>
-      <nz-form-label nzFor="costosOperativos">Costos Operativos</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="costosOperativos" formControlName="costosOperativos" (keyup)="onValueChange('costosOperativos')" type="text" [value]="valoresFormateados['costosOperativos']"/>
-        <p *ngIf="valoresEnLetras['costosOperativos']">Costos Operativos en letras: {{valoresEnLetras['costosOperativos'] | uppercase }}</p>
-      </nz-form-control>
-    </nz-form-item>
-  
-    <!-- Fracción de Costos Operativos -->
-    <nz-form-item>
-      <nz-form-label nzFor="frcCostosOperativos">Fracción de Costos Operativos</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="frcCostosOperativos" formControlName="frcCostosOperativos" (keyup)="onValueChange('frcCostosOperativos')" type="number" />
-      </nz-form-control>
-    </nz-form-item>
+  <!-- Nombre del Demandado -->
+  <nz-form-item>
+    <nz-form-label nzFor="demandadoNombre">Nombre del Demandado</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="demandadoNombre" formControlName="demandadoNombre" />
+    </nz-form-control>
+  </nz-form-item>
 
-    <!-- Total Adeudado -->
-    <nz-form-item>
-      <nz-form-label nzFor="totalAdeudado">Total Adeudado</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="totalAdeudado" formControlName="totalAdeudado" (keyup)="onValueChange('totalAdeudado')" type="text" [value]="valoresFormateados['totalAdeudado']"/>
-        <p *ngIf="valoresEnLetras['totalAdeudado']">Total Adeudado en letras: {{valoresEnLetras['totalAdeudado'] | uppercase }}</p>
-      </nz-form-control>
-    </nz-form-item>
+  <!-- Cédula del Demandado -->
+  <nz-form-item>
+    <nz-form-label nzFor="demandadoCedula">Cédula del Demandado</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="demandadoCedula" formControlName="demandadoCedula" />
+    </nz-form-control>
+  </nz-form-item>
 
-    <!-- Fracción de Total Adeudado -->
-    <nz-form-item>
-      <nz-form-label nzFor="frcTotalAdeudado">Fracción de Total Adeudado</nz-form-label>
-      <nz-form-control>
-        <input nz-input id="frcTotalAdeudado" formControlName="frcTotalAdeudado" (keyup)="onValueChange('frcTotalAdeudado')" type="number" />
-      </nz-form-control>
-    </nz-form-item>
+  <!-- Número de Fojas Estado de Cuenta -->
+  <nz-form-item>
+    <nz-form-label nzFor="nroFojas">Número de Fojas Estado de Cuenta</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="nroFojas" formControlName="nroFojas" />
+    </nz-form-control>
+  </nz-form-item>
 
-    <!-- Botón de Envío -->
-    <nz-form-item>
-      <nz-form-control>
-        <button nz-button nzType="primary" type="submit" [disabled]="!demandaForm.valid">Generar Documento</button>
-      </nz-form-control>
-    </nz-form-item>
-  </form>
+  <!-- Número de Fojas Abonos -->
+  <nz-form-item>
+    <nz-form-label nzFor="nroFojasAbonos">Número de Fojas Abonos</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="nroFojasAbonos" formControlName="nroFojasAbonos" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Fecha de Emisión -->
+  <nz-form-item>
+    <nz-form-label nzFor="fechaEmision">Fecha de Emisión</nz-form-label>
+    <nz-form-control>
+      <nz-date-picker id="fechaEmision" formControlName="fechaEmision"></nz-date-picker>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Número de Tarjeta de Crédito -->
+  <nz-form-item>
+    <nz-form-label nzFor="nroTC">Número de Tarjeta de Crédito</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="nroTC" formControlName="nroTC" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Tipo de Tarjeta de Crédito -->
+  <nz-form-item>
+    <nz-form-label nzFor="tipoTC">Tipo de Tarjeta de Crédito</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="tipoTC" formControlName="tipoTC" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Fecha de Vencimiento -->
+  <nz-form-item>
+    <nz-form-label nzFor="fechaVencimiento">Fecha de Vencimiento</nz-form-label>
+    <nz-form-control>
+      <nz-date-picker id="fechaVencimiento" formControlName="fechaVencimiento"></nz-date-picker>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Fecha de Liquidación -->
+  <nz-form-item>
+    <nz-form-label nzFor="fechaLiquidacion">Fecha de Liquidación</nz-form-label>
+    <nz-form-control>
+      <nz-date-picker id="fechaLiquidacion" formControlName="fechaLiquidacion"></nz-date-picker>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Saldo de Capital -->
+  <nz-form-item>
+    <nz-form-label nzFor="saldoCapital">Saldo de Capital</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="saldoCapital" formControlName="saldoCapital" (keyup)="onValueChange('saldoCapital')"
+        type="text" [value]="valoresFormateados['saldoCapital']" />
+    </nz-form-control>
+    <p *ngIf="valoresEnLetras['saldoCapital']">Saldo en letras: {{ valoresEnLetras['saldoCapital'] | uppercase }}</p>
+  </nz-form-item>
+
+  <!-- Fracción de Capital -->
+  <nz-form-item>
+    <nz-form-label nzFor="frcCapital">Fracción de Capital</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="frcCapital" formControlName="frcCapital" (keyup)="onValueChange('frcCapital')"
+        type="number" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Interés Financiado -->
+  <nz-form-item>
+    <nz-form-label nzFor="interesFinanciado">Interés Financiado</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="interesFinanciado" formControlName="interesFinanciado"
+        (keyup)="onValueChange('interesFinanciado')" type="text" [value]="valoresFormateados['interesFinanciado']" />
+      <p *ngIf="valoresEnLetras['interesFinanciado']">Interés Financiado en letras:
+        {{valoresEnLetras['interesFinanciado'] | uppercase }}</p>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Fracción de Interés Financiado -->
+  <nz-form-item>
+    <nz-form-label nzFor="frcInteresFinanciado">Fracción de Interés Financiado</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="frcInteresFinanciado" formControlName="frcInteresFinanciado"
+        (keyup)="onValueChange('frcInteresFinanciado')" type="number" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Interes Diferido -->
+  <nz-form-item>
+    <nz-form-label nzFor="interesDiferido">Interés Diferido</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="interesDiferido" formControlName="interesDiferido" (keyup)="onValueChange('interesDiferido')"
+        type="text" [value]="valoresFormateados['interesDiferido']" />
+      <p *ngIf="valoresEnLetras['interesDiferido']">Interés Diferido en letras: {{valoresEnLetras['interesDiferido'] |
+        uppercase }}</p>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Fracción de Interés Diferido -->
+  <nz-form-item>
+    <nz-form-label nzFor="frcInteresDiferido">Fracción de Interés Diferido</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="frcInteresDiferido" formControlName="frcInteresDiferido"
+        (keyup)="onValueChange('frcInteresDiferido')" type="number" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Interés de Mora -->
+  <nz-form-item>
+    <nz-form-label nzFor="interesMora">Interés de Mora</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="interesMora" formControlName="interesMora" (keyup)="onValueChange('interesMora')" type="text"
+        [value]="valoresFormateados['interesMora']" />
+      <p *ngIf="valoresEnLetras['interesMora']">Interés de Mora en letras: {{valoresEnLetras['interesMora'] | uppercase
+        }}</p>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Fracción de Interés de Mora -->
+  <nz-form-item>
+    <nz-form-label nzFor="frcInteresMora">Fracción de Interés de Mora</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="frcInteresMora" formControlName="frcInteresMora" (keyup)="onValueChange('frcInteresMora')"
+        type="number" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Costos Operativos -->
+  <nz-form-item>
+    <nz-form-label nzFor="costosOperativos">Costos Operativos</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="costosOperativos" formControlName="costosOperativos"
+        (keyup)="onValueChange('costosOperativos')" type="text" [value]="valoresFormateados['costosOperativos']" />
+      <p *ngIf="valoresEnLetras['costosOperativos']">Costos Operativos en letras: {{valoresEnLetras['costosOperativos']
+        | uppercase }}</p>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Fracción de Costos Operativos -->
+  <nz-form-item>
+    <nz-form-label nzFor="frcCostosOperativos">Fracción de Costos Operativos</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="frcCostosOperativos" formControlName="frcCostosOperativos"
+        (keyup)="onValueChange('frcCostosOperativos')" type="number" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Total Adeudado -->
+  <nz-form-item>
+    <nz-form-label nzFor="totalAdeudado">Total Adeudado</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="totalAdeudado" formControlName="totalAdeudado" (keyup)="onValueChange('totalAdeudado')"
+        type="text" [value]="valoresFormateados['totalAdeudado']" />
+      <p *ngIf="valoresEnLetras['totalAdeudado']">Total Adeudado en letras: {{valoresEnLetras['totalAdeudado'] |
+        uppercase }}</p>
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Fracción de Total Adeudado -->
+  <nz-form-item>
+    <nz-form-label nzFor="frcTotalAdeudado">Fracción de Total Adeudado</nz-form-label>
+    <nz-form-control>
+      <input nz-input id="frcTotalAdeudado" formControlName="frcTotalAdeudado"
+        (keyup)="onValueChange('frcTotalAdeudado')" type="number" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <!-- Botón de Envío -->
+  <nz-form-item>
+    <nz-form-control>
+      <button nz-button nzType="primary" type="submit" [disabled]="!demandaForm.valid">Generar Documento</button>
+    </nz-form-control>
+  </nz-form-item>
+</form>
 
 <!-- <form [formGroup]="demandaForm" (ngSubmit)="onSubmit()">
     <label for="demandadoNombre">Nombre del Demandado:</label>

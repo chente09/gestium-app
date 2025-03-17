@@ -28,7 +28,7 @@ export class AreaDetailComponentComponent {
 
   areasOptions: any = {
     issfa: [
-      { title: 'Redacción de matrices', route: '/servicio/matrices', icon: 'file-text' },
+      { title: 'Redacción de matrices', route: '/matriz-doc-isffa', icon: 'file-text' },
       { title: 'Registro de casos', route: '/servicio/registro', icon: 'form' },
       { title: 'Avances de casos', route: '/servicio/avances', icon: 'solution' }
     ],

@@ -1,0 +1,187 @@
+<form nz-form [formGroup]="demandaForm" (ngSubmit)="onSubmit()" class="demanda-form">
+    <!-- Número ID de Matriz -->
+    <nz-form-item>
+        <nz-form-label nzFor="numeroMatriz">Número ID de Matriz</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="numeroMatriz" formControlName="numeroMatriz" />
+        </nz-form-control>
+    </nz-form-item>
+    
+    <!-- Pronombre del Cliente -->
+    <nz-form-item>
+        <nz-form-label nzFor="pronombre">Pronombre del Cliente</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="pronombre" formControlName="pronombre" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Nombre del Cliente -->
+    <nz-form-item>
+        <nz-form-label nzFor="nombreCliente">Nombre del Cliente</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="nombreCliente" formControlName="nombreCliente" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Estado Civil -->
+    <nz-form-item>
+        <nz-form-label nzFor="estadoCivil">Estado Civil</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="estadoCivil" formControlName="estadoCivil" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Fecha de Emisión -->
+    <nz-form-item>
+        <nz-form-label nzFor="fechaEmision">Fecha de Emisión</nz-form-label>
+        <nz-form-control>
+            <nz-date-picker id="fechaEmision" formControlName="fechaEmision"></nz-date-picker>
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Fecha de Otorgamiento -->
+    <nz-form-item>
+        <nz-form-label nzFor="fechaVencimiento">Fecha de Otorgamiento</nz-form-label>
+        <nz-form-control>
+            <nz-date-picker id="fechaVencimiento" formControlName="fechaVencimiento"></nz-date-picker>
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Notaría -->
+    <nz-form-item>
+        <nz-form-label nzFor="notaria">Notaría</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="notaria" formControlName="notaria" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Cantón -->
+    <nz-form-item>
+        <nz-form-label nzFor="canton">Cantón</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="canton" formControlName="canton" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Nombre del Notario -->
+    <nz-form-item>
+        <nz-form-label nzFor="nombreNotario">Nombre del Notario</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="nombreNotario" formControlName="nombreNotario" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Cantón de Inscripción -->
+    <nz-form-item>
+        <nz-form-label nzFor="cantonInscripcion">Cantón de Inscripción</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="cantonInscripcion" formControlName="cantonInscripcion" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Fecha de Inscripción -->
+    <nz-form-item>
+        <nz-form-label nzFor="fechaLiquidacion">Fecha de Inscripción</nz-form-label>
+        <nz-form-control>
+            <nz-date-picker id="fechaLiquidacion" formControlName="fechaLiquidacion"></nz-date-picker>
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Tipo de Préstamo -->
+    <nz-form-item>
+        <nz-form-label nzFor="tipoPrestamo">Tipo de Préstamo</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="tipoPrestamo" formControlName="tipoPrestamo" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Destino del Préstamo -->
+    <nz-form-item>
+        <nz-form-label nzFor="destinoPrestamo">Destino del Préstamo</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="destinoPrestamo" formControlName="destinoPrestamo" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Parroquia Inmueble -->
+    <nz-form-item>
+        <nz-form-label nzFor="parroquiaUbi">Parroquia Inmueble</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="parroquiaUbi" formControlName="parroquiaUbi" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Cantón Inmueble -->
+    <nz-form-item>
+        <nz-form-label nzFor="cantonUbi">Cantón Inmueble</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="cantonUbi" formControlName="cantonUbi" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Provincia Inmueble -->
+    <nz-form-item>
+        <nz-form-label nzFor="provinciaUbi">Provincia Inmueble</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="provinciaUbi" formControlName="provinciaUbi" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Pronombre 2 -->
+    <nz-form-item>
+        <nz-form-label nzFor="pronombre2">Pronombre 2</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="pronombre2" formControlName="pronombre2" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Número de Oficio -->
+    <nz-form-item>
+        <nz-form-label nzFor="numOficio">Número de Oficio</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="numOficio" formControlName="numOficio" (keyup)="onValueChange('numOficio')"
+                type="text" [value]="valoresFormateados['numOficio']" />
+        </nz-form-control>
+        <p *ngIf="valoresEnLetras['numOficio']">Número de Oficio en letras: {{ valoresEnLetras['numOficio']  }}
+        </p>
+    </nz-form-item>
+
+    <!-- Fecha de Oficio -->
+    <nz-form-item>
+        <nz-form-label nzFor="fechaOficio">Fecha de Oficio</nz-form-label>
+        <nz-form-control>
+            <nz-date-picker id="fechaOficio" formControlName="fechaOficio"></nz-date-picker>
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Encargado de Oficio -->
+    <nz-form-item>
+        <nz-form-label nzFor="encargadoOficio">Encargado de Oficio</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="encargadoOficio" formControlName="encargadoOficio" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Tipo de préstamo cancelado -->
+    <nz-form-item>
+        <nz-form-label nzFor="tipoPrestamoCancel">Tipo de préstamo cancelado</nz-form-label>
+        <nz-form-control>
+            <input nz-input id="tipoPrestamoCancel" formControlName="tipoPrestamoCancel" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Nota -->
+    <nz-form-item>
+        <nz-form-label nzFor="nota">Nota</nz-form-label>
+        <nz-form-control>
+            <textarea nz-input id="nota" formControlName="nota" > </textarea>
+        </nz-form-control>
+    </nz-form-item>
+
+    <!-- Botón de Envío -->
+    <nz-form-item>
+        <nz-form-control>
+            <button nz-button nzType="primary" type="submit" [disabled]="!demandaForm.valid">Generar Documento</button>
+        </nz-form-control>
+    </nz-form-item>
+</form>

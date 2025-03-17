@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DocumentoService } from '../../../services/document/documento.service';
+import { DocumentoService } from '../../services/document/documento.service';
 import { CommonModule } from '@angular/common';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -9,7 +9,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 
 @Component({
-  selector: 'app-dmd-proc-ordinario',
+  selector: 'app-matriz-doc-isffa',
   imports: [
     ReactiveFormsModule,
     CommonModule,
@@ -19,40 +19,42 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
     NzButtonModule,
     NzIconModule
   ],
-  templateUrl: './dmd-proc-ordinario.component.html',
-  styleUrl: './dmd-proc-ordinario.component.css'
+  templateUrl: './matriz-doc-isffa.component.html',
+  styleUrl: './matriz-doc-isffa.component.css'
 })
-export class DmdProcOrdinarioComponent {
+export class MatrizDocIsffaComponent {
   demandaForm: FormGroup;
   valoresEnLetras: { [key: string]: string } = {};
-  valoresFormateados: { [key: string]: string } = {}; // Para almacenar valores formateados
+  valoresFormateados: { [key: string]: string } = {};
 
   constructor(
     private fb: FormBuilder,
     private documentoService: DocumentoService
   ) {
     this.demandaForm = this.fb.group({
-      demandadoNombre: ['', Validators.required],
-      demandadoCedula: ['', Validators.required],
-      nroFojas: ['', Validators.required],
-      nroFojasAbonos: ['', Validators.required],
+      numeroMatriz: ['', Validators.required],
+      pronombre: ['', Validators.required],
+      nombreCliente: ['', Validators.required],
+      estadoCivil: ['', Validators.required],
       fechaEmision: ['', Validators.required],
-      nroTC: ['', Validators.required],
-      tipoTC: ['', Validators.required],
       fechaVencimiento: ['', Validators.required],
+      notaria: ['', Validators.required],
+      canton: ['', Validators.required],
+      nombreNotario: ['', Validators.required],
+      cantonInscripcion: ['', Validators.required],
       fechaLiquidacion: ['', Validators.required],
-      saldoCapital: ['', [ Validators.pattern("^[0-9,]*$")]],
-      frcCapital: [''],
-      interesFinanciado: ['', [ Validators.pattern("^[0-9,]*$")]],
-      frcInteresFinanciado: [''],
-      interesDiferido: ['', [ Validators.pattern("^[0-9,]*$")]],
-      frcInteresDiferido: [''],
-      interesMora: ['', [ Validators.pattern("^[0-9,]*$")]],
-      frcInteresMora: [''],
-      costosOperativos: ['', [ Validators.pattern("^[0-9,]*$")]],
-      frcCostosOperativos: [''],
-      totalAdeudado: ['', [ Validators.pattern("^[0-9,]*$")]],
-      frcTotalAdeudado: [''],
+      tipoPrestamo: ['', Validators.required],
+      destinoPrestamo: ['', Validators.required],
+      parroquiaUbi: ['', Validators.required],
+      cantonUbi: ['', Validators.required],
+      provinciaUbi: ['', Validators.required],
+      pronombre2: ['', Validators.required],
+      numOficio: ['', [Validators.pattern("^[0-9,]*$")]],
+      fechaOficio: ['', Validators.required],
+      encargadoOficio: ['', Validators.required],
+      tipoPrestamoCancel: ['', Validators.required],
+      nota: ['', Validators.required],
+
     });
   }
 
@@ -62,16 +64,16 @@ export class DmdProcOrdinarioComponent {
    */
   onValueChange(campo: string) {
     const valor = this.demandaForm.get(campo)?.value;
-  
+
     // Eliminar comas antes de formatear y convertir
     const valorSinComas = valor.replace(/,/g, '');
-  
+
     // Formatear el valor con separadores de miles si tiene cuatro o más dígitos
     const valorFormateado = this.formatearNumeroConMiles(valorSinComas);
-  
+
     // Almacenar el valor formateado para mostrarlo en el input
     this.valoresFormateados[campo] = valorFormateado;
-  
+
     // Convertir el número a letras (usar valorSinComas para evitar problemas con comas)
     this.valoresEnLetras[campo] = valorSinComas ? this.convertirNumeroALetras(Number(valorSinComas)).toUpperCase() : '';
   }
@@ -106,7 +108,7 @@ export class DmdProcOrdinarioComponent {
     const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
     const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
     const centenas = ['', 'cien', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
-  
+
     if (num < 10) return unidades[num];
     if (num < 20) return especiales[num - 10];
     if (num < 100) {
@@ -148,68 +150,121 @@ export class DmdProcOrdinarioComponent {
     if (this.demandaForm.valid) {
       // Obtener los valores del formulario
       const valoresFormulario = this.demandaForm.value;
-  
+
       // Formatear los valores numéricos con separadores de miles
-      const saldoCapitalFormateado = this.formatearNumeroConMiles(valoresFormulario.saldoCapital);
-      const interesFinanciadoFormateado = this.formatearNumeroConMiles(valoresFormulario.interesFinanciado);
-      const interesDiferidoFormateado = this.formatearNumeroConMiles(valoresFormulario.interesDiferido);
-      const interesMoraFormateado = this.formatearNumeroConMiles(valoresFormulario.interesMora);
-      const costosOperativosFormateado = this.formatearNumeroConMiles(valoresFormulario.costosOperativos);
-      const totalAdeudadoFormateado = this.formatearNumeroConMiles(valoresFormulario.totalAdeudado);
-  
+      const numOficioFormateado = this.formatearNumeroConMiles(valoresFormulario.numOficio);
+
+
       // Formatear las fechas
       const fechaEmisionFormateada = this.formatearFecha(valoresFormulario.fechaEmision);
-      const fechaVencimientoFormateada = this.formatearFecha(valoresFormulario.fechaVencimiento);
-      const fechaLiquidacionFormateada = this.formatearFecha(valoresFormulario.fechaLiquidacion);
-  
+      const fechaOtrogamientoFormateada = this.formatearFecha(valoresFormulario.fechaVencimiento);
+      const fechaInscripcionFormateada = this.formatearFecha(valoresFormulario.fechaLiquidacion);
+      const fechaOficioFormateada = this.formatearFecha(valoresFormulario.fechaOficio);
+
       // Crear el objeto de datos a enviar
       const datos = {
         ...valoresFormulario, // Datos originales del formulario
-        saldoCapital: saldoCapitalFormateado, // Valor formateado
-        interesFinanciado: interesFinanciadoFormateado, // Valor formateado
-        interesDiferido: interesDiferidoFormateado, // Valor formateado
-        interesMora: interesMoraFormateado, // Valor formateado
-        costosOperativos: costosOperativosFormateado, // Valor formateado
-        totalAdeudado: totalAdeudadoFormateado, // Valor formateado
-        saldoCapitalLetras: this.valoresEnLetras['saldoCapital'],
-        interesFinanciadoLetras: this.valoresEnLetras['interesFinanciado'],
-        interesDiferidoLetras: this.valoresEnLetras['interesDiferido'],
-        interesMoraLetras: this.valoresEnLetras['interesMora'],
-        costosOperativosLetras: this.valoresEnLetras['costosOperativos'],
-        totalAdeudadoLetras: this.valoresEnLetras['totalAdeudado'],
-        fechaEmisionFormateada, // Fecha de emisión formateada
-        fechaVencimientoFormateada, // Fecha de vencimiento formateada
-        fechaLiquidacionFormateada // Fecha de liquidación formateada
+        numOficio: numOficioFormateado, // Valor formateado
+        numOficioLetras: this.valoresEnLetras['numOficio'],
+        fechaEmisionFormateada,
+        fechaOtrogamientoFormateada,
+        fechaInscripcionFormateada,
+        fechaOficioFormateada
       };
-  
+
       console.log('Datos enviados al documento:', datos);
-      this.documentoService.generarDmdProcOrd(datos);
+      this.documentoService.generarMatrizIssfa(datos);
     } else {
       console.warn('El formulario no es válido.');
     }
   }
 
+  /**
+   * Formatea una fecha en formato legible.
+   * @param fecha - Fecha a formatear (puede ser string o Date)
+   * @returns Fecha formateada como cadena
+   */
   formatearFecha(fecha: string | Date): string {
-    const meses = [
-      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-    ];
+    const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const numerosEnTexto: { [key: number]: string } = {
+      1: 'uno', 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis',
+      7: 'siete', 8: 'ocho', 9: 'nueve', 10: 'diez', 11: 'once', 12: 'doce',
+      13: 'trece', 14: 'catorce', 15: 'quince', 16: 'dieciséis', 17: 'diecisiete',
+      18: 'dieciocho', 19: 'diecinueve', 20: 'veinte', 21: 'veintiuno',
+      22: 'veintidós', 23: 'veintitrés', 24: 'veinticuatro', 25: 'veinticinco',
+      26: 'veintiséis', 27: 'veintisiete', 28: 'veintiocho', 29: 'veintinueve',
+      30: 'treinta', 31: 'treinta y uno'
+    };
+
+    const fechaObj = new Date(fecha);
+    if (isNaN(fechaObj.getTime())) {
+      throw new Error('Fecha inválida');
+    }
+
+    const diaSemana = diasSemana[fechaObj.getDay()];
+    const dia = fechaObj.getDate();
+    const mes = meses[fechaObj.getMonth()];
+    const anio = this.convertirAnioATexto(fechaObj.getFullYear());
+
+    return `${diaSemana} ${numerosEnTexto[dia]} de ${mes} del ${anio}`;
+  }
+
+  /**
+   * Convierte un año a su representación en texto.
+   * @param anio - Año a convertir
+   * @returns Representación en texto del año
+   */
+  convertirAnioATexto(anio: number): string {
+    const miles = ['mil', 'dos mil', 'tres mil', 'cuatro mil', 'cinco mil', 'seis mil', 'siete mil', 'ocho mil', 'nueve mil'];
+    const centenas = ['', 'cien', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+    const decenas = ['', 'diez', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+    const unidades = ['', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
+    const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
   
-    // Verifica si fecha es un objeto Date, y si es así, convierte a formato 'YYYY-MM-DD'
-    let fechaObj: Date;
-    if (fecha instanceof Date) {
-      fechaObj = fecha;
-    } else {
-      fechaObj = new Date(fecha); // Convierte la cadena 'YYYY-MM-DD' a Date
+    if (anio < 1000) {
+      return this.convertirNumeroALetras(anio); // Usar la función existente para números menores a 1000
     }
   
-    const dia = fechaObj.getDate().toString().padStart(2, '0');
-    const mes = fechaObj.getMonth(); // Mes en base 0
-    const anio = fechaObj.getFullYear();
+    const mil = Math.floor(anio / 1000);
+    const resto = anio % 1000;
   
-    const nombreMes = meses[mes]; // Nombre del mes en español
+    let resultado = miles[mil - 1] || '';
   
-    return `${dia} de ${nombreMes} de ${anio}`;
+    if (resto === 0) {
+      return resultado; // Años como 2000, 3000, etc.
+    }
+  
+    if (resto < 10) {
+      resultado += ` ${unidades[resto]}`;
+    } else if (resto < 20) {
+      resultado += ` ${especiales[resto - 10]}`;
+    } else if (resto < 100) {
+      resultado += ` ${decenas[Math.floor(resto / 10)]}`;
+      if (resto % 10 !== 0) {
+        resultado += ` y ${unidades[resto % 10]}`;
+      }
+    } else {
+      const centena = Math.floor(resto / 100);
+      const decenaUnidad = resto % 100;
+  
+      resultado += ` ${centenas[centena]}`;
+  
+      if (decenaUnidad < 10) {
+        resultado += ` ${unidades[decenaUnidad]}`;
+      } else if (decenaUnidad < 20) {
+        resultado += ` ${especiales[decenaUnidad - 10]}`;
+      } else {
+        resultado += ` ${decenas[Math.floor(decenaUnidad / 10)]}`;
+        if (decenaUnidad % 10 !== 0) {
+          resultado += ` y ${unidades[decenaUnidad % 10]}`;
+        }
+      }
+    }
+  
+    return resultado.trim();
   }
-  
+
+
+
 }

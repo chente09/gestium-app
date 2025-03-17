@@ -8,6 +8,7 @@ import { WelcomeComponent } from './pages/welcome/welcome.component';
 import { canActivate, redirectUnauthorizedTo } from '@angular/fire/auth-guard';
 import { DmdProcOrdinarioComponent } from './pages/demandas-bp/dmd-proc-ordinario/dmd-proc-ordinario.component';
 import { AreaDetailComponentComponent } from './pages/area-detail-component/area-detail-component.component';
+import { MatrizDocIsffaComponent } from './pages/matriz-doc-isffa/matriz-doc-isffa.component';
 
 export const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['/login']);
 
@@ -20,6 +21,7 @@ export const routes: Routes = [
   { path: 'itinerario-form', component: ItinerarioFormComponent, ...canActivate(redirectUnauthorizedToLogin) },
   { path: 'history-itinerario', component: HistoryItinerarioComponent, ...canActivate(redirectUnauthorizedToLogin) },
   { path: 'dmd-proc-ordinario', component: DmdProcOrdinarioComponent, ...canActivate(redirectUnauthorizedToLogin) },
+  { path: 'matriz-doc-isffa', component: MatrizDocIsffaComponent, ...canActivate(redirectUnauthorizedToLogin) },
   { path: 'area/:id', component: AreaDetailComponentComponent, ...canActivate(redirectUnauthorizedToLogin) },
 
   

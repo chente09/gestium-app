@@ -18,7 +18,6 @@ import { NzListModule } from 'ng-zorro-antd/list';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { Subject, takeUntil } from 'rxjs';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
@@ -27,6 +26,8 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+
+import autoTable from 'jspdf-autotable';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -406,60 +407,76 @@ export class ItinerarioComponent implements OnInit {
       this.message.warning('No hay registros para descargar.');
       return;
     }
+  
+    const pdf = new jsPDF({
+      orientation: 'landscape', // Orientación horizontal
+      unit: 'mm',
+      format: 'a4',
+    });
+  
+    pdf.setFont('Helvetica');
 
-    // Guardar el valor original de nzPageSize
-    const originalPageSize = this.rowSelectionTable.nzPageSize;
+    // Definir las columnas con los mismos nombres de la tabla
+    const columnas = [
+      'Estado',
+      'Área Oficina',
+      'Trámite',
+      'Unidad',
+      'Piso y Juez',
+      'Área',
+      'Diligencia',
+      'Recibe',
+      'Fechas',
+      'Observaciones'
+    ];
+  
+    // Función para normalizar caracteres especiales
+  const normalizarTexto = (texto: string): string => {
+    return texto
+      .normalize('NFD') // Normaliza los caracteres a su forma descompuesta
+      .replace(/[\u0300-\u036f]/g, ''); // Elimina los acentos
+  };
 
-    // Mostrar todos los registros (desactivar paginación)
-    this.rowSelectionTable.nzPageSize = 1000; // Un número muy grande
-
-    // Esperar a que la tabla se actualice
-    setTimeout(() => {
-      const tabla = document.getElementById('tabla-itinerarios') as HTMLElement;
-
-      // Capturar la tabla con html2canvas
-      html2canvas(tabla).then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-
-        const imgWidth = 210; // Ancho de la página A4 en mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width; // Altura proporcional
-
-        // Altura de la página A4 en mm
-        const pageHeight = 297;
-
-        // Si la imagen es más alta que una página, dividirla en varias páginas
-        if (imgHeight > pageHeight) {
-          let position = 0; // Posición inicial en el PDF
-
-          while (position < imgHeight) {
-            // Agregar una nueva página si no es la primera
-            if (position > 0) {
-              pdf.addPage();
-            }
-
-            // Calcular la altura de la porción de la imagen que cabe en la página
-            const height = Math.min(pageHeight, imgHeight - position);
-
-            // Agregar la porción de la imagen al PDF
-            pdf.addImage(imgData, 'PNG', 0, -position, imgWidth, imgHeight);
-
-            // Mover la posición para la siguiente porción
-            position += pageHeight;
-          }
-        } else {
-          // Si la imagen cabe en una sola página, agregarla directamente
-          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-        }
-
-        // Descargar el PDF
-        pdf.save('itinerarios.pdf');
-
-        // Restaurar el valor original de nzPageSize
-        this.rowSelectionTable.nzPageSize = originalPageSize;
-      });
-    }, 500); // Esperar 500ms para asegurar que la tabla se actualice
+    // Extraer datos de `filteredItinerarios` y asegurarse de que no haya valores `undefined`
+    const filas = this.filteredItinerarios.map(itinerario => [
+      itinerario.estado || '', // Estado
+      `Área: ${itinerario.manualArea || itinerario.area || ''}\nSolicita: ${itinerario.creadoPor || ''}`, // Área Oficina
+      `Actividad: ${itinerario.tramite || ''}\n${itinerario.nroProceso ? 'N° Juicio: ' + itinerario.nroProceso : ''}`, // Trámite
+      itinerario.manualJuzgado || itinerario.juzgado || '', // Unidad
+      `Piso: ${itinerario.manualPiso || itinerario.piso || ''}\nJuez: ${normalizarTexto(itinerario.juez || '')}`,  // Piso y Juez
+      itinerario.manualMateria || itinerario.materia || '', // Área
+      itinerario.manualDiligencia || itinerario.diligencia || '', // Diligencia
+      itinerario.solicita || '', // Recibe
+      `Solicitud: ${itinerario.fechaSolicitud || ''}\nHora: ${itinerario.horaSolicitud || ''}\nTérmino: ${itinerario.fechaTermino || ''}`, // Fechas
+      itinerario.observaciones || '' // Observaciones
+    ]);
+  
+    // Generar la tabla en el PDF
+    autoTable(pdf, {
+      head: [columnas],
+      body: filas,
+      startY: 20, // Espacio desde la parte superior
+      theme: 'striped', // Estilo de tabla (opciones: 'grid', 'striped', 'plain')
+      styles: { fontSize: 8 }, // Reducir tamaño de fuente para mejor ajuste
+      headStyles: { fillColor: [13, 20, 27] }, // Color de encabezado (verde)
+      columnStyles: {
+        0: { cellWidth: 18 }, // Estado
+        1: { cellWidth: 20 }, // Área Oficina
+        2: { cellWidth: 40 }, // Trámite
+        3: { cellWidth: 18 }, // Unidad
+        4: { cellWidth: 30 }, // Piso y Juez
+        5: { cellWidth: 20 }, // Área
+        6: { cellWidth: 30 }, // Diligencia
+        7: { cellWidth: 18 }, // Recibe
+        8: { cellWidth: 35 }, // Fechas
+        9: { cellWidth: 40 } // Observaciones
+      },
+    });
+  
+    // Guardar el archivo PDF
+    pdf.save('itinerarios.pdf');
   }
+  
 
   getCurrentUserId(): string | null {
     const user = this.usersService.getCurrentUser();

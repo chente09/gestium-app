@@ -24,6 +24,7 @@
     "gestium-sli": "file:",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.0",
+    "jspdf-autotable": "^5.0.2",
     "ng-zorro-antd": "^19.0.2",
     "pdfmake": "^0.2.18",
     "pizzip": "^3.1.8",

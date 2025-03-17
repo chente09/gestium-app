@@ -116,10 +116,10 @@
                         <strong>Solicita: </strong> {{ item.creadoPor }}
                     </td>
                     <td>
-                        <strong>Actividad: </strong> {{ item.tramite }}
+                        <strong>Actividad: </strong> <br> {{ item.tramite }}
                         <br>
                         <ng-container *ngIf="item && item.nroProceso">
-                            <strong>N° Juicio: </strong> {{ item.nroProceso }}
+                            <strong>N° Juicio: </strong> <br> {{ item.nroProceso }}
                         </ng-container>
                     </td>
                     <td>{{ item.manualJuzgado || item.juzgado }}</td>

@@ -44,8 +44,20 @@
 
 <!-- Tabla con scroll horizontal -->
 <div class="table-container">
-    <nz-table class="itinerario-table" #itinerarioTable nzBordered [nzFrontPagination]="false"
-        [nzShowPagination]="false" [nzData]="filteredItinerarios" nzTableLayout="fixed" [nzScroll]="{ y: '500px' }">
+    <nz-table 
+        class="itinerario-table"
+        #itinerarioTable
+        nzBordered
+        [nzData]="filteredItinerarios"
+        nzTableLayout="fixed"
+        [nzScroll]="{ y: 'calc(100vh - 300px)'}"
+        [nzFrontPagination]="true"
+        [nzShowPagination]="true"
+        [nzPageSize]="pageSize"
+        [nzTotal]="filteredItinerarios.length"
+        [nzPageIndex]="pageIndex"
+        (nzPageIndexChange)="onPageIndexChange($event)"
+        >
         <thead>
             <tr>
                 <th nzWidth="145px">Área Oficina</th>
@@ -68,8 +80,8 @@
                 <th nzWidth="5%">Acciones</th>
             </tr>
         </thead>
-        <tbody *ngIf="filteredItinerarios.length > 0">
-            <tr *ngFor="let item of filteredItinerarios; trackBy: trackById">
+        <tbody >
+            <tr *ngFor="let item of itinerarioTable.data; trackBy: trackById">
                 <!-- Modo lectura -->
                 <td *ngIf="!editCache[item.id]?.edit">
                     <strong>Area: </strong> {{ item.manualArea || item.area }}

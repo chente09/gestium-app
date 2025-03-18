@@ -1,0 +1,133 @@
+<div class="procesos-container">
+    <nz-card>
+        <div class="header-container">
+            <h2 class="main-title">Gestión de Procesos</h2>
+            <div class="action-buttons">
+                <button nz-button nzType="primary" (click)="toggleFormulario()"
+                    nzTooltipTitle="{{isFormVisible ? 'Ocultar formulario' : 'Crear nuevo proceso'}}" nz-tooltip>
+                    <i nz-icon [nzType]="isFormVisible ? 'up' : 'plus'"></i>
+                    {{isFormVisible ? 'Cancelar' : 'Nuevo Proceso'}}
+                </button>
+                <button nz-button (click)="cargarProcesos()" nzTooltipTitle="Recargar lista de procesos" nz-tooltip>
+                    <i nz-icon nzType="reload"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Formulario para crear procesos -->
+        <div *ngIf="isFormVisible" class="form-container" [@fadeInOut]>
+            <nz-divider nzText="Nuevo Proceso"></nz-divider>
+            <form nz-form [formGroup]="formProceso" (ngSubmit)="crearProceso()">
+                <nz-form-item>
+                    <nz-form-label nzRequired nzFor="nombre" [nzSpan]="6">Nombre del Proceso</nz-form-label>
+                    <nz-form-control [nzSpan]="14" [nzErrorTip]="nombreErrorTpl">
+                        <input nz-input formControlName="nombre" id="nombre"
+                            placeholder="Ingrese el nombre del proceso" />
+                        <ng-template #nombreErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">El nombre es obligatorio</ng-container>
+                            <ng-container *ngIf="control.hasError('minlength')">El nombre debe tener al menos 3
+                                caracteres</ng-container>
+                            <ng-container *ngIf="control.hasError('maxlength')">El nombre no debe exceder 50
+                                caracteres</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <nz-form-item>
+                    <nz-form-label nzRequired nzFor="descripcion" [nzSpan]="6">Descripción</nz-form-label>
+                    <nz-form-control [nzSpan]="14" [nzErrorTip]="descripcionErrorTpl">
+                        <textarea nz-input formControlName="descripcion" id="descripcion"
+                            [nzAutosize]="{ minRows: 3, maxRows: 6 }" placeholder="Ingrese la descripción"></textarea>
+                        <ng-template #descripcionErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">La descripción es
+                                obligatoria</ng-container>
+                            <ng-container *ngIf="control.hasError('minlength')">La descripción debe tener al menos 10
+                                caracteres</ng-container>
+                            <ng-container *ngIf="control.hasError('maxlength')">La descripción no debe exceder 200
+                                caracteres</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <div class="form-buttons">
+                    <button nz-button (click)="toggleFormulario()">Cancelar</button>
+                    <button nz-button nzType="primary" [nzLoading]="isCreating" [disabled]="!formProceso.valid">
+                        <i nz-icon nzType="save"></i> Guardar Proceso
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <nz-divider nzText="Lista de Procesos"></nz-divider>
+
+        <!-- Buscador para filtrar procesos -->
+        <div class="search-container">
+            <nz-input-group [nzSuffix]="suffixIconSearch">
+                <input type="text" nz-input placeholder="Buscar procesos..." [(ngModel)]="searchValue"
+                    (ngModelChange)="buscarProcesos($event)" />
+            </nz-input-group>
+            <ng-template #suffixIconSearch>
+                <i nz-icon nzType="search"></i>
+            </ng-template>
+        </div>
+
+        <!-- Tabla de procesos -->
+        <nz-spin [nzSpinning]="isLoading">
+            <nz-table #basicTable [nzBordered]="true" [nzData]="procesos" [nzLoading]="isLoading" [nzSize]="'middle'"
+                [nzShowPagination]="procesos.length > 10" [nzPageSize]="10" nzShowSizeChanger
+                [nzNoResult]="noResultTemplate">
+                <thead>
+                    <tr>
+                        <th nzWidth="25%">Nombre</th>
+                        <th nzWidth="40%">Descripción</th>
+                        <th nzWidth="15%">Fecha</th>
+                        <th nzWidth="20%">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let proceso of basicTable.data"
+                        [class.selected-row]="procesoSeleccionado?.id === proceso.id">
+                        <td>
+                            <span class="proceso-nombre">{{ proceso.nombre }}</span>
+                        </td>
+                        <td>
+                            <span class="proceso-descripcion">{{ proceso.descripcion }}</span>
+                        </td>
+                        <td>{{ proceso.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>
+                            <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Ver etapas" nz-tooltip
+                                (click)="seleccionarProceso(proceso)">
+                                <i nz-icon [nzType]="procesoSeleccionado?.id === proceso.id ? 'up' : 'down'"></i>
+                            </button>
+                            <nz-divider nzType="vertical"></nz-divider>
+                            <button nz-button nzType="primary" nzDanger nzShape="circle"
+                                nzTooltipTitle="Eliminar proceso" nz-tooltip nz-popconfirm
+                                nzPopconfirmTitle="¿Eliminar el proceso '{{proceso.nombre}}'?"
+                                nzPopconfirmPlacement="top" nzOkText="Eliminar" nzCancelText="Cancelar"
+                                (nzOnConfirm)="eliminarProceso(proceso)">
+                                <i nz-icon nzType="delete"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </nz-table>
+
+            <!-- Template para cuando no hay resultados -->
+            <ng-template #noResultTemplate>
+                <nz-empty
+                    [nzNotFoundContent]="searchValue ? 'No se encontraron procesos que coincidan con la búsqueda' : 'No hay procesos creados'">
+                </nz-empty>
+            </ng-template>
+        </nz-spin>
+    </nz-card>
+
+    <!-- Componente de Etapas con animación -->
+    <div *ngIf="procesoSeleccionado" class="etapas-container" [@fadeInOut]>
+        <nz-card>
+            <h3 class="etapas-title">
+                Etapas del proceso: <strong>{{ procesoSeleccionado.nombre }}</strong>
+            </h3>
+            <app-etapas [proceso]="procesoSeleccionado"></app-etapas>
+        </nz-card>
+    </div>
+</div>

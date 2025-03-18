@@ -1,0 +1,52 @@
+<h3>Etapas del Proceso: {{ proceso.nombre }}</h3>
+
+<!-- Botón para agregar etapa -->
+<button nz-button nzType="dashed" (click)="mostrarModal = true">Agregar Etapa</button>
+
+<!-- Tabla de etapas -->
+<nz-table [nzBordered]="true" [nzData]="proceso.etapas" [nzSize]="'middle'" nzPagination="false">
+    <thead>
+        <tr>
+            <th nzWidth="40%">Nombre</th>
+            <th nzWidth="40%">Descripción</th>
+            <th nzWidth="20%">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr *ngFor="let etapa of proceso.etapas; let i = index">
+            <td>{{ etapa.nombre }}</td>
+            <td>{{ etapa.descripcion }}</td>
+            <td>
+                <button nz-button nzType="link" (click)="seleccionarEtapa(i)">Ver Documentos</button>
+                <button nz-button nzType="link" nzDanger (click)="eliminarEtapa(i)">Eliminar</button>
+            </td>
+        </tr>
+    </tbody>
+</nz-table>
+
+<!-- Modal para agregar etapas -->
+<nz-modal [(nzVisible)]="mostrarModal" nzTitle="Agregar Etapa" (nzOnCancel)="cerrarModal()" (nzOnOk)="guardarEtapa()"
+    [nzOkLoading]="isLoading">
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="formEtapa">
+            <nz-form-item>
+                <nz-form-label nzFor="nombre" [nzSpan]="6">Nombre de la Etapa</nz-form-label>
+                <nz-form-control [nzSpan]="14">
+                    <input nz-input formControlName="nombre" id="nombre" placeholder="Ingrese el nombre de la etapa" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzFor="descripcion" [nzSpan]="6">Descripción</nz-form-label>
+                <nz-form-control [nzSpan]="14">
+                    <textarea nz-input formControlName="descripcion" id="descripcion"
+                        placeholder="Ingrese la descripción"></textarea>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+</nz-modal>
+
+<!-- Componente de Documentos -->
+<app-documentos *ngIf="etapaSeleccionada !== null" [proceso]="proceso"
+    [indiceEtapa]="etapaSeleccionada"></app-documentos>

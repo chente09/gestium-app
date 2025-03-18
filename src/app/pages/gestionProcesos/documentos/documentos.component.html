@@ -1,0 +1,55 @@
+<div class="documentos-container">
+    <nz-card nzTitle="Documentos de la Etapa" [nzExtra]="extraTemplate" [nzLoading]="isLoading">
+        <!-- Mensaje de error si existe -->
+        <div *ngIf="errorMessage" class="error-message">
+            <p>{{ errorMessage }}</p>
+            <button nz-button nzType="primary" (click)="cargarDocumentos()">Reintentar</button>
+        </div>
+
+        <!-- Lista de documentos -->
+        <ng-container *ngIf="!errorMessage">
+            <nz-empty *ngIf="documentos.length === 0 && !isLoading" nzDescription="No hay documentos en esta etapa"
+                [nzNotFoundContent]="emptyContent">
+            </nz-empty>
+
+            <nz-list *ngIf="documentos.length > 0" [nzLoading]="isLoading" [nzDataSource]="documentos"
+                [nzRenderItem]="item" [nzItemLayout]="'horizontal'">
+                <ng-template #item let-documento>
+                    <nz-list-item [nzActions]="[downloadAction, deleteAction]">
+                        <nz-list-item-meta [nzTitle]="documento.nombre"
+                            [nzDescription]="'Tipo: ' + documento.nombre.split('.').pop()">
+                        </nz-list-item-meta>
+                        <ng-template #downloadAction>
+                            <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Descargar" nz-tooltip
+                                (click)="descargarDocumento(documento)">
+                                <i nz-icon nzType="download"></i>
+                            </button>
+                        </ng-template>
+                        <ng-template #deleteAction>
+                            <button nz-button nzType="primary" nzDanger nzShape="circle" nzTooltipTitle="Eliminar"
+                                nz-tooltip (click)="eliminarDocumento(documento)">
+                                <i nz-icon nzType="delete"></i>
+                            </button>
+                        </ng-template>
+                    </nz-list-item>
+                </ng-template>
+            </nz-list>
+        </ng-container>
+    </nz-card>
+
+    <ng-template #emptyContent>
+        <div class="empty-container">
+            <p>No hay documentos en esta etapa. Suba archivos utilizando el botón de arriba.</p>
+        </div>
+    </ng-template>
+
+    <ng-template #extraTemplate>
+        <nz-upload [nzMultiple]="true" [(nzFileList)]="fileList" [nzBeforeUpload]="beforeUpload"
+            [nzShowUploadList]="false" [nzAccept]="tiposPermitidos">
+            <button nz-button [nzLoading]="cargandoArchivo" nzType="primary" nzTooltipTitle="Subir nuevo documento"
+                nz-tooltip>
+                <i nz-icon nzType="upload"></i> Subir Documento
+            </button>
+        </nz-upload>
+    </ng-template>
+</div>

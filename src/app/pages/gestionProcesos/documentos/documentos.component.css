@@ -1,0 +1,40 @@
+.documentos-container {
+    margin: 16px 0;
+}
+
+.error-message {
+    text-align: center;
+    padding: 16px;
+    color: #f5222d;
+    background-color: #fff1f0;
+    border-radius: 4px;
+    margin-bottom: 16px;
+}
+
+.empty-container {
+    text-align: center;
+    padding: 24px;
+}
+
+:host ::ng-deep .ant-list-item-meta-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:host ::ng-deep .ant-card-head {
+    background-color: #f5f5f5;
+}
+
+:host ::ng-deep .ant-list-item {
+    transition: all 0.3s;
+}
+
+:host ::ng-deep .ant-list-item:hover {
+    background-color: #f5f5f5;
+}
+
+:host ::ng-deep .ant-upload-list {
+    margin-top: 16px;
+}

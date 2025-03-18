@@ -9,6 +9,8 @@ import { canActivate, redirectUnauthorizedTo } from '@angular/fire/auth-guard';
 import { DmdProcOrdinarioComponent } from './pages/demandas-bp/dmd-proc-ordinario/dmd-proc-ordinario.component';
 import { AreaDetailComponentComponent } from './pages/area-detail-component/area-detail-component.component';
 import { MatrizDocIsffaComponent } from './pages/matriz-doc-isffa/matriz-doc-isffa.component';
+import { ProcesosComponent } from './pages/gestionProcesos/procesos/procesos.component';
+import { ConsultasComponent } from './components/consultas/consultas.component';
 
 export const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['/login']);
 
@@ -23,6 +25,8 @@ export const routes: Routes = [
   { path: 'dmd-proc-ordinario', component: DmdProcOrdinarioComponent, ...canActivate(redirectUnauthorizedToLogin) },
   { path: 'matriz-doc-isffa', component: MatrizDocIsffaComponent, ...canActivate(redirectUnauthorizedToLogin) },
   { path: 'area/:id', component: AreaDetailComponentComponent, ...canActivate(redirectUnauthorizedToLogin) },
+  { path: 'procesos', component: ProcesosComponent, ...canActivate(redirectUnauthorizedToLogin) },
+  { path: 'consultas', component: ConsultasComponent },
 
   
 ];

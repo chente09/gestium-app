@@ -1,0 +1,244 @@
+.header-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.header-container button {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+.header-container button:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
+}
+
+/* Loading container styling */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+/* Empty state styling */
+.empty-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+    color: #001529d1;
+    text-align: center;
+}
+
+.empty-container span[nz-icon] {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #001529d1;
+}
+
+.empty-container p {
+    margin-bottom: 16px;
+    font-size: 16px;
+}
+
+.empty-container button {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+/* Table styling */
+nz-table {
+    margin-top: 16px;
+}
+
+
+/* Selected row styling */
+.selected-row {
+    background-color: #f6f7f9;
+    border-left: 4px solid #001529d1;
+}
+
+/* Button styling in table */
+nz-table button {
+    margin-right: 8px;
+}
+
+nz-table button[nzType="primary"] {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+nz-table button[nzType="primary"]:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
+}
+
+/* Modal styling */
+::ng-deep .ant-modal-header {
+    border-bottom: 1px solid #001529d1;
+}
+
+::ng-deep .ant-modal-title {
+    color: #001529d1;
+    font-weight: 600;
+}
+
+::ng-deep .ant-modal-footer {
+    border-top: 1px solid #001529d1;
+}
+
+::ng-deep .ant-modal-footer button[nz-button][nzType="primary"] {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+/* Form styling */
+nz-form-label {
+    color: #001529d1 !important;
+    font-weight: 500;
+}
+
+/* Documentos container styling */
+.documentos-container {
+    margin-top: 24px;
+    padding: 16px;
+    background-color: #f9f9f9;
+    border-left: 4px solid #001529d1;
+    border-radius: 4px;
+}
+
+.documentos-title {
+    color: #001529d1;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* Additional ng-zorro overrides */
+::ng-deep .ant-btn-primary {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+::ng-deep .ant-btn-primary:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
+}
+
+::ng-deep .ant-table-thead>tr>th {
+    background-color: #f0f2f5;
+    color: #001529d1;
+    font-weight: 600;
+    border-color: #001529d1;
+}
+
+::ng-deep .ant-form-item-required::before {
+    color: #d9534f !important;
+}
+
+::ng-deep .ant-form-item-explain-error {
+    color: #d9534f;
+}
+
+/* Focus states */
+::ng-deep .ant-input:focus,
+::ng-deep .ant-input-focused {
+    border-color: #001529d1;
+    box-shadow: 0 0 0 2px rgba(0, 21, 41, 0.2);
+}
+
+
+/* Modal styling */
+::ng-deep .ant-modal-content {
+    border-radius: 4px;
+}
+
+::ng-deep .ant-modal-header {
+    border-bottom: 1px solid #001529d1;
+    padding: 16px 24px;
+}
+
+::ng-deep .ant-modal-title {
+    color: #001529d1;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+::ng-deep .ant-modal-body {
+    padding: 24px;
+}
+
+::ng-deep .ant-modal-footer {
+    border-top: 1px solid #001529d1;
+    padding: 12px 24px;
+}
+
+/* Form styling */
+nz-form-item {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+nz-form-label {
+    color: #001529d1 !important;
+    font-weight: 500;
+}
+
+/* Make inputs full width */
+nz-form-control {
+    width: 100%;
+}
+
+::ng-deep .ant-form-item-control-input {
+    width: 100%;
+}
+
+::ng-deep .ant-form-item-control-input-content {
+    width: 100%;
+}
+
+input[nz-input],
+textarea[nz-input] {
+    width: 100%;
+    border-color: #d9d9d9;
+    border-radius: 4px;
+}
+
+/* Required field marker */
+::ng-deep .ant-form-item-required::before {
+    color: #d9534f !important;
+    margin-right: 4px;
+}
+
+/* Button styling */
+::ng-deep .ant-modal-footer button[nz-button] {
+    border-radius: 4px;
+    padding: 6px 16px;
+    height: auto;
+}
+
+::ng-deep .ant-modal-footer button[nz-button="default"] {
+    border-color: #d9d9d9;
+    color: #333;
+}
+
+::ng-deep .ant-modal-footer button[nz-button][nzType="primary"] {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+::ng-deep .ant-modal-footer button[nz-button][nzType="primary"]:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
+}
+
+/* Focus states */
+input[nz-input]:focus,
+input[nz-input]:hover,
+textarea[nz-input]:focus,
+textarea[nz-input]:hover {
+    border-color: #001529d1;
+    box-shadow: 0 0 0 2px rgba(0, 21, 41, 0.2);
+}

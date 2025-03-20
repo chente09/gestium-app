@@ -28,17 +28,16 @@ export class AreaDetailComponentComponent {
 
   areasOptions: any = {
     issfa: [
-      { title: 'Redacción de matrices', route: '/matriz-doc-isffa', icon: 'file-text' },
       { title: 'Registro de casos', route: '/procesos', icon: 'form' },
-      { title: 'Avances de casos', route: '/servicio/avances', icon: 'solution' }
+      { title: 'Redacción de matrices', route: '/matriz-doc-isffa', icon: 'file-text' },
     ],
     inmobiliaria: [
-      { title: 'Escrituras', route: '/servicio/escrituras', icon: 'book' },
-      { title: 'Registros catastrales', route: '/servicio/catastrales', icon: 'environment' }
+      { title: 'Registro de casos', route: '/procesos', icon: 'form' },
+      { title: 'Escrituras', route: '/servicio/escrituras', icon: 'book' }
     ],
     produbanco: [
-      { title: 'Elaboración de demandas', route: '/servicio/demandas', icon: 'edit' },
-      { title: 'Revisión de procesos', route: '/servicio/procesos', icon: 'profile' }
+      { title: 'Registro de casos', route: '/procesos', icon: 'form' },
+      { title: 'Elaboración de demandas', route: '/servicio/demandas', icon: 'edit' }
     ],
     pichincha: [
       { title: 'Elaboración de demandas', 

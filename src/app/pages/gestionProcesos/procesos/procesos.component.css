@@ -1,7 +1,9 @@
-.procesos-container {
-    padding: 16px 0;
+.divider {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px;
 }
-
+/* Card header styling */
 .header-container {
     display: flex;
     justify-content: space-between;
@@ -10,81 +12,107 @@
 }
 
 .main-title {
+    color: #001529d1;
     margin: 0;
     font-size: 24px;
-    color: #1890ff;
+    font-weight: 600;
 }
 
 .action-buttons button {
     margin-left: 8px;
 }
 
+button[nzType="primary"] {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+button[nzType="primary"]:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
+}
+
+/* Form container styling */
+.form-container {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border-left: 4px solid #001529d1;
+}
+
+/* Form elements styling */
+nz-form-item {
+    margin-bottom: 16px;
+}
+
+nz-form-label {
+    font-weight: 500;
+}
+
+/* Form buttons styling */
+.form-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* Search container styling */
 .search-container {
     margin-bottom: 16px;
     max-width: 400px;
 }
 
-.form-container {
-    margin-bottom: 24px;
-    padding: 16px;
-    background-color: #f8f8f8;
-    border-radius: 4px;
-    transition: all 0.3s;
-}
-
-.form-buttons {
-    display: flex;
-    justify-content: flex-end;
+/* Table styling */
+nz-table {
     margin-top: 16px;
 }
 
-.form-buttons button {
-    margin-left: 8px;
+th {
+    background-color: #f0f2f5 !important;
+    color: #001529d1 !important;
+    font-weight: 600 !important;
 }
 
 .selected-row {
-    background-color: #e6f7ff;
+    background-color: #f6f7f9;
 }
 
-.proceso-nombre {
-    font-weight: 500;
-    color: #1890ff;
-}
-
-.proceso-descripcion {
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 350px;
-}
-
+/* Etapas container styling */
 .etapas-container {
-    margin-top: 24px;
-    transition: all 0.3s;
+    margin-top: 20px;
+    border-top: 1px solid #e8e8e8;
+    padding-top: 20px;
 }
 
 .etapas-title {
-    margin-top: 0;
-    color: #1890ff;
+    color: #001529d1;
+    margin-bottom: 16px;
 }
 
-/* Estilos para pantallas pequeñas */
-@media (max-width: 768px) {
-    .header-container {
-        flex-direction: column;
-        align-items: flex-start;
-    }
+/* Override some ng-zorro defaults to match your design */
+::ng-deep .ant-divider-inner-text {
+    color: #d9534f;
+    font-weight: 500;
+}
 
-    .action-buttons {
-        margin-top: 16px;
-    }
+::ng-deep .ant-btn-primary {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
 
-    .search-container {
-        max-width: 100%;
-    }
+::ng-deep .ant-btn-primary:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
+}
 
-    .proceso-descripcion {
-        max-width: 200px;
-    }
+::ng-deep .ant-table-thead>tr>th {
+    background-color: #f0f2f5;
+    color: #001529d1;
+    font-weight: 600;
+}
+
+::ng-deep .ant-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
 }

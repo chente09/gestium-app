@@ -6,8 +6,8 @@ import { NzTableComponent, NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 
-import { ItinerarioService, Itinerario, RutaDiaria } from '../../services/itinerario/itinerario.service';
-import { UsersService } from '../../services/users/users.service';
+import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
+import { UsersService } from '../../../services/users/users.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { RouterModule } from '@angular/router';

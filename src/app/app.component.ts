@@ -96,4 +96,9 @@ export class AppComponent {
   closeDrawer() {
     this.isDrawerOpen = false;
   }
+
+  isStandaloneRoute(): boolean {
+    const standaloneRoutes = ['/consultas', '/login']; // Rutas sin layout
+    return standaloneRoutes.includes(this.router.url);
+  }
 }

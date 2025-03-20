@@ -7,6 +7,8 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import {  RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-dmd-proc-ordinario',
@@ -17,7 +19,9 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
     NzInputModule,
     NzDatePickerModule,
     NzButtonModule,
-    NzIconModule
+    NzIconModule,
+    NzBreadCrumbModule,
+    RouterModule
   ],
   templateUrl: './dmd-proc-ordinario.component.html',
   styleUrl: './dmd-proc-ordinario.component.css'

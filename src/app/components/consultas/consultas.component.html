@@ -1,1 +1,191 @@
-<p>consultas works!</p>
+<div class="consulta-container">
+    <h2 class="consulta-title">Consulta de Procesos Judiciales</h2>
+
+    <!-- Formulario de búsqueda -->
+    <form nz-form [formGroup]="formBusqueda" (ngSubmit)="buscarProcesos()" class="search-form">
+        <div nz-row [nzGutter]="[16, 16]">
+            <!-- Tipo de búsqueda -->
+            <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="8" [nzLg]="8">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Buscar por</nz-form-label>
+                    <nz-form-control>
+                        <nz-select formControlName="tipoBusqueda" class="full-width">
+                            <nz-option *ngFor="let tipo of tiposBusqueda" [nzValue]="tipo.value"
+                                [nzLabel]="tipo.label"></nz-option>
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+            </div>
+
+            <!-- Valor de búsqueda -->
+            <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="10" [nzLg]="12">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Valor de búsqueda</nz-form-label>
+                    <nz-form-control [nzErrorTip]="errorTip">
+                        <ng-container
+                            *ngIf="formBusqueda.get('tipoBusqueda')?.value !== 'materia'; else materiasSelect">
+                            <input nz-input formControlName="valorBusqueda" placeholder="Ingrese el valor a buscar"
+                                class="full-width" />
+                        </ng-container>
+                        <ng-template #materiasSelect>
+                            <nz-select formControlName="valorBusqueda" nzPlaceHolder="Seleccione una materia"
+                                class="full-width">
+                                <nz-option *ngFor="let materia of materiasDisponibles" [nzValue]="materia"
+                                    [nzLabel]="materia"></nz-option>
+                            </nz-select>
+                        </ng-template>
+                        <ng-template #errorTip>
+                            <ng-container *ngIf="formBusqueda.get('tipoBusqueda')?.value === 'cedula'">
+                                Por favor ingrese una cédula válida (10 dígitos)
+                            </ng-container>
+                            <ng-container *ngIf="formBusqueda.get('tipoBusqueda')?.value !== 'cedula'">
+                                Este campo es requerido
+                            </ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+            </div>
+
+            <!-- Botón buscar -->
+            <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="6" [nzLg]="4">
+                <nz-form-item class="search-button-container">
+                    <button nz-button nzType="primary" nzBlock>
+                        <i nz-icon nzType="search"></i><span class="button-text">Buscar</span>
+                    </button>
+                </nz-form-item>
+            </div>
+        </div>
+    </form>
+
+    <!-- Botón para limpiar resultados con margen mejorado -->
+    <div class="actions-container" *ngIf="procesos.length > 0">
+        <button nz-button (click)="limpiarBusqueda()" class="clear-button">
+            <i nz-icon nzType="delete"></i> Limpiar resultados
+        </button>
+    </div>
+
+    <!-- Tabla de resultados con scroll horizontal -->
+    <div class="resultados-container" *ngIf="!procesoSeleccionado">
+        <nz-table #basicTable [nzData]="procesos" [nzShowPagination]="procesos.length > 10" [nzPageSize]="10"
+            [nzScroll]="{ x: '800px' }">
+            <thead>
+                <tr>
+                    <th [nzWidth]="'25%'">Nombre</th>
+                    <th [nzWidth]="'15%'">Cédula</th>
+                    <th [nzWidth]="'20%'">Materia</th>
+                    <th [nzWidth]="'20%'">Fecha</th>
+                    <th [nzWidth]="'20%'" [nzAlign]="'center'">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let proceso of basicTable.data">
+                    <td>{{ proceso.nombre }}</td>
+                    <td>{{ proceso.cedula }}</td>
+                    <td>{{ proceso.materia }}</td>
+                    <td>{{ obtenerFechaFormateada(proceso.fechaCreacion) }}</td>
+                    <td [nzAlign]="'center'">
+                        <button nz-button nzType="primary" nzSize="small" (click)="verDetalleProceso(proceso)"
+                            class="action-button">
+                            <i nz-icon nzType="eye"></i><span class="button-text">Ver detalle</span>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </nz-table>
+
+        <!-- Mensaje cuando no hay resultados -->
+        <nz-empty *ngIf="procesos.length === 0"
+            nzDescription="No se encontraron procesos con los criterios de búsqueda">
+        </nz-empty>
+    </div>
+
+    <!-- Vista detallada del proceso mejorada -->
+    <div class="detalle-proceso" *ngIf="procesoSeleccionado">
+        <div class="detalle-header">
+            <h3><i nz-icon nzType="file-text"></i> Detalle del proceso</h3>
+            <button nz-button (click)="cerrarDetalle()" class="back-button">
+                <i nz-icon nzType="arrow-left"></i> Volver
+            </button>
+        </div>
+
+        <nz-card class="detalle-card">
+            <!-- Información principal -->
+            <div class="info-principal">
+                <h4 class="nombre-proceso">{{ procesoSeleccionado.nombre }}</h4>
+            </div>
+
+            <!-- Contenedor principal con estilo similar al de la imagen -->
+            <div class="proceso-judicial-container">
+                <!-- Encabezado con el fondo azul oscuro -->
+                <div class="proceso-header">
+                    <h3>Datos generales</h3>
+                </div>
+
+                <!-- Tabla de datos del proceso judicial -->
+                <div class="proceso-datos">
+                    <div class="proceso-row">
+                        <div class="proceso-label">Nombre</div>
+                        <div class="proceso-value">{{ procesoSeleccionado.nombre }}</div>
+                        <div class="proceso-label">Fecha</div>
+                        <div class="proceso-value">{{ obtenerFechaFormateada(procesoSeleccionado.fechaCreacion) }}</div>
+                    </div>
+
+                    <div class="proceso-row">
+                        <div class="proceso-label">Cédula</div>
+                        <div class="proceso-value">{{ procesoSeleccionado.cedula }}</div>
+                        <div class="proceso-label">Materia</div>
+                        <div class="proceso-value">{{ procesoSeleccionado.materia }}</div>
+                    </div>
+
+                    <div class="proceso-row full-width">
+                        <div class="proceso-label">Descripción</div>
+                        <div class="proceso-value">{{ procesoSeleccionado.descripcion }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Etapas del proceso -->
+            <div class="etapas-container" *ngIf="procesoSeleccionado.etapas && procesoSeleccionado.etapas.length > 0">
+                <h4 class="etapas-title"><i nz-icon nzType="schedule"></i> Etapas del Proceso</h4>
+                <nz-collapse>
+                    <nz-collapse-panel *ngFor="let etapa of procesoSeleccionado.etapas; let i = index"
+                        [nzHeader]="etapa.nombre" [nzActive]="i === 0" class="etapa-panel">
+                        <p class="etapa-descripcion">{{ etapa.descripcion }}</p>
+
+                        <!-- Documentos de la etapa -->
+                        <nz-divider></nz-divider>
+                        <h5 class="documentos-title"><i nz-icon nzType="paper-clip"></i> Documentos</h5>
+                        <nz-list [nzDataSource]="etapa.documentos || []" [nzRenderItem]="documentoTemplate"
+                            nzEmpty="emptyDocumentosTemplate">
+                            <ng-template #documentoTemplate let-documento>
+                                <nz-list-item class="documento-item">
+                                    <nz-list-item-meta [nzTitle]="documento.nombre"
+                                        [nzDescription]="'Documento del proceso'" [nzAvatar]="avatarTemplate">
+                                        <ng-template #avatarTemplate>
+                                            <i nz-icon nzType="file-pdf" nzTheme="outline"></i>
+                                        </ng-template>
+                                    </nz-list-item-meta>
+                                    <ul nz-list-item-actions>
+                                        <nz-list-item-action>
+                                            <a href="{{ documento.url }}" target="_blank" class="view-document">
+                                                <i nz-icon nzType="download"></i> Ver documento
+                                            </a>
+                                        </nz-list-item-action>
+                                    </ul>
+                                </nz-list-item>
+                            </ng-template>
+                            <ng-template #emptyDocumentosTemplate>
+                                <nz-empty nzDescription="No hay documentos disponibles para esta etapa"></nz-empty>
+                            </ng-template>
+                        </nz-list>
+                    </nz-collapse-panel>
+                </nz-collapse>
+            </div>
+
+            <!-- Mensaje para cuando no hay etapas -->
+            <nz-empty *ngIf="!procesoSeleccionado.etapas || procesoSeleccionado.etapas.length === 0"
+                nzDescription="Este proceso no tiene etapas registradas">
+            </nz-empty>
+        </nz-card>
+    </div>
+</div>

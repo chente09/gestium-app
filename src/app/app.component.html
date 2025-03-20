@@ -1,4 +1,4 @@
-<nz-layout class="app-layout">
+<nz-layout class="app-layout" *ngIf="!isStandaloneRoute()">
   <!-- Menú lateral (Sider) -->
   <nz-sider class="menu-sidebar" nzCollapsible nzWidth="180px" nzBreakpoint="md" [(nzCollapsed)]="isCollapsed"
     [nzTrigger]="null">
@@ -118,3 +118,7 @@
     </div>
   </nz-layout>
 </nz-layout>
+<!-- Si la ruta es independiente, solo se muestra el contenido -->
+<div *ngIf="isStandaloneRoute()">
+  <router-outlet></router-outlet>
+</div>

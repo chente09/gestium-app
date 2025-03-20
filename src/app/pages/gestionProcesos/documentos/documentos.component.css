@@ -1,40 +1,138 @@
-.documentos-container {
-    margin: 16px 0;
+/* Contenedor principal de documentos */
+
+/* Título de la tarjeta */
+.documentos-container nz-card {
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+.documentos-container nz-card .ant-card-head {
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.documentos-container nz-card .ant-card-head-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #001529d1;
+}
+
+/* Botón de subir archivo en el extra */
+.documentos-container nz-upload button {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+.documentos-container nz-upload button:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
+}
+
+/* Mensaje de error */
 .error-message {
-    text-align: center;
-    padding: 16px;
-    color: #f5222d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
     background-color: #fff1f0;
+    border: 1px solid #ffccc7;
     border-radius: 4px;
     margin-bottom: 16px;
 }
 
-.empty-container {
-    text-align: center;
-    padding: 24px;
+.error-message p {
+    color: #d9534f;
+    font-size: 16px;
+    margin-bottom: 12px;
 }
 
-:host ::ng-deep .ant-list-item-meta-title {
-    font-weight: 500;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.error-message button {
+    background-color: #d9534f;
+    border-color: #001529d1;
 }
 
-:host ::ng-deep .ant-card-head {
-    background-color: #f5f5f5;
+.error-message button:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
 }
 
-:host ::ng-deep .ant-list-item {
-    transition: all 0.3s;
-}
-
-:host ::ng-deep .ant-list-item:hover {
-    background-color: #f5f5f5;
-}
-
-:host ::ng-deep .ant-upload-list {
+/* Lista de documentos */
+.documentos-container nz-list {
     margin-top: 16px;
+}
+
+.documentos-container nz-list-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e8e8e8;
+    transition: background-color 0.3s;
+}
+
+.documentos-container nz-list-item:hover {
+    background-color: #f6f7f9;
+}
+
+.documentos-container nz-list-item-meta {
+    align-items: center;
+}
+
+.documentos-container nz-list-item-meta-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #001529d1;
+}
+
+.documentos-container nz-list-item-meta-description {
+    font-size: 14px;
+    color: #8c8c8c;
+}
+
+/* Botones de acción (descargar y eliminar) */
+.documentos-container nz-list-item-actions button {
+    margin-left: 8px;
+}
+
+.documentos-container nz-list-item-actions button[nzType="primary"] {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+.documentos-container nz-list-item-actions button[nzType="primary"]:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
+}
+
+.documentos-container nz-list-item-actions button[nzType="primary"][nzDanger] {
+    background-color: #ff4d4f;
+    border-color: #001529d1;
+}
+
+.documentos-container nz-list-item-actions button[nzType="primary"][nzDanger]:hover {
+    background-color: #d9363e;
+    border-color: #001529d1;
+}
+
+/* Estado vacío (sin documentos) */
+.empty-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+    color: #001529d1;
+    text-align: center;
+}
+
+.empty-container p {
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.empty-container button {
+    background-color: #d9534f;
+    border-color: #001529d1;
+}
+
+.empty-container button:hover {
+    background-color: #c9302c;
+    border-color: #001529d1;
 }

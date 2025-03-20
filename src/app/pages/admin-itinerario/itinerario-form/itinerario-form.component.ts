@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
-import { ItinerarioService, Itinerario, RutaDiaria } from '../../services/itinerario/itinerario.service';
-import { UsersService } from '../../services/users/users.service';
+import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
+import { UsersService } from '../../../services/users/users.service';
 import { CommonModule } from '@angular/common';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';

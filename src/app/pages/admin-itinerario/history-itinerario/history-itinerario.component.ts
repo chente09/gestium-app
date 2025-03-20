@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ItinerarioService, Itinerario } from '../../services/itinerario/itinerario.service';// Asegúrate de que la ruta sea correcta
+import { ItinerarioService, Itinerario } from '../../../services/itinerario/itinerario.service';// Asegúrate de que la ruta sea correcta
 import { CommonModule } from '@angular/common';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';

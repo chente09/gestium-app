@@ -1,20 +1,129 @@
+.divider {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px;
+}
+
+/* Estilos para el formulario */
 .demanda-form {
     max-width: 800px;
     margin: 0 auto;
     padding: 24px;
-    background-color: #fff;
+    background-color: #f9f9f9;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Estilos para los elementos del formulario */
 .demanda-form nz-form-item {
     margin-bottom: 16px;
 }
 
 .demanda-form nz-form-label {
     font-weight: 500;
+    color: #001529;
 }
 
-.demanda-form button {
-    margin-top: 24px;
+.demanda-form nz-form-control {
+    width: 100%;
+}
+
+.demanda-form input[nz-input],
+.demanda-form textarea[nz-input],
+.demanda-form nz-date-picker {
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+    padding: 8px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.demanda-form input[nz-input]:focus,
+.demanda-form textarea[nz-input]:focus,
+.demanda-form nz-date-picker:focus {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.demanda-form textarea[nz-input] {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Estilos para el botón de envío */
+.demanda-form button[nz-button] {
+    width: 100%;
+    margin-top: 16px;
+    background-color: #1890ff;
+    border-color: #1890ff;
+    color: #fff;
+    font-weight: 500;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.demanda-form button[nz-button]:hover {
+    background-color: #40a9ff;
+    border-color: #40a9ff;
+}
+
+.demanda-form button[nz-button]:disabled {
+    background-color: #f5f5f5;
+    border-color: #d9d9d9;
+    color: rgba(0, 0, 0, 0.25);
+    cursor: not-allowed;
+}
+
+/* Estilos para los mensajes de error */
+.demanda-form nz-form-explain {
+    color: #ff4d4f;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Estilos para el texto de "Número de Oficio en letras" */
+.demanda-form p {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #595959;
+    font-style: italic;
+}
+
+/* Estilos para los campos de fecha */
+.demanda-form nz-date-picker {
+    width: 100%;
+}
+
+.demanda-form nz-date-picker .ant-calendar-picker-input {
+    border-radius: 4px;
+    border: 1px solid #d9d9d9;
+    padding: 8px;
+}
+
+/* Estilos para el contenedor del formulario */
+.demanda-form-container {
+    padding: 24px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .demanda-form {
+        padding: 16px;
+    }
+
+    .demanda-form nz-form-item {
+        margin-bottom: 12px;
+    }
+
+    .demanda-form input[nz-input],
+    .demanda-form textarea[nz-input],
+    .demanda-form nz-date-picker {
+        padding: 6px;
+    }
+
+    .demanda-form button[nz-button] {
+        margin-top: 12px;
+    }
 }

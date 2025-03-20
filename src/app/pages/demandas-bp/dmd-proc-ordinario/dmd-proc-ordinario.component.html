@@ -1,3 +1,12 @@
+<nz-breadcrumb>
+  <nz-breadcrumb-item>
+      <a routerLink="/welcome">
+          <nz-icon nzType="home" />
+      </a>
+  </nz-breadcrumb-item>
+  <nz-breadcrumb-item>Redacción de Demanda de Proceso Ordinario</nz-breadcrumb-item>
+</nz-breadcrumb>
+<hr class="divider">
 <form nz-form [formGroup]="demandaForm" (ngSubmit)="onSubmit()" class="demanda-form">
   <!-- Nombre del Demandado -->
   <nz-form-item>

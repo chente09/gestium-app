@@ -1,68 +1,91 @@
-.login-form {
-    max-width: 350px;
-    width: 100%;
-    margin: 50px auto;
-    padding: 20px;
-    background: #001628;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+/* Contenedor principal para centrar */
+.login-wrapper {
+    background: linear-gradient(135deg, #001628, #003d5b);
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
+    width: 100%;
+    height: 100vh;
 }
 
-h2 {
-    font-size: 24px;
-    color: #fff;
+/* Estilo del formulario */
+.login-form {
+    max-width: 400px;
+    width: 90%;
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     text-align: center;
-    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+    animation: fadeIn 0.8s ease-in-out;
 }
+
+/* Título */
+h2 {
+    font-size: 26px;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+/* Texto descriptivo */
 p {
     font-size: 16px;
-    color: #fff;
-    text-align: center;
+    color: #d3d3d3;
     margin-bottom: 24px;
 }
+
+/* Botón de Google */
 .login-form-button {
     width: 100%;
-    height: 40px;
+    height: 45px;
     font-size: 16px;
-    border-radius: 5px;
+    border-radius: 6px;
     transition: all 0.3s ease;
     cursor: pointer;
+    font-weight: bold;
 }
 
-.login-form-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
+/* Estilo del botón */
 .google-login {
-    background-color: #d3272d81;
+    background-color: #d3272d;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 40px;
-    font-size: 16px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
     border: none;
+    box-shadow: 0 4px 8px rgba(211, 39, 45, 0.4);
+    transition: all 0.3s ease;
 }
 
+/* Efecto hover */
 .google-login:hover {
-    background-color: #d3272dc0;
+    background-color: #b0252a;
+    box-shadow: 0 6px 12px rgba(211, 39, 45, 0.6);
+    transform: scale(1.05);
 }
 
+/* Espaciado entre ícono y texto */
 .google-login span {
-    margin-right: 8px;
+    margin-right: 10px;
 }
 
-/* Estilos para pantallas pequeñas */
+/* Animación de entrada */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsivo para pantallas pequeñas */
 @media (max-width: 450px) {
     .login-form {
-        max-width: 100%;
+        max-width: 90%;
+        padding: 20px;
     }
 }

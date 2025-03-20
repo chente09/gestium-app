@@ -61,7 +61,7 @@
             <i nz-icon nzType="download"></i> Descargar Registros (PDF)
         </button>
 
-        <button nz-button  (click)="irASeccion()">Ruta de Actividades</button>
+        <button nz-button (click)="irASeccion()">Ruta de Actividades</button>
     </div>
 
     <nz-input-group [nzSuffix]="suffixIconSearch">
@@ -73,44 +73,36 @@
     <hr class="divider">
 
     <div class="table-container">
-        <nz-table 
-            id="tabla-itinerarios" 
-            class="itinerario-table" 
-            #rowSelectionTable 
-            nzBordered 
-            [nzFrontPagination]="false"
-            [nzShowPagination]="false" 
-            [nzData]="filteredItinerarios" 
-            [nzLoading]="loading"
-            (nzCurrentPageDataChange)="onCurrentPageDataChange($event)" 
-            [nzScroll]="{ y: '450px' }" >
-        <thead>
-            <tr >
-                <th nzWidth="80px">Estado</th>
-                <th nzWidth="150px">Área Oficina</th>
-                <th nzWidth="140px">Trámite</th>
-                <th nzWidth="80px">Unidad</th>
-                <th nzWidth="100px">Piso y Juez</th>
-                <th nzWidth="auto">Área</th>
-                <th nzWidth="auto">Diligencia</th>
-                <th nzWidth="auto">Recibe</th>
-                <th nzWidth="150px">Fechas</th>
-                <th nzWidth="150px">Observaciones</th>
-                <th nzWidth="auto">Adjuntos</th>
-                <th nzWidth="100px">Fecha y Hora Completado</th>
-                <th nzWidth="100px">Obs. Completado</th>
-                <th nzWidth="130px">Acciones</th>
-            </tr>
-        </thead>
-        <tbody *ngIf="rowSelectionTable.data && rowSelectionTable.data.length > 0; else emptyTable">
-            @for (item of rowSelectionTable.data; track item.id) {
+        <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered
+            [nzFrontPagination]="false" [nzShowPagination]="false" [nzData]="filteredItinerarios" [nzLoading]="loading"
+            (nzCurrentPageDataChange)="onCurrentPageDataChange($event)" [nzScroll]="{ y: '450px' }">
+            <thead>
                 <tr>
-                    <td >
+                    <th nzWidth="80px">Estado</th>
+                    <th nzWidth="150px">Área Oficina</th>
+                    <th nzWidth="140px">Trámite</th>
+                    <th nzWidth="80px">Unidad</th>
+                    <th nzWidth="100px">Piso y Juez</th>
+                    <th nzWidth="auto">Área</th>
+                    <th nzWidth="auto">Diligencia</th>
+                    <th nzWidth="auto">Recibe</th>
+                    <th nzWidth="150px">Fechas</th>
+                    <th nzWidth="150px">Observaciones</th>
+                    <th nzWidth="auto">Adjuntos</th>
+                    <th nzWidth="100px">Fecha y Hora Completado</th>
+                    <th nzWidth="100px">Obs. Completado</th>
+                    <th nzWidth="130px">Acciones</th>
+                </tr>
+            </thead>
+            <tbody *ngIf="rowSelectionTable.data && rowSelectionTable.data.length > 0; else emptyTable">
+                @for (item of rowSelectionTable.data; track item.id) {
+                <tr>
+                    <td>
                         <nz-tag [nzColor]="getEstadoColor(item.estado)">
                             {{ getEstadoTexto(item.estado) }}
                         </nz-tag>
                     </td>
-                    <td >
+                    <td>
                         <strong>Área: </strong> {{ item.manualArea || item.area }}
                         <br>
                         <strong>Solicita: </strong> {{ item.creadoPor }}
@@ -148,13 +140,13 @@
                             <a *ngIf="item.imagen" [href]="item.imagen" target="_blank">
                                 <img [src]="item.imagen" alt="Imagen" width="60" style="cursor: pointer;">
                             </a>
-        
+
                             <a *ngIf="item.pdf" [href]="item.pdf" download="documento.pdf" target="_blank"
                                 style="color: rgb(190, 31, 31);">
                                 <i nz-icon nzType="download"></i> Descargar PDF
                             </a>
                         </ng-container>
-        
+
                         <ng-template #noData>
                             N/A
                         </ng-template>
@@ -169,7 +161,7 @@
                         <span *ngIf="item.historial && item.historial.length > 0">
                             {{ item.historial[item.historial.length - 1].observacion }}
                         </span>
-        
+
                         <button nz-button nzType="link" style="color: #bf8220" (click)="verHistorial(item)"
                             *ngIf="item.historial && item.historial.length > 0">
                             Ver Historial
@@ -180,22 +172,22 @@
                             <button nz-button class="btn-completado" (click)="completarItem(item)">
                                 <i nz-icon nzType="check"></i> Completado
                             </button>
-        
+
                             <button nz-button class="btn-proceso" (click)="enProcesoItem(item)">
                                 <i nz-icon nzType="hourglass"></i> En Proceso
                             </button>
                         </ng-container>
                     </td>
                 </tr>
-            }
-        </tbody>
-        
+                }
+            </tbody>
 
-        <!-- Template para cuando no hay datos -->
-        <ng-template #emptyTable>
-            <tbody></tbody>
-        </ng-template>
-    </nz-table>
+
+            <!-- Template para cuando no hay datos -->
+            <ng-template #emptyTable>
+                <tbody></tbody>
+            </ng-template>
+        </nz-table>
     </div>
 </div>
 
@@ -219,14 +211,8 @@
             <nz-form-item>
                 <nz-form-label nzFor="fotografia">Fotografía</nz-form-label>
                 <nz-form-control>
-                    <input 
-                        type="file" 
-                        accept="image/*" 
-                        capture="environment" 
-                        (change)="onFileSelected($event)" 
-                        #fileInput 
-                        style="display: none;"
-                    />
+                    <input type="file" accept="image/*" capture="environment" (change)="onFileSelected($event)"
+                        #fileInput style="display: none;" />
                     <button nz-button (click)="fileInput.click()">
                         <i nz-icon nzType="upload"></i> Subir Imagen
                     </button>
@@ -380,7 +366,8 @@
             [nzLg]="6" [nzXl]="6" class="actividad-col">
             <nz-card [nzBordered]="true" class="actividad-card">
                 <span style="display: flex; justify-content: flex-end;">
-                    <button nzSize="small" nz-popconfirm nzPopconfirmTitle="¿Seguro que quieres eliminar?" (nzOnConfirm)="eliminarActividadGuardada(i)"  class="delete-btn">
+                    <button nzSize="small" nz-popconfirm nzPopconfirmTitle="¿Seguro que quieres eliminar?"
+                        (nzOnConfirm)="eliminarActividadGuardada(i)" class="delete-btn">
                         <nz-icon nz-icon nzType="delete"></nz-icon>
                     </button>
                 </span>

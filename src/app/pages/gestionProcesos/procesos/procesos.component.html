@@ -1,3 +1,12 @@
+<nz-breadcrumb>
+    <nz-breadcrumb-item>
+        <a routerLink="/welcome">
+            <nz-icon nzType="home" />
+        </a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>Gestion de Procesos</nz-breadcrumb-item>
+</nz-breadcrumb>
+<hr class="divider">
 <div class="procesos-container">
     <nz-card>
         <div class="header-container">
@@ -17,12 +26,13 @@
         <!-- Formulario para crear procesos -->
         <div *ngIf="isFormVisible" class="form-container" [@fadeInOut]>
             <nz-divider nzText="Nuevo Proceso"></nz-divider>
-            <form nz-form [formGroup]="formProceso" (ngSubmit)="crearProceso()">
+            <form nz-form [formGroup]="formProceso" (ngSubmit)="guardarProceso()">
+                <!-- Nombre -->
                 <nz-form-item>
-                    <nz-form-label nzRequired nzFor="nombre" [nzSpan]="6">Nombre del Proceso</nz-form-label>
-                    <nz-form-control [nzSpan]="14" [nzErrorTip]="nombreErrorTpl">
+                    <nz-form-label nzRequired nzFor="nombre">Nombre del Cliente</nz-form-label>
+                    <nz-form-control [nzErrorTip]="nombreErrorTpl">
                         <input nz-input formControlName="nombre" id="nombre"
-                            placeholder="Ingrese el nombre del proceso" />
+                            placeholder="Ingrese el nombre del cliente" />
                         <ng-template #nombreErrorTpl let-control>
                             <ng-container *ngIf="control.hasError('required')">El nombre es obligatorio</ng-container>
                             <ng-container *ngIf="control.hasError('minlength')">El nombre debe tener al menos 3
@@ -33,9 +43,23 @@
                     </nz-form-control>
                 </nz-form-item>
 
+                <!-- Cédula -->
                 <nz-form-item>
-                    <nz-form-label nzRequired nzFor="descripcion" [nzSpan]="6">Descripción</nz-form-label>
-                    <nz-form-control [nzSpan]="14" [nzErrorTip]="descripcionErrorTpl">
+                    <nz-form-label nzRequired nzFor="cedula">Cédula</nz-form-label>
+                    <nz-form-control [nzErrorTip]="cedulaErrorTpl">
+                        <input nz-input formControlName="cedula" id="cedula" placeholder="Ingrese la cédula" />
+                        <ng-template #cedulaErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">La cédula es obligatoria</ng-container>
+                            <ng-container *ngIf="control.hasError('minlength') || control.hasError('maxlength')">La
+                                cédula debe tener 10 dígitos</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <!-- Descripción -->
+                <nz-form-item>
+                    <nz-form-label nzRequired nzFor="descripcion">Descripción</nz-form-label>
+                    <nz-form-control [nzErrorTip]="descripcionErrorTpl">
                         <textarea nz-input formControlName="descripcion" id="descripcion"
                             [nzAutosize]="{ minRows: 3, maxRows: 6 }" placeholder="Ingrese la descripción"></textarea>
                         <ng-template #descripcionErrorTpl let-control>
@@ -49,10 +73,25 @@
                     </nz-form-control>
                 </nz-form-item>
 
+                <!-- Materia -->
+                <nz-form-item>
+                    <nz-form-label nzRequired nzFor="materia">Materia</nz-form-label>
+                    <nz-form-control [nzErrorTip]="materiaErrorTpl">
+                        <nz-select formControlName="materia" id="materia" placeholder="Seleccione la materia">
+                            <nz-option *ngFor="let materia of materias" [nzValue]="materia"
+                                [nzLabel]="materia"></nz-option>
+                        </nz-select>
+                        <ng-template #materiaErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">La materia es obligatoria</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+                <!-- Botones del formulario -->
                 <div class="form-buttons">
                     <button nz-button (click)="toggleFormulario()">Cancelar</button>
                     <button nz-button nzType="primary" [nzLoading]="isCreating" [disabled]="!formProceso.valid">
-                        <i nz-icon nzType="save"></i> Guardar Proceso
+                        <i nz-icon nzType="save"></i>
+                        {{ isEditing ? 'Actualizar Proceso' : 'Guardar Proceso' }}
                     </button>
                 </div>
             </form>
@@ -75,24 +114,26 @@
         <nz-spin [nzSpinning]="isLoading">
             <nz-table #basicTable [nzBordered]="true" [nzData]="procesos" [nzLoading]="isLoading" [nzSize]="'middle'"
                 [nzShowPagination]="procesos.length > 10" [nzPageSize]="10" nzShowSizeChanger
-                [nzNoResult]="noResultTemplate">
+                [nzNoResult]="noResultTemplate" [nzScroll]="{ x: '1100px', y: 'calc(100vh - 300px)' }">
                 <thead>
                     <tr>
-                        <th nzWidth="25%">Nombre</th>
-                        <th nzWidth="40%">Descripción</th>
-                        <th nzWidth="15%">Fecha</th>
-                        <th nzWidth="20%">Acciones</th>
+                        <th nzWidth="10%">Abogado</th>
+                        <th nzWidth="15%">Cliente</th>
+                        <th nzWidth="10%">Cédula</th>
+                        <th nzWidth="30%">Descripción</th>
+                        <th nzWidth="15%">Materia</th>
+                        <th nzWidth="10%">Fecha</th>
+                        <th nzWidth="15%">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr *ngFor="let proceso of basicTable.data"
                         [class.selected-row]="procesoSeleccionado?.id === proceso.id">
-                        <td>
-                            <span class="proceso-nombre">{{ proceso.nombre }}</span>
-                        </td>
-                        <td>
-                            <span class="proceso-descripcion">{{ proceso.descripcion }}</span>
-                        </td>
+                        <td>{{ proceso.abogadoId }}</td>
+                        <td>{{ proceso.nombre }}</td>
+                        <td>{{ proceso.cedula }}</td>
+                        <td>{{ proceso.descripcion }}</td>
+                        <td>{{ proceso.materia }}</td>
                         <td>{{ proceso.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</td>
                         <td>
                             <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Ver etapas" nz-tooltip
@@ -100,9 +141,13 @@
                                 <i nz-icon [nzType]="procesoSeleccionado?.id === proceso.id ? 'up' : 'down'"></i>
                             </button>
                             <nz-divider nzType="vertical"></nz-divider>
-                            <button nz-button nzType="primary" nzDanger nzShape="circle"
-                                nzTooltipTitle="Eliminar proceso" nz-tooltip nz-popconfirm
-                                nzPopconfirmTitle="¿Eliminar el proceso '{{proceso.nombre}}'?"
+                            <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Editar proceso"
+                                nz-tooltip (click)="toggleFormulario(proceso)">
+                                <i nz-icon nzType="edit"></i>
+                            </button>
+                            <nz-divider nzType="vertical"></nz-divider>
+                            <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Eliminar proceso"
+                                nz-tooltip nz-popconfirm nzPopconfirmTitle="¿Eliminar el proceso '{{proceso.nombre}}'?"
                                 nzPopconfirmPlacement="top" nzOkText="Eliminar" nzCancelText="Cancelar"
                                 (nzOnConfirm)="eliminarProceso(proceso)">
                                 <i nz-icon nzType="delete"></i>
@@ -122,7 +167,7 @@
     </nz-card>
 
     <!-- Componente de Etapas con animación -->
-    <div *ngIf="procesoSeleccionado" class="etapas-container" [@fadeInOut]>
+    <div #etapasContent *ngIf="procesoSeleccionado" class="etapas-container" [@fadeInOut]>
         <nz-card>
             <h3 class="etapas-title">
                 Etapas del proceso: <strong>{{ procesoSeleccionado.nombre }}</strong>

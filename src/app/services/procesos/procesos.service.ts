@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Firestore, addDoc, collection, collectionData, doc, updateDoc, getDoc, deleteDoc } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, collectionData, doc, updateDoc, getDoc, deleteDoc, query, where } from '@angular/fire/firestore';
 import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 export interface Documento {
   nombre: string;
@@ -17,11 +17,15 @@ export interface Etapa {
 export interface Proceso {
   id?: string;
   nombre: string;
+  cedula: string;
   descripcion: string;
   abogadoId: string;
   fechaCreacion: Date;
   etapas: Etapa[];
+  materia: string; // Nueva propiedad para categorizar por materia
 }
+
+export type MateriaProceso = 'ISSFA' | 'Inmobiliario' | 'Produbanco' | 'Civil' | 'Laboral' | 'Tributario' | 'Otros';
 
 @Injectable({
   providedIn: 'root'
@@ -32,25 +36,86 @@ export class ProcesosService {
 
   constructor(private firestore: Firestore, private storage: Storage) { }
 
-  // 📌 Crear un proceso judicial
-  async crearProceso(proceso: { nombre: string; descripcion: string; abogadoId: string }): Promise<void> {
+  // 📌 Crear un proceso judicial con materia
+  async crearProceso(proceso: {
+    nombre: string;
+    descripcion: string;
+    abogadoId: string;
+    cedula: string;
+    materia: MateriaProceso; // Agregamos la materia como campo obligatorio
+  }): Promise<string> {
     try {
       const docRef = collection(this.firestore, this.collectionName);
-      await addDoc(docRef, {
+      const docSnap = await addDoc(docRef, {
         ...proceso,
         etapas: [], // Inicializa las etapas como un arreglo vacío
         fechaCreacion: new Date() // Añade la fecha de creación
       });
+
+      return docSnap.id; // Retornamos el ID del documento creado
     } catch (error) {
       console.error('Error al crear el proceso:', error);
       throw new Error('No se pudo crear el proceso');
     }
   }
 
-  // 📌 Obtener procesos en tiempo real
+  // 📌 Obtener todos los procesos en tiempo real
   getProcesos(): Observable<Proceso[]> {
     const procesosRef = collection(this.firestore, this.collectionName);
     return collectionData(procesosRef, { idField: 'id' }) as Observable<Proceso[]>;
+  }
+
+  // 📌 Obtener procesos por materia específica
+  getProcesosPorMateria(materia: MateriaProceso): Observable<Proceso[]> {
+    const procesosRef = collection(this.firestore, this.collectionName);
+    const q = query(procesosRef, where('materia', '==', materia));
+    return collectionData(q, { idField: 'id' }) as Observable<Proceso[]>;
+  }
+
+  // 📌 Obtener procesos por múltiples materias
+  getProcesosPorMaterias(materias: MateriaProceso[]): Observable<Proceso[]> {
+    if (!materias || materias.length === 0) {
+      return this.getProcesos();
+    }
+
+    return this.getProcesos().pipe(
+      map(procesos => procesos.filter(proceso => materias.includes(proceso.materia as MateriaProceso)))
+    );
+  }
+
+  // 📌 Obtener procesos por abogado y materia
+  getProcesosPorAbogadoYMateria(abogadoId: string, materia?: MateriaProceso): Observable<Proceso[]> {
+    let q = query(collection(this.firestore, this.collectionName), where('abogadoId', '==', abogadoId));
+    if (materia) q = query(q, where('materia', '==', materia));
+    return collectionData(q, { idField: 'id' }) as Observable<Proceso[]>;
+  }
+
+  // 📌 Obtener un proceso por ID
+  async getProcesoById(procesoId: string): Promise<Proceso | null> {
+    try {
+      const procesoRef = doc(this.firestore, `${this.collectionName}/${procesoId}`);
+      const procesoSnap = await getDoc(procesoRef);
+
+      if (!procesoSnap.exists()) {
+        return null;
+      }
+
+      return { id: procesoSnap.id, ...procesoSnap.data() } as Proceso;
+    } catch (error) {
+      console.error('Error al obtener el proceso:', error);
+      throw new Error('No se pudo obtener el proceso');
+    }
+  }
+
+  // 📌 Actualizar la materia de un proceso
+  async actualizarMateriaProceso(procesoId: string, materia: MateriaProceso): Promise<void> {
+    try {
+      const procesoRef = doc(this.firestore, `${this.collectionName}/${procesoId}`);
+      await updateDoc(procesoRef, { materia });
+    } catch (error) {
+      console.error('Error al actualizar la materia del proceso:', error);
+      throw new Error('No se pudo actualizar la materia del proceso');
+    }
   }
 
   // 📌 Agregar etapa a un proceso
@@ -97,13 +162,60 @@ export class ProcesosService {
       }
 
       // Añade el documento a la etapa correspondiente
-      data.etapas[indiceEtapa].documentos.push({ nombre: file.name, url });
+      const documentos = data.etapas[indiceEtapa].documentos || [];
+      documentos.push({ nombre: file.name, url });
+      data.etapas[indiceEtapa].documentos = documentos;
+
       await updateDoc(procesoRef, { etapas: data.etapas });
 
       return url; // Devuelve la URL del archivo subido
     } catch (error) {
       console.error('Error al subir el documento:', error);
       throw new Error('No se pudo subir el documento');
+    }
+  }
+
+  // 📌 Actualizar un proceso existente
+  async actualizarProceso(procesoId: string, nuevosDatos: Partial<Proceso>): Promise<void> {
+    try {
+      const procesoRef = doc(this.firestore, `${this.collectionName}/${procesoId}`);
+      const procesoSnap = await getDoc(procesoRef);
+
+      if (!procesoSnap.exists()) {
+        throw new Error('El proceso no existe');
+      }
+
+      // Actualiza solo los campos proporcionados en `nuevosDatos`
+      await updateDoc(procesoRef, nuevosDatos);
+    } catch (error) {
+      console.error('Error al actualizar el proceso:', error);
+      throw new Error('No se pudo actualizar el proceso');
+    }
+  }
+
+  // 📌 Actualizar una etapa de un proceso
+  async actualizarEtapa(procesoId: string, indiceEtapa: number, nuevosDatos: Partial<Etapa>): Promise<void> {
+    try {
+      const procesoRef = doc(this.firestore, `${this.collectionName}/${procesoId}`);
+      const procesoSnap = await getDoc(procesoRef);
+
+      if (!procesoSnap.exists()) {
+        throw new Error('El proceso no existe');
+      }
+
+      const data = procesoSnap.data() as Proceso;
+      if (!data.etapas || !data.etapas[indiceEtapa]) {
+        throw new Error('La etapa no existe');
+      }
+
+      // Actualiza solo los campos proporcionados en `nuevosDatos`
+      data.etapas[indiceEtapa] = { ...data.etapas[indiceEtapa], ...nuevosDatos };
+
+      // Guarda los cambios en Firestore
+      await updateDoc(procesoRef, { etapas: data.etapas });
+    } catch (error) {
+      console.error('Error al actualizar la etapa:', error);
+      throw new Error('No se pudo actualizar la etapa');
     }
   }
 
@@ -182,18 +294,23 @@ export class ProcesosService {
   }
 
   async obtenerDocumentos(procesoId: string, indiceEtapa: number): Promise<Documento[]> {
-    const procesoRef = doc(this.firestore, `${this.collectionName}/${procesoId}`);
-    const procesoSnap = getDoc(procesoRef);
+    try {
+      const procesoRef = doc(this.firestore, `${this.collectionName}/${procesoId}`);
+      const procesoSnap = await getDoc(procesoRef);
 
-    if (!(await procesoSnap).exists()) {
-      throw new Error('El proceso no existe');
+      if (!procesoSnap.exists()) {
+        throw new Error('El proceso no existe');
+      }
+
+      const data = procesoSnap.data() as Proceso;
+      if (!data.etapas || !data.etapas[indiceEtapa]) {
+        throw new Error('La etapa no existe');
+      }
+
+      return data.etapas[indiceEtapa].documentos || [];
+    } catch (error) {
+      console.error('Error al obtener documentos:', error);
+      throw new Error('No se pudieron obtener los documentos');
     }
-
-    const data = (await procesoSnap).data() as Proceso;
-    if (!data.etapas || !data.etapas[indiceEtapa]) {
-      throw new Error('La etapa no existe');
-    }
-
-    return data.etapas[indiceEtapa].documentos;
   }
 }

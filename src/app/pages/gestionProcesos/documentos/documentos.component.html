@@ -9,7 +9,7 @@
         <!-- Lista de documentos -->
         <ng-container *ngIf="!errorMessage">
             <nz-empty *ngIf="documentos.length === 0 && !isLoading" nzDescription="No hay documentos en esta etapa"
-                [nzNotFoundContent]="emptyContent">
+                [nzNotFoundContent]="emptyContent"> 
             </nz-empty>
 
             <nz-list *ngIf="documentos.length > 0" [nzLoading]="isLoading" [nzDataSource]="documentos"

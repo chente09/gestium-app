@@ -18,6 +18,7 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
 interface Etapa {
   nombre: string;
   descripcion: string;
+  fechaRegistro: Date;
 }
 
 @Component({
@@ -85,7 +86,8 @@ export class EtapasComponent implements OnInit, OnDestroy {
   private initForm(): void {
     this.formEtapa = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(100)]],
-      descripcion: ['', [Validators.required, Validators.maxLength(500)]]
+      descripcion: ['', [Validators.required, Validators.maxLength(500)]],
+      fechaRegistro: [new Date().toISOString().split('T')[0], Validators.required],
     });
   }
 
@@ -99,13 +101,16 @@ export class EtapasComponent implements OnInit, OnDestroy {
       const etapa = this.proceso.etapas[index];
       this.formEtapa.patchValue({
         nombre: etapa.nombre,
-        descripcion: etapa.descripcion
+        descripcion: etapa.descripcion,
+        fechaRegistro: etapa.fechaRegistro // Cargar la fecha de registro de la etapa
       });
     } else {
       // Modo creación: Resetear el formulario
       this.isEditingEtapa = false;
       this.etapaEditandoIndex = null;
-      this.formEtapa.reset();
+      this.formEtapa.reset({
+        fechaRegistro: new Date().toISOString().split('T')[0] // Establecer la fecha actual por defecto
+      });
     }
 
     // Mostrar el modal
@@ -148,7 +153,8 @@ export class EtapasComponent implements OnInit, OnDestroy {
       try {
         const etapa: Etapa = {
           nombre: this.formEtapa.get('nombre')?.value.trim(),
-          descripcion: this.formEtapa.get('descripcion')?.value.trim()
+          descripcion: this.formEtapa.get('descripcion')?.value.trim(),
+          fechaRegistro: this.formEtapa.get('fechaRegistro')?.value // Incluir la fecha de registro
         };
 
         if (this.isEditingEtapa && this.etapaEditandoIndex !== null) {
@@ -265,4 +271,5 @@ export class EtapasComponent implements OnInit, OnDestroy {
   // Helper for template
   get nombreControl() { return this.formEtapa.get('nombre'); }
   get descripcionControl() { return this.formEtapa.get('descripcion'); }
+  get fechaRegistroControl() { return this.formEtapa.get('fechaRegistro'); }
 }

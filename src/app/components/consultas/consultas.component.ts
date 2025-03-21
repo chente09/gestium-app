@@ -50,11 +50,8 @@ export class ConsultasComponent implements OnInit {
   tiposBusqueda = [
     { label: 'Cédula', value: 'cedula' },
     { label: 'Nombre', value: 'nombre' },
-    { label: 'Materia', value: 'materia' }
   ];
-  materiasDisponibles = [
-    'ISSFA', 'Inmobiliario', 'Produbanco', 'Civil', 'Laboral', 'Tributario', 'Otros'
-  ];
+  
   constructor(
     private fb: FormBuilder,
     private procesosService: ProcesosService,
@@ -112,10 +109,7 @@ export class ConsultasComponent implements OnInit {
             resultados = procesos.filter(p => p.cedula.toLowerCase() === valorBusqueda.toLowerCase());
             break;
           case 'nombre':
-            resultados = procesos.filter(p => p.nombre.toLowerCase().includes(valorBusqueda.toLowerCase()));
-            break;
-          case 'materia':
-            resultados = procesos.filter(p => p.materia.toLowerCase() === valorBusqueda.toLowerCase());
+            resultados = procesos.filter(p => p.nombre.toLowerCase() ===(valorBusqueda.toLowerCase()));
             break;
         }
 

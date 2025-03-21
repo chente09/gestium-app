@@ -11,6 +11,7 @@ export interface Documento {
 export interface Etapa {
   nombre: string;
   descripcion: string;
+  fechaRegistro: Date;
   documentos: Documento[];
 }
 
@@ -119,7 +120,7 @@ export class ProcesosService {
   }
 
   // 📌 Agregar etapa a un proceso
-  async agregarEtapa(procesoId: string, etapa: { nombre: string; descripcion: string }): Promise<void> {
+  async agregarEtapa(procesoId: string, etapa: { nombre: string; fechaRegistro: Date; descripcion: string }): Promise<void> {
     try {
       const procesoRef = doc(this.firestore, `${this.collectionName}/${procesoId}`);
       const procesoSnap = await getDoc(procesoRef);

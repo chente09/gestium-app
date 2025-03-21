@@ -68,7 +68,6 @@ export class ItinerarioFormComponent implements OnInit {
       "Alban Solano Diana",
       "Altamirano Ruiz Santiago",
       "Baño Palomino Patricio",
-      "Baño Palomino Patricio",
       "Calero Sánchez Oscar",
       "Cevallos Ampudia Edwin",
       "Chacón Ortiz Francisco",

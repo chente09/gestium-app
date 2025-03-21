@@ -32,7 +32,11 @@
             <tr *ngFor="let etapa of proceso.etapas; let i = index"
                 [ngClass]="{'selected-row': etapaSeleccionada === i}">
                 <td>{{ etapa.nombre }}</td>
-                <td>{{ etapa.descripcion }}</td>
+                <td>
+                    {{ etapa.descripcion }}
+                    <br>
+                    {{ etapa.fechaRegistro }}
+                </td>
                 <td>
                     <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Ver Documentos" nz-tooltip
                             (click)="seleccionarEtapa(i)">

@@ -98,7 +98,7 @@ export class AppComponent {
   }
 
   isStandaloneRoute(): boolean {
-    const standaloneRoutes = ['/consultas', '/login']; // Rutas sin layout
+    const standaloneRoutes = ['/consultas', '/login', '/unauthorized', '/not-found']; // Rutas sin layout
     return standaloneRoutes.includes(this.router.url);
   }
 }

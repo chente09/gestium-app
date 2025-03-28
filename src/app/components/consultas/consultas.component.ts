@@ -75,6 +75,12 @@ export class ConsultasComponent implements OnInit {
           Validators.required,
           Validators.pattern('^[0-9]{10}$') // Formato cédula Ecuador
         ]);
+      } else if (valor === 'nombre') {
+        valorBusqueda?.setValidators([
+          Validators.required,
+          Validators.pattern('^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+$'), // Solo letras y espacios
+          Validators.minLength(3)
+        ]);
       } else {
         valorBusqueda?.setValidators(Validators.required);
       }
@@ -117,7 +123,7 @@ export class ConsultasComponent implements OnInit {
         return of(resultados);
       }),
       catchError(error => {
-        console.error('Error al buscar procesos:', error);
+        console.error('Error al buscar procesos:');
         this.messageService.error('Error al buscar procesos');
         return of([]); // Retorna un observable vacío para evitar que finalize se detenga
       }),

@@ -1,0 +1,26 @@
+/* not-found.component.css */
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    text-align: center;
+}
+
+.error-content {
+    max-width: 500px;
+    padding: 2rem;
+}
+
+.error-title {
+    font-size: 6rem;
+    margin-bottom: 0;
+    color: #ff4d4f;
+}
+
+.options {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}

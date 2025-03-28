@@ -197,9 +197,6 @@ export class ItinerarioComponent implements OnInit {
 
       return isPendingOrIncomplete && isAreaMatch && isDateInRange && isEstadoMatch && isSearchMatch;
     });
-
-
-
     // Ordenar los datos después de filtrar
     this.filteredItinerarios = this.sortData(this.filteredItinerarios);
 
@@ -364,6 +361,7 @@ export class ItinerarioComponent implements OnInit {
     this.mostrarTodos = !this.mostrarTodos; // Cambia el estado de "mostrarTodos"
     this.cdr.detectChanges();
   }
+  
 
 
   // Eliminar una actividad guardada (opcional)

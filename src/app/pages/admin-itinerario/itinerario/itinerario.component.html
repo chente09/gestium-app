@@ -16,9 +16,9 @@
     </div>
 </div>
 <div class="notification-container">
-    <!-- Botón de notificaciones -->
-    <div class="notification-container">
-        <button nz-button (click)="mostrarNotificaciones = !mostrarNotificaciones">
+    <!-- Botón de notificaciones en un contenedor fijo -->
+    <div class="button-wrapper">
+        <button  (click)="mostrarNotificaciones = !mostrarNotificaciones">
             <i nz-icon nzType="bell"></i>
             <span *ngIf="notificaciones.length > 0" class="notification-badge">{{ notificaciones.length }}</span>
         </button>
@@ -81,7 +81,7 @@
                     <th nzWidth="80px">Estado</th>
                     <th nzWidth="150px">Área Oficina</th>
                     <th nzWidth="140px">Trámite</th>
-                    <th nzWidth="80px">Unidad</th>
+                    <th nzWidth="90px">Unidad</th>
                     <th nzWidth="100px">Piso y Juez</th>
                     <th nzWidth="auto">Área</th>
                     <th nzWidth="auto">Diligencia</th>

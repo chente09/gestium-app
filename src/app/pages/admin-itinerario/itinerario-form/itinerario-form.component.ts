@@ -58,10 +58,10 @@ export class ItinerarioFormComponent implements OnInit {
   selectPiso: string | null = null;
   selectJuez: string | null = null;
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
-  unidad: string[] = ['', 'Municipio', 'Notaria', 'SUPERCIAS', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro'];
-  materia: string[] = ['', 'Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales', 'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro'];
-  diligencia: string[] = ['', 'Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro'];
-  piso: string[] = ['', 'Pb', '5to', '8vo', 'Otro'];
+  unidad: string[] = [ 'Municipio', 'Notaria', 'SUPERCIAS', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro'];
+  materia: string[] = ['Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales', 'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro'];
+  diligencia: string[] = ['Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro'];
+  piso: string[] = ['Pb', '5to', '8vo', 'Otro'];
   juecesPorPiso: { [key: string]: string[] } = {
     "5to": [
       "",
@@ -170,17 +170,17 @@ export class ItinerarioFormComponent implements OnInit {
   private initForm(): void {
     this.itinerarioForm = this.fb.group({
       creadoPor: [this.getCurrentUserName() || '', Validators.required],
-      juzgado: [this.unidad[0]],
+      juzgado: [''],
       manualJuzgado: [''],
-      piso: [this.piso[0]],
+      piso: [''],
       manualPiso: [''],
-      juez: [this.jueces[0]],
+      juez: [''],
       manualJuez: [''],
       tramite: ['', Validators.required],
       nroProceso: [''],
-      materia: [this.materia[0]],
+      materia: [''],
       manualMateria: [''],
-      diligencia: [this.diligencia[0]],
+      diligencia: [''],
       manualDiligencia: [''],
       solicita: [''],
       fechaSolicitud: [new Date().toISOString().split('T')[0], Validators.required],
@@ -188,7 +188,7 @@ export class ItinerarioFormComponent implements OnInit {
       fechaTermino: ['', [Validators.required, this.fechaTerminoValidator]],
       estado: [Estado.PENDIENTE, Validators.required],
       observaciones: [''],
-      area: [this.areas[0]],
+      area: [''],
       manualArea: [''],
     });
 

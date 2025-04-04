@@ -20,7 +20,7 @@
             <nz-form-item>
                 <nz-form-label nzFor="area" nzRequired>Solicita</nz-form-label>
                 <nz-form-control>
-                    <nz-select formControlName="area">
+                    <nz-select formControlName="area" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione el área">
                         <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
                     </nz-select>
                     <input *ngIf="showManualAreaInput" nz-input formControlName="manualArea"
@@ -64,7 +64,7 @@
                 <nz-form-item>
                     <nz-form-label nzFor="juzgado">Unidad, Juzgado o Entidad</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="juzgado">
+                        <nz-select formControlName="juzgado" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la unidad, juzgado o entidad">
                             <nz-option *ngFor="let juzgado of unidad" [nzValue]="juzgado"
                                 [nzLabel]="juzgado"></nz-option>
                         </nz-select>
@@ -77,7 +77,7 @@
                 <nz-form-item>
                     <nz-form-label nzFor="piso">Selecciona el piso</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="piso">
+                        <nz-select formControlName="piso" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione el piso">
                             <nz-option *ngFor="let pisoItem of piso" [nzValue]="pisoItem"
                                 [nzLabel]="pisoItem"></nz-option>
                         </nz-select>
@@ -94,7 +94,7 @@
                 <nz-form-item>
                     <nz-form-label nzFor="juez">Puedes asignar un Juez</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="juez">
+                        <nz-select formControlName="juez" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione el juez">
                             <nz-option *ngFor="let juezItem of jueces" [nzValue]="juezItem"
                                 [nzLabel]="juezItem"></nz-option>
                         </nz-select>
@@ -108,7 +108,7 @@
                 <nz-form-item>
                     <nz-form-label nzFor="materia">Selecciona el área</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="materia">
+                        <nz-select formControlName="materia" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la materia">
                             <nz-option *ngFor="let materia of materia" [nzValue]="materia"
                                 [nzLabel]="materia"></nz-option>
                         </nz-select>
@@ -122,7 +122,7 @@
                 <nz-form-item>
                     <nz-form-label nzFor="diligencia">Seleciona la diligencia</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="diligencia">
+                        <nz-select formControlName="diligencia" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la diligencia">
                             <nz-option *ngFor="let diligencia of diligencia" [nzValue]="diligencia"
                                 [nzLabel]="diligencia"></nz-option>
                         </nz-select>

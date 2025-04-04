@@ -70,6 +70,7 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   procesoSeleccionado: Proceso | null = null;
   formProceso: FormGroup;
   materias: MateriaProceso[] = ['ISSFA', 'Inmobiliario', 'Produbanco', 'Civil', 'Laboral', 'Tributario', 'Otros'];
+  materiaSeleccionada: string = '';
 
   // Estados
   isLoading = false;
@@ -131,6 +132,11 @@ export class ProcesosComponent implements OnInit, OnDestroy {
 
           this.procesosOriginales = [...this.procesos];
           this.isLoading = false;
+
+          // Aplicar filtro de materia si ya hay uno seleccionado
+          if (this.materiaSeleccionada) {
+            this.filtrarPorMateria();
+          }
         },
         error: (error) => {
           console.error('Error al cargar los procesos:', error);
@@ -149,7 +155,7 @@ export class ProcesosComponent implements OnInit, OnDestroy {
 
   toggleFormulario(proceso?: Proceso): void {
     this.isFormVisible = !this.isFormVisible;
-  
+
     if (this.isFormVisible) {
       if (proceso) {
         // Modo edición: Cargar los datos del proceso en el formulario
@@ -239,9 +245,9 @@ export class ProcesosComponent implements OnInit, OnDestroy {
     if (this.formProceso.invalid) {
       return;
     }
-  
+
     const procesoData = this.formProceso.value;
-  
+
     if (this.isEditing && this.procesoEditando) {
       // Modo edición: Actualizar el proceso existente
       await this.procesosService.actualizarProceso(this.procesoEditando.id!, procesoData);
@@ -251,13 +257,13 @@ export class ProcesosComponent implements OnInit, OnDestroy {
       await this.procesosService.crearProceso(procesoData);
       this.messageService.success('Proceso creado correctamente');
     }
-  
+
     // Reiniciar el formulario y ocultarlo
     this.formProceso.reset();
     this.isFormVisible = false;
     this.isEditing = false;
     this.procesoEditando = null;
-  
+
     // Recargar la lista de procesos
     this.cargarProcesos();
   }
@@ -299,12 +305,12 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   buscarProcesos(value: string): void {
     if (!value.trim()) {
       // Si la búsqueda está vacía, mostrar todos los procesos originales
-      this.procesos = [...this.procesosOriginales];
+      this.aplicarFiltros();
       return;
     }
-  
+
     const searchTerm = value.toLowerCase().trim();
-    
+
     this.procesos = this.procesosOriginales.filter(proceso => {
       return proceso.nombre.toLowerCase().includes(searchTerm) ||
         proceso.descripcion.toLowerCase().includes(searchTerm) ||
@@ -314,9 +320,39 @@ export class ProcesosComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Método para filtrar por materia
+  filtrarPorMateria(): void {
+    this.aplicarFiltros();
+  }
+
+  // Método para aplicar ambos filtros (búsqueda y materia)
+  aplicarFiltros(): void {
+    let resultados = [...this.procesosOriginales];
+
+    // Aplicar filtro de búsqueda si hay texto
+    if (this.searchValue) {
+      const valorBusqueda = this.searchValue.toLowerCase();
+      resultados = resultados.filter(proceso =>
+        proceso.nombre?.toLowerCase().includes(valorBusqueda) ||
+        proceso.cedula?.toLowerCase().includes(valorBusqueda) ||
+        proceso.descripcion?.toLowerCase().includes(valorBusqueda) ||
+        proceso.materia?.toLowerCase().includes(valorBusqueda) ||
+        proceso.abogadoId?.toLowerCase().includes(valorBusqueda)
+      );
+    }
+
+    // Aplicar filtro de materia si hay una seleccionada
+    if (this.materiaSeleccionada) {
+      resultados = resultados.filter(proceso =>
+        proceso.materia === this.materiaSeleccionada
+      );
+    }
+
+    this.procesos = resultados;
+  }
+
   limpiarBusqueda(): void {
     this.searchValue = '';
-    this.procesos = [...this.procesosOriginales];
   }
 
   // Getters para validación de formularios

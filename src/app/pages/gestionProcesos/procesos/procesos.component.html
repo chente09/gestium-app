@@ -77,7 +77,7 @@
                 <nz-form-item>
                     <nz-form-label nzRequired nzFor="materia">Materia</nz-form-label>
                     <nz-form-control [nzErrorTip]="materiaErrorTpl">
-                        <nz-select formControlName="materia" id="materia" placeholder="Seleccione la materia">
+                        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la materia" formControlName="materia" id="materia">
                             <nz-option *ngFor="let materia of materias" [nzValue]="materia"
                                 [nzLabel]="materia"></nz-option>
                         </nz-select>
@@ -98,16 +98,27 @@
         </div>
 
         <nz-divider nzText="Lista de Procesos"></nz-divider>
-
-        <!-- Buscador para filtrar procesos -->
-        <div class="search-container">
-            <nz-input-group [nzSuffix]="suffixIconSearch">
-                <input type="text" nz-input placeholder="Buscar procesos..." [(ngModel)]="searchValue"
-                    (ngModelChange)="buscarProcesos($event)" />
-            </nz-input-group>
-            <ng-template #suffixIconSearch>
-                <i nz-icon nzType="search"></i>
-            </ng-template>
+        <!-- Selector de materias -->
+        <div class="filters-container" >
+            <!-- Selector de materias (izquierda) -->
+            <div class="materia-filter">
+                <nz-select [(ngModel)]="materiaSeleccionada" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la materia" style="min-width: 150px;"
+                    (ngModelChange)="filtrarPorMateria()">
+                    <nz-option nzValue="" nzLabel="Todas"></nz-option>
+                    <nz-option *ngFor="let materia of materias" [nzValue]="materia" [nzLabel]="materia"></nz-option>
+                </nz-select>
+            </div>
+        
+            <!-- Buscador para filtrar procesos (derecha) -->
+            <div class="search-container" style="width: 300px;">
+                <nz-input-group [nzSuffix]="suffixIconSearch">
+                    <input type="text" nz-input placeholder="Buscar procesos..." [(ngModel)]="searchValue"
+                        (ngModelChange)="buscarProcesos($event)" />
+                </nz-input-group>
+                <ng-template #suffixIconSearch>
+                    <i nz-icon nzType="search"></i>
+                </ng-template>
+            </div>
         </div>
 
         <!-- Tabla de procesos -->
@@ -160,7 +171,7 @@
             <!-- Template para cuando no hay resultados -->
             <ng-template #noResultTemplate>
                 <nz-empty
-                    [nzNotFoundContent]="searchValue ? 'No se encontraron procesos que coincidan con la búsqueda' : 'No hay procesos creados'">
+                    [nzNotFoundContent]="searchValue || materiaSeleccionada ? 'No se encontraron procesos que coincidan con los filtros' : 'No hay procesos creados'">
                 </nz-empty>
             </ng-template>
         </nz-spin>

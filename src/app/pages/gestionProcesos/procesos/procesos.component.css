@@ -3,6 +3,7 @@
     border: none;
     border-top: 1px;
 }
+
 /* Card header styling */
 .header-container {
     display: flex;
@@ -30,6 +31,24 @@ button[nzType="primary"] {
 button[nzType="primary"]:hover {
     background-color: #c9302c;
     border-color: #001529d1;
+}
+
+/* Estilos para el contenedor de filtros */
+.filters-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+/* Estilo opcional para el buscador */
+.search-container {
+    width: 300px;
+}
+
+/* Estilo opcional para el selector de materias */
+.materia-filter nz-select {
+    min-width: 150px;
 }
 
 /* Form container styling */

@@ -228,6 +228,9 @@ export class ItinerarioComponent implements OnInit {
       const indexDiligenciaA = diligenciaOrder.indexOf(a.diligencia);
       const indexDiligenciaB = diligenciaOrder.indexOf(b.diligencia);
 
+      const fechaA = a.fechaTermino ? new Date(a.fechaTermino).getTime() : Number.MAX_SAFE_INTEGER;
+      const fechaB = b.fechaTermino ? new Date(b.fechaTermino).getTime() : Number.MAX_SAFE_INTEGER;
+
       // Función para manejar valores no encontrados
       const getSafeIndex = (index: number, orderArray: string[]) =>
         index === -1 ? orderArray.length : index;
@@ -237,7 +240,8 @@ export class ItinerarioComponent implements OnInit {
         getSafeIndex(indexUnidadA, unidadOrder) - getSafeIndex(indexUnidadB, unidadOrder) ||
         getSafeIndex(indexPisoA, pisoOrder) - getSafeIndex(indexPisoB, pisoOrder) ||
         getSafeIndex(indexMateriaA, materiaOrder) - getSafeIndex(indexMateriaB, materiaOrder) ||
-        getSafeIndex(indexDiligenciaA, diligenciaOrder) - getSafeIndex(indexDiligenciaB, diligenciaOrder)
+        getSafeIndex(indexDiligenciaA, diligenciaOrder) - getSafeIndex(indexDiligenciaB, diligenciaOrder) ||
+        fechaA - fechaB 
       );
     });
   }

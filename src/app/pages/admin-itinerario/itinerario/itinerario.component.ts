@@ -204,7 +204,7 @@ export class ItinerarioComponent implements OnInit {
   }
 
   private sortData(itinerarios: Itinerario[]): Itinerario[] {
-    const unidadOrder: string[] = ['Municipio', 'Notaria', 'SUPERCIAS','AMT', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''];
+    const unidadOrder: string[] = ['Pague Ya', 'Municipio', 'Notaria', 'SUPERCIAS','AMT', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''];
     const pisoOrder: string[] = ['Pb', '5to', '8vo', 'Otro', ''];
     const materiaOrder: string[] = [
       'Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales',

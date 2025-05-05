@@ -94,17 +94,19 @@ export class ItinerarioFormComponent implements OnInit {
       "Chango Baños Edith",
       "Chinde Chamorro Richard",
       "Erazo Navarrete Grimanesa",
-      "Flor Mónica",
+      "Flor Pazmiño Mónica",
       "Fuentes López Carlos",
       "López Vargas Melany",
       "Miranda Calvache Jorge",
       "Pila Avendaño Viviana",
+      "Ponce Toala Brenda Leonor",
       "Rodas Sánchez Silvia",
       "Salto Dávila luz",
       "Saltos Pinto Luis",
-      "Silva Cristian",
+      "Silva Pereira Cristian",
       "Tello Aymacaña Ángel",
       "Torres Recalde Ana",
+      "Vallejo Naranjo Byron Andrés",
       "Vela Ribadeneira María"
     ]
   };

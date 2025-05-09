@@ -16,6 +16,7 @@ import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzUploadModule } from 'ng-zorro-antd/upload';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
+import { doc } from '@angular/fire/firestore';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -94,6 +95,7 @@ export class ItinerarioFormComponent implements OnInit {
       "Chango Baños Edith",
       "Chinde Chamorro Richard",
       "Erazo Navarrete Grimanesa",
+      "Fierrro Vega Johana Alexia",
       "Flor Pazmiño Mónica",
       "Fuentes López Carlos",
       "López Vargas Melany",
@@ -104,6 +106,7 @@ export class ItinerarioFormComponent implements OnInit {
       "Salto Dávila luz",
       "Saltos Pinto Luis",
       "Silva Pereira Cristian",
+      "Sanmartin Solano Dayanna Mercedes",
       "Tello Aymacaña Ángel",
       "Torres Recalde Ana",
       "Vallejo Naranjo Byron Andrés",
@@ -277,7 +280,7 @@ export class ItinerarioFormComponent implements OnInit {
         const existingItinerario = await this.itinerarioService.getItinerarioByNroProceso(nroProceso);
 
         if (!existingItinerario.empty) {
-          const existingDocs = existingItinerario.docs.map(doc => doc.data() as Itinerario);
+          const existingDocs = existingItinerario.docs.map(doc => doc.data() as Itinerario).filter(doc => doc.estado !== Estado.COMPLETADO);
 
           // 🛑 Construimos el mensaje con todos los duplicados
           const duplicadosMsg = existingDocs.map((doc, index) =>

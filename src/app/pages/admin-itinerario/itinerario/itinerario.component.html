@@ -73,9 +73,19 @@
     <hr class="divider">
 
     <div class="table-container">
-        <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered
-            [nzFrontPagination]="false" [nzShowPagination]="false" [nzData]="filteredItinerarios" [nzLoading]="loading"
-            (nzCurrentPageDataChange)="onCurrentPageDataChange($event)" [nzScroll]="{ y: '450px' }">
+        <nz-table 
+            id="tabla-itinerarios" 
+            class="itinerario-table" 
+            #rowSelectionTable 
+            nzBordered
+            [nzFrontPagination]="true" 
+            [nzShowPagination]="true"
+            [nzPageSize]="pageSize"
+            [nzTotal]="filteredItinerarios.length" 
+            [nzData]="filteredItinerarios" 
+            [nzLoading]="loading"
+            (nzCurrentPageDataChange)="onCurrentPageDataChange($event)" 
+            [nzScroll]="{ y: '450px' }">
             <thead>
                 <tr>
                     <th nzWidth="80px">Estado</th>

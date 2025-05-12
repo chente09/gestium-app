@@ -118,6 +118,9 @@ export class ItinerarioComponent implements OnInit {
 
   searchTerm: string = '';
 
+  pageSize = 20;
+  pageIndex = 1;
+
   constructor(
     private itinerarioService: ItinerarioService,
     private usersService: UsersService,

@@ -81,7 +81,7 @@ export class ItinerarioComponent implements OnInit {
   imageFileList: any[] = [];
   fechaActual: string = '';  // Variable para la fecha por defecto
   horaActual: string = '';
-  notificaciones: { area: string; tramite: string; fechaTermino: string }[] = [];
+  notificaciones: { area: string; tramite: string; fechaTermino: string, solicita: string, id: string }[] = [];
   mostrarNotificaciones = false; // Estado para mostrar/ocultar la lista
 
   isVisible = false; // Controla la visibilidad del modal
@@ -207,7 +207,7 @@ export class ItinerarioComponent implements OnInit {
   }
 
   private sortData(itinerarios: Itinerario[]): Itinerario[] {
-    const unidadOrder: string[] = ['Pague Ya', 'Municipio', 'Notaria', 'SUPERCIAS','AMT', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''];
+    const unidadOrder: string[] = ['Pague Ya', 'Municipio', 'Notaria', 'SUPERCIAS', 'AMT', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro', ''];
     const pisoOrder: string[] = ['Pb', '5to', '8vo', 'Otro', ''];
     const materiaOrder: string[] = [
       'Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales',
@@ -244,7 +244,7 @@ export class ItinerarioComponent implements OnInit {
         getSafeIndex(indexPisoA, pisoOrder) - getSafeIndex(indexPisoB, pisoOrder) ||
         getSafeIndex(indexMateriaA, materiaOrder) - getSafeIndex(indexMateriaB, materiaOrder) ||
         getSafeIndex(indexDiligenciaA, diligenciaOrder) - getSafeIndex(indexDiligenciaB, diligenciaOrder) ||
-        fechaA - fechaB 
+        fechaA - fechaB
       );
     });
   }
@@ -368,7 +368,7 @@ export class ItinerarioComponent implements OnInit {
     this.mostrarTodos = !this.mostrarTodos; // Cambia el estado de "mostrarTodos"
     this.cdr.detectChanges();
   }
-  
+
 
 
   // Eliminar una actividad guardada (opcional)
@@ -395,6 +395,8 @@ export class ItinerarioComponent implements OnInit {
   agregarNotificacion(item: Itinerario): void {
     if (this.esFechaTerminoHoy(item.fechaTermino, item.estado)) {
       const notificacion = {
+        id: item.id,
+        solicita: item.creadoPor,
         area: item.area,
         tramite: item.tramite,
         fechaTermino: item.fechaTermino,
@@ -402,8 +404,22 @@ export class ItinerarioComponent implements OnInit {
 
       if (!this.notificaciones.some(n => n.tramite === notificacion.tramite && n.fechaTermino === notificacion.fechaTermino)) {
         this.notificaciones.push(notificacion);
+
+        // Ordenar las notificaciones de la más actual a la más antigua
+        this.ordenarNotificacionesPorFecha();
       }
     }
+  }
+
+  // Función para ordenar las notificaciones por fecha (más reciente primero)
+  ordenarNotificacionesPorFecha(): void {
+    this.notificaciones.sort((a, b) => {
+      const fechaA = new Date(a.fechaTermino).getTime();
+      const fechaB = new Date(b.fechaTermino).getTime();
+
+      // Orden descendente (más reciente primero)
+      return fechaB - fechaA;
+    });
   }
 
 
@@ -412,13 +428,13 @@ export class ItinerarioComponent implements OnInit {
       this.message.warning('No hay registros para descargar.');
       return;
     }
-  
+
     const pdf = new jsPDF({
       orientation: 'landscape', // Orientación horizontal
       unit: 'mm',
       format: 'a4',
     });
-  
+
     pdf.setFont('Helvetica');
 
     // Definir las columnas con los mismos nombres de la tabla
@@ -434,13 +450,13 @@ export class ItinerarioComponent implements OnInit {
       'Fechas',
       'Observaciones'
     ];
-  
+
     // Función para normalizar caracteres especiales
-  const normalizarTexto = (texto: string): string => {
-    return texto
-      .normalize('NFD') // Normaliza los caracteres a su forma descompuesta
-      .replace(/[\u0300-\u036f]/g, ''); // Elimina los acentos
-  };
+    const normalizarTexto = (texto: string): string => {
+      return texto
+        .normalize('NFD') // Normaliza los caracteres a su forma descompuesta
+        .replace(/[\u0300-\u036f]/g, ''); // Elimina los acentos
+    };
 
     // Extraer datos de `filteredItinerarios` y asegurarse de que no haya valores `undefined`
     const filas = this.filteredItinerarios.map(itinerario => [
@@ -455,7 +471,7 @@ export class ItinerarioComponent implements OnInit {
       `Solicitud: ${itinerario.fechaSolicitud || ''}\nHora: ${itinerario.horaSolicitud || ''}\nTérmino: ${itinerario.fechaTermino || ''}`, // Fechas
       itinerario.observaciones || '' // Observaciones
     ]);
-  
+
     // Generar la tabla en el PDF
     autoTable(pdf, {
       head: [columnas],
@@ -477,11 +493,11 @@ export class ItinerarioComponent implements OnInit {
         9: { cellWidth: 40 } // Observaciones
       },
     });
-  
+
     // Guardar el archivo PDF
     pdf.save('itinerarios.pdf');
   }
-  
+
 
   getCurrentUserId(): string | null {
     const user = this.usersService.getCurrentUser();
@@ -569,25 +585,25 @@ export class ItinerarioComponent implements OnInit {
     const file = event.target?.files?.[0] || null;
     if (file) {
       console.log('Archivo seleccionado:', file);
-      
+
       // Guardar el archivo para la subida
-      this.imagenSeleccionada = file; 
-  
+      this.imagenSeleccionada = file;
+
       // Actualizar la lista de imágenes para la vista
-      this.imageFileList = [{ 
-        uid: '-1', 
-        name: file.name, 
-        status: 'done', 
-        originFileObj: file 
+      this.imageFileList = [{
+        uid: '-1',
+        name: file.name,
+        status: 'done',
+        originFileObj: file
       }];
-  
+
       // Validar el formulario después de seleccionar la imagen
       this.validarFormulario();
     } else {
       console.warn('No se seleccionó ningún archivo.');
     }
   }
-  
+
 
   async guardarEstado(): Promise<void> {
     if (!this.selectedItem) return;

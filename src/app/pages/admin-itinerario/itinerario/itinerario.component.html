@@ -33,7 +33,9 @@
                 <div class="notification-item">
                     <strong>{{ notificacion.area }}</strong>
                     <strong>{{ notificacion.tramite }}</strong>
+                    <p>Solicita: {{ notificacion.solicita }}</p>
                     <p>Fecha de término: {{ notificacion.fechaTermino }}</p>
+                    <p>Id: {{ notificacion.id }}</p>
                 </div>
             </li>
             <li *ngIf="notificaciones.length === 0">No hay notificaciones.</li>

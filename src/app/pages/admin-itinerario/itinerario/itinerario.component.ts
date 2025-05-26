@@ -214,7 +214,7 @@ export class ItinerarioComponent implements OnInit {
       'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro', ''
     ];
     const diligenciaOrder: string[] = [
-      'Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro', ''
+      'Copias para Citar', 'Desglose', 'Requerimiento', 'Oficios', 'Otro', ''
     ];
 
     return itinerarios.sort((a, b) => {

@@ -59,13 +59,12 @@ export class ItinerarioFormComponent implements OnInit {
   selectPiso: string | null = null;
   selectJuez: string | null = null;
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
-  unidad: string[] = [ 'Pague Ya', 'Municipio', 'Notaria', 'SUPERCIAS','AMT', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro'];
+  unidad: string[] = ['Pague Ya', 'Municipio', 'Notaria', 'SUPERCIAS', 'AMT', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro'];
   materia: string[] = ['Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales', 'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro'];
-  diligencia: string[] = ['Copias para Citar', 'Desglose', 'Requerimiento', 'Retiro Oficios', 'Otro'];
+  diligencia: string[] = ['Copias para Citar', 'Desglose', 'Requerimiento', 'Oficios', 'Otro'];
   piso: string[] = ['Pb', '5to', '8vo', 'Otro'];
   juecesPorPiso: { [key: string]: string[] } = {
     "5to": [
-      "",
       "Alban Solano Diana",
       "Altamirano Ruiz Santiago",
       "Baño Palomino Patricio",
@@ -91,7 +90,6 @@ export class ItinerarioFormComponent implements OnInit {
       "Zambrano Ortiz Wilmer"
     ],
     "8vo": [
-      "",
       "Chango Baños Edith",
       "Chinde Chamorro Richard",
       "Erazo Navarrete Grimanesa",
@@ -203,6 +201,10 @@ export class ItinerarioFormComponent implements OnInit {
     this.slectedUnidad = this.unidad[0];
     this.slectedMateria = this.materia[0];
     this.selectDiligencia = this.diligencia[0];
+    this.selectJuez = null; // 🌟 Inicializar como null
+
+    // Actualizar jueces basado en el piso inicial, pero sin seleccionar ninguno
+    this.actualizarJueces(this.selectPiso);
   }
 
   onAreaChange(area: string): void {
@@ -221,7 +223,7 @@ export class ItinerarioFormComponent implements OnInit {
   private actualizarJueces(piso: string): void {
     if (this.juecesPorPiso[piso]) {
       this.jueces = this.juecesPorPiso[piso];
-      this.selectJuez = this.jueces[0];
+      this.selectJuez = null;
       this.itinerarioForm.patchValue({ juez: this.selectJuez }, { emitEvent: false });
     } else {
       this.jueces = [];
@@ -289,8 +291,8 @@ export class ItinerarioFormComponent implements OnInit {
           // 🛑 Esperar la confirmación del usuario
           const userConfirmed = await new Promise<boolean>((resolve) => {
             this.modal.confirm({
-                nzTitle: 'Número de proceso duplicado',
-                nzContent: `
+              nzTitle: 'Número de proceso duplicado',
+              nzContent: `
                     <div style="max-height: 300px; overflow-y: auto;">
                         <p>⚠️ El número de proceso "<b>${nroProceso}</b>" ya está registrado en los siguientes trámites:</p>
                         <ul style="padding-left: 20px;">
@@ -305,12 +307,12 @@ export class ItinerarioFormComponent implements OnInit {
                         <p>¿Desea continuar con el guardado?</p>
                     </div>
                 `,
-                nzOkText: 'Sí, continuar',
-                nzCancelText: 'No, cancelar',
-                nzOnOk: () => resolve(true),
-                nzOnCancel: () => resolve(false),
+              nzOkText: 'Sí, continuar',
+              nzCancelText: 'No, cancelar',
+              nzOnOk: () => resolve(true),
+              nzOnCancel: () => resolve(false),
             });
-        });
+          });
           if (!userConfirmed) {
             console.log('Usuario canceló la operación'); // Depuración
             this.isLoading = false;

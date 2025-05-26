@@ -128,3 +128,75 @@
         width: 100%;
     }
 }
+
+/* ESTILOS ADICIONALES PARA MODO EDICIÓN - Compatible con estilos existentes */
+
+/* 1. Extensión de tu tabla existente para modo edición */
+.itinerario-table.editing-mode {
+  min-width: 2200px; /* Más ancho que tu min-width actual de 1900px */
+}
+
+/* 2. Mejorar inputs en modo edición (extiende tu configuración existente) */
+.itinerario-table.editing-mode input[nz-input] {
+  min-width: 120px;
+  font-size: 12px;
+  padding: 4px 8px;
+  /* Mantiene tu width: 100% y box-sizing: border-box existentes */
+}
+
+/* 3. Mejorar selects en modo edición */
+.itinerario-table nz-select {
+  width: 100%;
+  min-width: 120px;
+}
+
+/* 4. Ajustar celdas específicamente en modo edición */
+.itinerario-table.editing-mode th,
+.itinerario-table.editing-mode td {
+  min-width: 120px;
+  vertical-align: top;
+  /* Mantiene tu padding: 8px existente */
+}
+
+/* 5. Contenedor para inputs con múltiples elementos */
+.edit-cell-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+
+/* 6. Estilos específicos para columnas que necesitan más espacio en edición */
+.itinerario-table.editing-mode td:nth-child(5), /* Unidad */
+.itinerario-table.editing-mode td:nth-child(6), /* Piso */
+.itinerario-table.editing-mode td:nth-child(7), /* Juez */
+.itinerario-table.editing-mode td:nth-child(8), /* Área */
+.itinerario-table.editing-mode td:nth-child(9)  /* Diligencia */ {
+  min-width: 150px;
+}
+
+/* 7. Estilos para inputs manuales que aparecen después de selects */
+.manual-input {
+  margin-top: 4px !important;
+  width: 100% !important;
+  font-size: 11px;
+}
+
+/* 8. Ajustar columna de acciones en modo edición */
+.itinerario-table.editing-mode td:last-child {
+  min-width: 140px;
+  white-space: nowrap;
+}
+
+/* 9. Sobrescribir temporalmente text-overflow para modo edición */
+.itinerario-table.editing-mode td {
+  text-overflow: initial; /* Permite ver contenido completo en edición */
+  overflow: visible; /* Permite ver contenido completo en edición */
+}
+
+/* 10. Ajustes responsivos específicos para modo edición */
+@media (max-width: 1400px) {
+  .itinerario-table.editing-mode {
+    min-width: 2400px;
+  }
+}

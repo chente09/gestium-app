@@ -18,6 +18,7 @@ import { NzListModule } from 'ng-zorro-antd/list';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { UsersService } from '../../../services/users/users.service';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -97,8 +98,7 @@ export class HistoryItinerarioComponent implements OnInit {
       "Tafur Salazar Jenny Margoth",
       "Vaca Duque Lucía Alejandra",
       "Zambrano Ortiz Wilmer Ismael",
-      "Figueroa María",
-      "Cevallos Ampudia Edwin"
+      "Figueroa Costa Maria Lorena",
     ],
     "8vo": [
       "Chango Baños Edith Cristina",
@@ -127,6 +127,7 @@ export class HistoryItinerarioComponent implements OnInit {
     private itinerarioService: ItinerarioService,
     private message: NzMessageService,
     private cdr: ChangeDetectorRef,
+    private usersService: UsersService
   ) { }
 
   private destroy$ = new Subject<void>();
@@ -240,22 +241,27 @@ export class HistoryItinerarioComponent implements OnInit {
 
   // 🌟 Método mejorado para iniciar edición
   startEdit(id: string): void {
-    const item = this.filteredItinerarios.find(i => i.id === id);
-    if (item) {
-      this.editCache[id] = {
-        edit: true,
-        data: {
-          ...item,
-          // Asegurar que los campos manuales estén disponibles
-          manualArea: item.manualArea || '',
-          manualJuzgado: item.manualJuzgado || '',
-          manualPiso: item.manualPiso || '',
-          manualMateria: item.manualMateria || '',
-          manualDiligencia: item.manualDiligencia || ''
-        }
-      };
-    }
-  }
+  const item = this.filteredItinerarios.find(i => i.id === id);
+  const user = this.usersService.getCurrentUser();
+
+  if (item && user?.email !== 'msaguano.gestium@gmail.com') {
+    this.editCache[id] = {
+      edit: true,
+      data: {
+        ...item,
+        manualArea: item.manualArea || '',
+        manualJuzgado: item.manualJuzgado || '',
+        manualPiso: item.manualPiso || '',
+        manualMateria: item.manualMateria || '',
+        manualDiligencia: item.manualDiligencia || ''
+      }
+    };
+  } else {
+    this.message.error('No tienes permiso para editar este itinerario.');
+  } 
+}
+
+
 
   cancelEdit(id: string): void {
     const index = this.itinerarios.findIndex(item => item.id === id);

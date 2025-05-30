@@ -88,8 +88,7 @@ export class ItinerarioFormComponent implements OnInit {
       "Tafur Salazar Jenny Margoth",
       "Vaca Duque Lucía Alejandra",
       "Zambrano Ortiz Wilmer Ismael",
-      "Figueroa María",
-      "Cevallos Ampudia Edwin"
+      "Figueroa Costa Maria Lorena",
     ],
     "8vo": [
       "Chango Baños Edith Cristina",

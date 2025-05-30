@@ -28,6 +28,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 
 import autoTable from 'jspdf-autotable';
+import { doc } from '@angular/fire/firestore';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -81,6 +82,7 @@ export class ItinerarioComponent implements OnInit {
   imageFileList: any[] = [];
   fechaActual: string = '';  // Variable para la fecha por defecto
   horaActual: string = '';
+
   notificaciones: { area: string; tramite: string; fechaTermino: string, solicita: string, id: string }[] = [];
   mostrarNotificaciones = false; // Estado para mostrar/ocultar la lista
 
@@ -108,6 +110,7 @@ export class ItinerarioComponent implements OnInit {
   selectedArea = new FormControl('');
   selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
   areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
+
 
   selectedEstado = new FormControl(null);
   estados: string[] = ['Incompleto', 'Pendiente'];
@@ -172,6 +175,22 @@ export class ItinerarioComponent implements OnInit {
     this.rutaActividades.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  mostrarDuplicados(): void {
+    const tramiteMap = new Map<string, number>();
+
+    // Contamos cuántas veces aparece cada trámite
+    this.filteredItinerarios.forEach(item => {
+      const count = tramiteMap.get(item.tramite) || 0;
+      tramiteMap.set(item.tramite, count + 1);
+    });
+
+    // Filtramos solo los que tienen más de una ocurrencia
+    const duplicados = this.filteredItinerarios.filter(item => tramiteMap.get(item.tramite)! > 1);
+
+    // Mostramos en la tabla solo los duplicados
+    this.filteredItinerarios = duplicados;
+  }
+  
   filterItinerarios(): void {
     const selectedAreaValue = this.selectedArea.value;
     const selectedEstadoValue = this.selectedEstado.value;

@@ -57,6 +57,8 @@
 
         <nz-range-picker [formControl]="selectedDate" (ngModelChange)="filterItinerarios()"></nz-range-picker>
 
+        <button nz-button nzType="default" (click)="mostrarDuplicados()">Mostrar Duplicados</button>
+
         <button nz-button nzType="default" (click)="showAllAreas()">Mostrar todas</button>
 
         <button nz-button class="download-button" (click)="descargarRegistrosPDF()">

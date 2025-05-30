@@ -180,7 +180,7 @@ export class ItinerarioFormComponent implements OnInit {
       manualPiso: [''],
       juez: [''],
       manualJuez: [''],
-      tramite: ['', Validators.required],
+      tramite: [''],
       nroProceso: [''],
       materia: [''],
       manualMateria: [''],

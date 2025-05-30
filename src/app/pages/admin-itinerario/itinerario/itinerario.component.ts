@@ -595,9 +595,15 @@ export class ItinerarioComponent implements OnInit {
   }
 
   validarFormulario(): void {
+    const user = this.usersService.getCurrentUser();
+
     // Validar que la imagen y la observación estén presentes
-    this.formularioValido = !!this.selectedItem?.obsCompletado?.trim()
+    if (user?.email === 'msaguano.gestium@gmail.com') {
+      this.formularioValido = !!this.selectedItem?.obsCompletado?.trim()
       && !!this.imagenSeleccionada;
+    } else {
+      this.formularioValido = true;
+    }
   }
 
   onFileSelected(event: any) {

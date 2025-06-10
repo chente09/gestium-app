@@ -213,7 +213,7 @@ export class ItinerarioService {
         }
 
         await uploadBytes(imageRef, newImageFile);
-        updatedData.imagen = await getDownloadURL(imageRef); // 🔹 Obtener la URL completa
+        updatedData.imagen = await getDownloadURL(imageRef);
       }
 
       // 📂 Subir nuevo PDF si se proporciona
@@ -230,7 +230,7 @@ export class ItinerarioService {
         }
 
         await uploadBytes(pdfRef, newPdfFile);
-        updatedData.pdf = await getDownloadURL(pdfRef); // 🔹 Obtener la URL completa
+        updatedData.pdf = await getDownloadURL(pdfRef);
       }
 
       // 📄 Obtener el historial actual desde Firestore
@@ -241,7 +241,6 @@ export class ItinerarioService {
       if (updatedData.historial) {
         // Filtrar entradas duplicadas
         const nuevoHistorialFiltrado = updatedData.historial.filter((nuevaEntrada: EntradaHistorial) => {
-          // Verificar si la nueva entrada ya existe en el historial actual
           return !historialActual.some((entradaExistente: EntradaHistorial) =>
             entradaExistente.observacion === nuevaEntrada.observacion &&
             entradaExistente.fecha === nuevaEntrada.fecha &&
@@ -249,15 +248,23 @@ export class ItinerarioService {
           );
         });
 
-        // Combinar el historial actual con el nuevo historial filtrado
         updatedData.historial = [...historialActual, ...nuevoHistorialFiltrado];
       } else {
-        updatedData.historial = historialActual; // Mantener el historial actual
+        updatedData.historial = historialActual;
       }
 
+      // 🔧 NUEVO: Eliminar valores undefined antes de actualizar Firestore
+      const cleanedData: any = {};
+      Object.keys(updatedData).forEach(key => {
+        const value = (updatedData as any)[key];
+        if (value !== undefined) {
+          cleanedData[key] = value;
+        }
+      });
+
       // 📄 Actualizar en Firestore solo si hay cambios
-      if (Object.keys(updatedData).length > 0) {
-        await updateDoc(docRef, updatedData);
+      if (Object.keys(cleanedData).length > 0) {
+        await updateDoc(docRef, cleanedData);
       }
     } catch (error: any) {
       throw new Error(`Error al actualizar el itinerario ${id}: ${error.message}`);

@@ -18,7 +18,7 @@
 <div class="notification-container">
     <!-- Botón de notificaciones en un contenedor fijo -->
     <div class="button-wrapper">
-        <button  (click)="mostrarNotificaciones = !mostrarNotificaciones">
+        <button (click)="mostrarNotificaciones = !mostrarNotificaciones">
             <i nz-icon nzType="bell"></i>
             <span *ngIf="notificaciones.length > 0" class="notification-badge">{{ notificaciones.length }}</span>
         </button>
@@ -77,19 +77,10 @@
     <hr class="divider">
 
     <div class="table-container">
-        <nz-table 
-            id="tabla-itinerarios" 
-            class="itinerario-table" 
-            #rowSelectionTable 
-            nzBordered
-            [nzFrontPagination]="true" 
-            [nzShowPagination]="true"
-            [nzPageSize]="pageSize"
-            [nzTotal]="filteredItinerarios.length" 
-            [nzData]="filteredItinerarios" 
-            [nzLoading]="loading"
-            (nzCurrentPageDataChange)="onCurrentPageDataChange($event)" 
-            [nzScroll]="{ y: '450px' }">
+        <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered
+            [nzFrontPagination]="true" [nzShowPagination]="true" [nzPageSize]="pageSize"
+            [nzTotal]="filteredItinerarios.length" [nzData]="filteredItinerarios" [nzLoading]="loading"
+            (nzCurrentPageDataChange)="onCurrentPageDataChange($event)" [nzScroll]="{ y: '450px' }">
             <thead>
                 <tr>
                     <th nzWidth="80px">Estado</th>
@@ -207,17 +198,34 @@
 
 <!-- Modal Completado -->
 
+<!-- Modal Completado -->
 <nz-modal [(nzVisible)]="isVisible" nzTitle="Detalles de Finalización" [nzFooter]="modalFooter"
     (nzOnCancel)="handleCancel()" [nzWidth]="'600px'">
     <ng-container *nzModalContent>
+        <!-- ✅ NUEVA SECCIÓN: Información del Item -->
+        <ng-container *ngIf="selectedItem">
+            <nz-card nzTitle="Información del Trámite" [nzBordered]="false" style="margin-bottom: 16px;">
+                <div>
+                    <strong>Actividad: </strong><br>
+                    {{ selectedItem.tramite }}
+                </div>
+                <div *ngIf="selectedItem.nroProceso" style="margin-top: 8px;">
+                    <strong>N° Juicio: </strong><br>
+                    {{ selectedItem.nroProceso }}
+                </div>
+            </nz-card>
+        </ng-container>
+
         <form nz-form>
             <!-- Observaciones -->
             <nz-form-item>
                 <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
                 <nz-form-control>
-                    <textarea nz-input [(ngModel)]="selectedItem.obsCompletado" (input)="validarFormulario()"
-                        id="observaciones" name="observaciones" placeholder="Ingrese observaciones" rows="4"
-                        style="width: 100%;"></textarea>
+                    <ng-container *ngIf="selectedItem">
+                        <textarea nz-input [(ngModel)]="selectedItem.obsCompletado" (input)="validarFormulario()"
+                            id="observaciones" name="observaciones" placeholder="Ingrese observaciones" rows="4"
+                            style="width: 100%;"></textarea>
+                    </ng-container>
                 </nz-form-control>
             </nz-form-item>
 
@@ -249,17 +257,33 @@
 
 
 <!-- Modal para EN PROCESO -->
+<!-- Modal para EN PROCESO -->
 <nz-modal [(nzVisible)]="isEnProcesoVisible" nzTitle="Agrega Observaciones del Proceso"
     [nzFooter]="modalFooterEnProceso" (nzOnCancel)="handleCancelEnProceso()">
     <ng-container *nzModalContent>
+        <!-- ✅ NUEVA SECCIÓN: Información del Item -->
+        <ng-container *ngIf="selectedItem">
+            <nz-card nzTitle="Información del Trámite" [nzBordered]="false" style="margin-bottom: 16px;">
+                <div>
+                    <strong>Actividad: </strong><br>
+                    {{ selectedItem.tramite }}
+                </div>
+                <div *ngIf="selectedItem.nroProceso" style="margin-top: 8px;">
+                    <strong>N° Juicio: </strong><br>
+                    {{ selectedItem.nroProceso }}
+                </div>
+            </nz-card>
+        </ng-container>
+
         <form nz-form>
             <nz-form-item>
                 <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
                 <nz-form-control>
                     <ng-container *ngIf="selectedItem">
-                        <textarea nz-input [(ngModel)]="selectedItem.obsEnProceso"
-                            (input)="validarFormularioEnProceso()" id="observaciones" name="observaciones"
-                            placeholder="Ingrese observaciones" rows="4"></textarea>
+                        <!-- ✅ CORREGIDO: obsEnProceso en lugar de obsCompletado -->
+                        <textarea nz-input [(ngModel)]="selectedItem.obsEnProceso" (input)="validarFormularioEnProceso()"
+                            id="observaciones" name="observaciones" placeholder="Ingrese observaciones" rows="4"
+                            style="width: 100%;"></textarea>
                     </ng-container>
                 </nz-form-control>
             </nz-form-item>
@@ -270,7 +294,8 @@
         <button nz-button nzDanger="true" (click)="handleCancelEnProceso()">
             <i nz-icon nzType="close"></i> Cancelar
         </button>
-        <button nz-button nzType="primary" (click)="guardarEstadoEnProceso()" [nzLoading]="isConfirmLoading">
+        <button nz-button nzType="primary" (click)="guardarEstadoEnProceso()" [nzLoading]="isConfirmLoading"
+            [disabled]="!formularioValido">
             <i nz-icon nzType="save"></i> Guardar
         </button>
     </ng-template>
@@ -403,37 +428,3 @@
     </div>
 </div>
 
-
-
-<!-- <div class="gestion-rutas-container">
-    <h3 class="gestion-title">Actividades Guardadas</h3>
-
-    
-    <ul class="list-group mt-3" *ngIf="actividadesGuardadas.length > 0">
-        <li *ngFor="let actividad of actividadesGuardadas; let i = index"
-            class="list-group-item d-flex justify-content-between align-items-center actividad-item">
-
-            
-            <div class="actividad-text">
-                <p><strong>Fecha:</strong> {{ actividad.fecha | date: 'medium' }}</p>
-                <p><strong>Lugares:</strong></p>
-                <ul>
-                    <li *ngFor="let lugar of actividad.lugar">{{ lugar }}</li>
-                </ul>
-            </div>
-
-            
-            <div class="actividad-actions">
-                <button (click)="eliminarActividadGuardada(i)" class="btn btn-danger btn-sm"
-                    aria-label="Eliminar actividad">
-                    <nz-icon nzType="delete"></nz-icon>
-                </button>
-            </div>
-        </li>
-    </ul>
-
-    
-    <div *ngIf="actividadesGuardadas.length === 0" class="alert alert-info mt-3">
-        No hay actividades guardadas.
-    </div>
-</div> -->

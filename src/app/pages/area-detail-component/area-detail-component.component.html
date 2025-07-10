@@ -7,6 +7,8 @@
     <nz-breadcrumb-item>{{ areaId | uppercase }}</nz-breadcrumb-item>
 </nz-breadcrumb>
 <hr class="divider">
+
+<!-- Enlaces externos existentes -->
 <div class="external-links-container" *ngFor="let option of options">
     <div *ngIf="option.externalLinks && option.externalLinks.length > 0">
         <nz-layout class="area-container">
@@ -30,7 +32,7 @@
     </div>
 </div>
 
-
+<!-- Acciones del área existentes -->
 <nz-layout class="area-container">
     <nz-card [nzBordered]="true">
         <h2 class="title">Acciones de {{ areaId | uppercase }}</h2>
@@ -49,3 +51,27 @@
         </nz-row>
     </nz-card>
 </nz-layout>
+
+<!-- ✅ DEBUG: Información de estado (solo en desarrollo) -->
+<!-- Puedes comentar o eliminar esta sección en producción -->
+<div style="background: #e6f7ff; padding: 10px; margin: 10px 0; border: 1px solid #91d5ff;" *ngIf="true">
+  <strong>🔧 DEBUG INFO:</strong><br>
+  - AreaId: {{ areaId }}<br>
+  - CurrentUserArea: {{ currentUserArea }}<br>
+  - ShowAgenda (propiedad): {{ showAgenda }}<br>
+  - Options length: {{ options.length }}
+</div>
+
+<!-- ✅ CORREGIDO: Ahora usa la propiedad showAgenda en lugar del método -->
+<div class="agenda-section" *ngIf="showAgenda && areaId">
+    <nz-card [nzBordered]="true" class="agenda-card">
+        <h2 class="title">
+            <i nz-icon nzType="calendar" nzTheme="outline"></i>
+            Agenda de {{ areaId | uppercase }}
+        </h2>
+        <hr class="divider">
+        
+        <!-- Componente de agenda -->
+        <app-agenda-area [area]="areaId!"></app-agenda-area>
+    </nz-card>
+</div>

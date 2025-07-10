@@ -1,0 +1,288 @@
+<div class="agenda-area-container">
+    <!-- 📅 Header con navegación de semanas -->
+    <nz-card class="week-navigation-card">
+        <div class="week-header">
+            <div class="week-navigation">
+                <button nz-button nzType="default" nzShape="circle" (click)="goToPreviousWeek()"
+                    nzTooltipTitle="Semana anterior" nz-tooltip>
+                    <i nz-icon nzType="left"></i>
+                </button>
+
+                <div class="week-title">
+                    <h3>{{ currentWeekStart | date:'dd/MM/yyyy' }} - {{ currentWeek[6] | date:'dd/MM/yyyy' }}</h3>
+                    <span class="week-subtitle">Agenda de {{ area | titlecase }}</span>
+                </div>
+
+                <button nz-button nzType="default" nzShape="circle" (click)="goToNextWeek()"
+                    nzTooltipTitle="Semana siguiente" nz-tooltip>
+                    <i nz-icon nzType="right"></i>
+                </button>
+            </div>
+
+            <div class="week-actions">
+                <button nz-button nzType="default" (click)="goToCurrentWeek()" nzTooltipTitle="Ir a semana actual"
+                    nz-tooltip>
+                    <i nz-icon nzType="calendar"></i>
+                    Hoy
+                </button>
+
+                <button nz-button nzType="primary" (click)="openCreateModal()" nzTooltipTitle="Crear nueva actividad"
+                    nz-tooltip>
+                    <i nz-icon nzType="plus"></i>
+                    Nueva Actividad
+                </button>
+            </div>
+        </div>
+    </nz-card>
+
+    <!-- 🗓️ Calendario semanal con drag & drop -->
+    <nz-spin [nzSpinning]="isLoading">
+        <div class="calendar-container">
+            <nz-row [nzGutter]="8" class="calendar-week">
+                <nz-col [nzSpan]="24/7" *ngFor="let day of currentWeek; trackBy: trackByDate" class="calendar-day-col">
+                    <nz-card class="day-card" [ngClass]="{'today-card': isToday(day)}"
+                        [nzBodyStyle]="{ padding: '12px' }">
+                        <!-- 📅 Header del día -->
+                        <div class="day-header">
+                            <div class="day-name">{{ getDayName(day) }}</div>
+                            <div class="day-number" [ngClass]="{'today-number': isToday(day)}">
+                                {{ day | date:'dd' }}
+                            </div>
+                            <div class="day-count">
+                                <nz-tag
+                                    [nzColor]="(weekActivities[getDateKey(day)] && weekActivities[getDateKey(day)].length > 0) ? 'blue' : 'default'">
+                                    {{ weekActivities[getDateKey(day)] ? weekActivities[getDateKey(day)].length : 0 }}
+                                </nz-tag>
+                            </div>
+                        </div>
+
+                        <!-- 🎯 Drop zone para actividades -->
+                        <div class="activities-container" cdkDropList
+                            [cdkDropListData]="weekActivities[getDateKey(day)] || []"
+                            (cdkDropListDropped)="onDrop($event, day)" [id]="'day-' + getDateKey(day)">
+                            <!-- 📋 Lista de actividades del día -->
+                            <div *ngFor="let activity of weekActivities[getDateKey(day)] || []; trackBy: trackByActivityId"
+                                class="activity-item" cdkDrag [cdkDragData]="activity">
+                                <nz-card class="activity-card" [nzSize]="'small'"
+                                    [ngClass]="'activity-' + activity.estado" [nzBodyStyle]="{ padding: '8px' }">
+                                    <!-- 🏷️ Header de actividad -->
+                                    <div class="activity-header">
+                                        <nz-tag [nzColor]="getPriorityColor(activity.prioridad)" nzSize="small">
+                                            {{ activity.prioridad | titlecase }}
+                                        </nz-tag>
+                                        <nz-tag [nzColor]="getActivityStatusColor(activity.estado)" nzSize="small">
+                                            {{ activity.estado | titlecase }}
+                                        </nz-tag>
+                                    </div>
+
+                                    <!-- 📝 Contenido de actividad -->
+                                    <div class="activity-content">
+                                        <div class="activity-title" nzTooltipTitle="{{ activity.titulo }}" nz-tooltip>
+                                            {{ activity.titulo }}
+                                        </div>
+
+                                        <div class="activity-description" *ngIf="activity.descripcion">
+                                            {{ activity.descripcion }}
+                                        </div>
+
+                                        <div class="activity-responsible" *ngIf="activity.responsableNombre">
+                                            <i nz-icon nzType="user"></i>
+                                            {{ activity.responsableNombre }}
+                                        </div>
+                                    </div>
+
+                                    <!-- ⚡ Acciones rápidas -->
+                                    <div class="activity-actions">
+                                        <button nz-button nzType="text" nzSize="small"
+                                            (click)="completeActivity(activity)"
+                                            *ngIf="activity.estado !== 'completada'"
+                                            nzTooltipTitle="Marcar como completada" nz-tooltip>
+                                            <i nz-icon nzType="check" nzTheme="outline"></i>
+                                        </button>
+
+                                        <button nz-button nzType="text" nzSize="small" (click)="editActivity(activity)"
+                                            nzTooltipTitle="Editar actividad" nz-tooltip>
+                                            <i nz-icon nzType="edit" nzTheme="outline"></i>
+                                        </button>
+
+                                        <button nz-button nzType="text" nzSize="small" nzDanger nz-popconfirm
+                                            nzPopconfirmTitle="¿Eliminar esta actividad?"
+                                            (nzOnConfirm)="deleteActivity(activity)" nzTooltipTitle="Eliminar actividad"
+                                            nz-tooltip>
+                                            <i nz-icon nzType="delete" nzTheme="outline"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- 🎯 Drag handle -->
+                                    <div class="drag-handle" cdkDragHandle>
+                                        <i nz-icon nzType="drag" nzTheme="outline"></i>
+                                    </div>
+                                </nz-card>
+                            </div>
+
+                            <!-- 📭 Placeholder cuando no hay actividades -->
+                            <div class="empty-day"
+                                *ngIf="!weekActivities[getDateKey(day)] || weekActivities[getDateKey(day)]?.length === 0">
+                                <div class="empty-message">
+                                    <i nz-icon nzType="plus-circle" nzTheme="outline"></i>
+                                    <span>Arrastra actividades aquí</span>
+                                </div>
+                            </div>
+                        </div>
+                    </nz-card>
+                </nz-col>
+            </nz-row>
+        </div>
+    </nz-spin>
+
+    <!-- ➕ Modal para crear actividad -->
+    <nz-modal [(nzVisible)]="showCreateModal" nzTitle="Crear Nueva Actividad" [nzFooter]="createModalFooter"
+        (nzOnCancel)="closeCreateModal()" [nzWidth]="600">
+        <ng-container *nzModalContent>
+            <form nz-form [formGroup]="createForm" nzLayout="vertical">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Título</nz-form-label>
+                    <nz-form-control nzErrorTip="El título es obligatorio">
+                        <input nz-input formControlName="titulo" placeholder="Ingrese el título de la actividad" />
+                    </nz-form-control>
+                </nz-form-item>
+
+                <nz-form-item>
+                    <nz-form-label>Descripción</nz-form-label>
+                    <nz-form-control>
+                        <textarea nz-input formControlName="descripcion" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
+                            placeholder="Descripción opcional de la actividad"></textarea>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <nz-row [nzGutter]="16">
+                    <nz-col [nzSpan]="12">
+                        <nz-form-item>
+                            <nz-form-label nzRequired>Fecha Límite</nz-form-label>
+                            <nz-form-control>
+                                <nz-date-picker formControlName="fechaLimite" nzPlaceHolder="Seleccionar fecha"
+                                    style="width: 100%"></nz-date-picker>
+                            </nz-form-control>
+                        </nz-form-item>
+                    </nz-col>
+
+                    <nz-col [nzSpan]="12">
+                        <nz-form-item>
+                            <nz-form-label nzRequired>Prioridad</nz-form-label>
+                            <nz-form-control>
+                                <nz-select formControlName="prioridad" nzPlaceHolder="Seleccionar prioridad">
+                                    <nz-option nzValue="baja" nzLabel="Baja"></nz-option>
+                                    <nz-option nzValue="media" nzLabel="Media"></nz-option>
+                                    <nz-option nzValue="alta" nzLabel="Alta"></nz-option>
+                                </nz-select>
+                            </nz-form-control>
+                        </nz-form-item>
+                    </nz-col>
+                </nz-row>
+
+                <nz-row [nzGutter]="16">
+                    <nz-col [nzSpan]="12">
+                        <nz-form-item>
+                            <nz-form-label nzRequired>Responsable (UID)</nz-form-label>
+                            <nz-form-control>
+                                <input nz-input formControlName="responsable" placeholder="UID del responsable" />
+                            </nz-form-control>
+                        </nz-form-item>
+                    </nz-col>
+
+                    <nz-col [nzSpan]="12">
+                        <nz-form-item>
+                            <nz-form-label nzRequired>Nombre del Responsable</nz-form-label>
+                            <nz-form-control>
+                                <input nz-input formControlName="responsableNombre" placeholder="Nombre completo" />
+                            </nz-form-control>
+                        </nz-form-item>
+                    </nz-col>
+                </nz-row>
+            </form>
+        </ng-container>
+
+        <ng-template #createModalFooter>
+            <button nz-button nzType="default" (click)="closeCreateModal()">Cancelar</button>
+            <button nz-button nzType="primary" [nzLoading]="isLoading" (click)="createActivity()">
+                Crear Actividad
+            </button>
+        </ng-template>
+    </nz-modal>
+
+    <!-- ✏️ Modal para editar actividad -->
+    <nz-modal [(nzVisible)]="showEditModal" nzTitle="Editar Actividad" [nzFooter]="editModalFooter"
+        (nzOnCancel)="closeEditModal()" [nzWidth]="600">
+        <ng-container *nzModalContent>
+            <form nz-form [formGroup]="editForm" nzLayout="vertical" *ngIf="selectedActivity">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Título</nz-form-label>
+                    <nz-form-control nzErrorTip="El título es obligatorio">
+                        <input nz-input formControlName="titulo" placeholder="Título de la actividad" />
+                    </nz-form-control>
+                </nz-form-item>
+
+                <nz-form-item>
+                    <nz-form-label>Descripción</nz-form-label>
+                    <nz-form-control>
+                        <textarea nz-input formControlName="descripcion" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
+                            placeholder="Descripción de la actividad"></textarea>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <nz-row [nzGutter]="16">
+                    <nz-col [nzSpan]="8">
+                        <nz-form-item>
+                            <nz-form-label nzRequired>Fecha Límite</nz-form-label>
+                            <nz-form-control>
+                                <nz-date-picker formControlName="fechaLimite" style="width: 100%"></nz-date-picker>
+                            </nz-form-control>
+                        </nz-form-item>
+                    </nz-col>
+
+                    <nz-col [nzSpan]="8">
+                        <nz-form-item>
+                            <nz-form-label>Prioridad</nz-form-label>
+                            <nz-form-control>
+                                <nz-select formControlName="prioridad">
+                                    <nz-option nzValue="baja" nzLabel="Baja"></nz-option>
+                                    <nz-option nzValue="media" nzLabel="Media"></nz-option>
+                                    <nz-option nzValue="alta" nzLabel="Alta"></nz-option>
+                                </nz-select>
+                            </nz-form-control>
+                        </nz-form-item>
+                    </nz-col>
+
+                    <nz-col [nzSpan]="8">
+                        <nz-form-item>
+                            <nz-form-label>Estado</nz-form-label>
+                            <nz-form-control>
+                                <nz-select formControlName="estado">
+                                    <nz-option nzValue="pendiente" nzLabel="Pendiente"></nz-option>
+                                    <nz-option nzValue="en_progreso" nzLabel="En Progreso"></nz-option>
+                                    <nz-option nzValue="completada" nzLabel="Completada"></nz-option>
+                                    <nz-option nzValue="pospuesta" nzLabel="Pospuesta"></nz-option>
+                                </nz-select>
+                            </nz-form-control>
+                        </nz-form-item>
+                    </nz-col>
+                </nz-row>
+
+                <nz-form-item>
+                    <nz-form-label>Notas</nz-form-label>
+                    <nz-form-control>
+                        <textarea nz-input formControlName="notas" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
+                            placeholder="Notas adicionales"></textarea>
+                    </nz-form-control>
+                </nz-form-item>
+            </form>
+        </ng-container>
+
+        <ng-template #editModalFooter>
+            <button nz-button nzType="default" (click)="closeEditModal()">Cancelar</button>
+            <button nz-button nzType="primary" [nzLoading]="isLoading" (click)="saveEditActivity()">
+                Guardar Cambios
+            </button>
+        </ng-template>
+    </nz-modal>
+</div>

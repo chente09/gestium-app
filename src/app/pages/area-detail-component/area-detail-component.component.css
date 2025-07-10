@@ -1,3 +1,5 @@
+/* ✅ ESTILOS EXISTENTES + NUEVOS PARA LA AGENDA */
+
 .area-container {
     text-align: center;
     padding: 20px;
@@ -17,7 +19,7 @@
 
 /* Ajustes de las tarjetas de opciones */
 .option-card {
-    background-color: #f8f9fa; /* Color claro para destacar las opciones */
+    background-color: #f8f9fa;
     padding: 16px;
     margin: 12px 0;
     font-size: 18px;
@@ -35,13 +37,11 @@
     box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Ícono dentro de la tarjeta */
 .option-icon {
     font-size: 28px;
     margin-bottom: 8px;
 }
 
-/* Enlace estilizado */
 .option-link {
     text-decoration: none;
     color: inherit;
@@ -49,39 +49,6 @@
     width: 100%;
 }
 
-/* Mejorando el diseño responsivo */
-@media (max-width: 1024px) {
-    .option-card {
-        font-size: 16px; /* Reduce el tamaño del texto en pantallas medianas */
-    }
-}
-
-@media (max-width: 768px) {
-    .option-card {
-        width: 100%; /* Asegura que las tarjetas ocupen todo el ancho */
-        font-size: 14px; /* Reduce el tamaño del texto */
-        padding: 12px;
-    }
-
-    .option-icon {
-        font-size: 24px; /* Ajusta el tamaño del icono */
-    }
-}
-
-@media (max-width: 480px) {
-    .option-card {
-        font-size: 12px; /* Texto más pequeño en dispositivos muy pequeños */
-        padding: 8px;
-    }
-
-    .option-icon {
-        font-size: 20px;
-    }
-
-    .ant-card-meta-title {
-        font-size: 10px;
-    }
-}
 .external-links-container {
     margin-bottom: 20px;
 }
@@ -128,4 +95,80 @@
 .external-link-text {
     font-size: 16px;
     font-weight: 500;
+}
+
+/* ✅ NUEVOS ESTILOS PARA LA SECCIÓN DE AGENDA */
+.agenda-section {
+    margin-top: 24px;
+    animation: slideInUp 0.4s ease-out;
+}
+
+.agenda-card {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.agenda-card .title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #001529;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+.agenda-card .title i {
+    color: #1890ff;
+}
+
+/* 🎨 Animación de entrada */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 📱 Responsive para la nueva sección */
+@media (max-width: 1024px) {
+    .agenda-section {
+        margin-top: 16px;
+    }
+    
+    .agenda-card .title {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .agenda-card .title {
+        font-size: 18px;
+        flex-direction: column;
+        text-align: center;
+        gap: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .option-card {
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    .option-icon {
+        font-size: 20px;
+    }
+
+    .ant-card-meta-title {
+        font-size: 10px;
+    }
+    
+    .agenda-card .title {
+        font-size: 16px;
+    }
 }

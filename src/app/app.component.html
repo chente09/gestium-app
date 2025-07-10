@@ -32,19 +32,23 @@
           </li>
         </ul>
       </li>
+      <!-- ✅ NUEVO: Menú de Administración (solo para admins) -->
+      <li nz-submenu nzOpen nzTitle="Administración" nzIcon="setting" *ngIf="isAdmin()">
+        <ul>
+          <li nz-menu-item>
+            <a routerLink="/admin/users">
+              <nz-icon nzType="team"></nz-icon>
+              <span>Gestión de Usuarios</span>
+            </a>
+          </li>
+        </ul>
+      </li>
     </ul>
   </nz-sider>
 
   <!-- Drawer para pantallas pequeñas -->
-  <nz-drawer 
-    [nzVisible]="isDrawerOpen" 
-    [nzPlacement]="'left'" 
-    [nzClosable]="true" 
-    (nzOnClose)="closeDrawer()"
-    [nzWidth]="180"
-    [nzBodyStyle]="{ padding: '0', background: '#001529' }"
-    [nzMask]="false"
-    >
+  <nz-drawer [nzVisible]="isDrawerOpen" [nzPlacement]="'left'" [nzClosable]="true" (nzOnClose)="closeDrawer()"
+    [nzWidth]="180" [nzBodyStyle]="{ padding: '0', background: '#001529' }" [nzMask]="false">
     <ng-container *nzDrawerContent>
       <ul nz-menu nzTheme="dark" nzMode="inline">
         <li nz-menu-item (click)="irWelcome(); closeDrawer()">
@@ -67,6 +71,15 @@
           <ul>
             <li nz-menu-item (click)="closeDrawer()">
               <a routerLink="/itinerario">Itinerario</a>
+            </li>
+          </ul>
+        </li>
+        <!-- ✅ NUEVO: Menú de Administración en drawer (solo para admins) -->
+        <li nz-submenu nzOpen nzTitle="Administración" nzIcon="setting" *ngIf="isAdmin()">
+          <ul>
+            <li nz-menu-item (click)="goToUserAdmin()">
+              <nz-icon nzType="team"></nz-icon>
+              <span>Gestión de Usuarios</span>
             </li>
           </ul>
         </li>
@@ -103,9 +116,27 @@
               <li nz-menu-item>
                 <strong>¡Hola, {{ getCurrentUserName() }}!</strong>
               </li>
+              <!-- ✅ NUEVO: Mostrar rol del usuario -->
+              <li nz-menu-item *ngIf="currentUserRole">
+                <span style="color: #1890ff;">
+                  <nz-icon nzType="crown" *ngIf="currentUserRole === 'admin'"></nz-icon>
+                  <nz-icon nzType="star" *ngIf="currentUserRole === 'coordinador'"></nz-icon>
+                  <nz-icon nzType="user" *ngIf="currentUserRole === 'empleado'"></nz-icon>
+                  {{ currentUserRole | titlecase }}
+                </span>
+              </li>
+              <!-- ✅ NUEVO: Enlace rápido a administración para admins -->
+              <li nz-menu-item *ngIf="isAdmin()">
+                <a routerLink="/admin/users" style="color: #722ed1;">
+                  <nz-icon nzType="setting"></nz-icon>
+                  Administración
+                </a>
+              </li>
               <li nz-menu-item>
-                <a (click)="logout()" style="color: brown;"><span nz-icon nzType="logout" style="color: brown;"></span>
-                  Cerrar Sesión</a>
+                <a (click)="logout()" style="color: brown;">
+                  <span nz-icon nzType="logout" style="color: brown;"></span>
+                  Cerrar Sesión
+                </a>
               </li>
             </ul>
           </nz-dropdown-menu>

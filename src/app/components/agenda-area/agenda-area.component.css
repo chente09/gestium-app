@@ -1,0 +1,435 @@
+/* 🎨 ESTILOS DEL COMPONENTE AGENDA POR ÁREA */
+
+.agenda-area-container {
+    width: 100%;
+    min-height: 600px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+/* 📅 Header de navegación de semanas */
+.week-navigation-card {
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.week-navigation {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.week-title {
+    text-align: center;
+}
+
+.week-title h3 {
+    margin: 0;
+    color: #001529;
+    font-weight: 600;
+}
+
+.week-subtitle {
+    color: #8c8c8c;
+    font-size: 14px;
+}
+
+.week-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* 🗓️ Contenedor del calendario */
+.calendar-container {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-height: 500px;
+}
+
+.calendar-week {
+    height: 100%;
+}
+
+.calendar-day-col {
+    height: 100%;
+}
+
+/* 📅 Tarjetas de días */
+.day-card {
+    height: 500px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.day-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.today-card {
+    border-color: #1890ff;
+    background: linear-gradient(135deg, #e6f7ff 0%, #fff 100%);
+}
+
+/* 📅 Header del día */
+.day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.day-name {
+    font-weight: 600;
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.day-number {
+    font-weight: bold;
+    font-size: 18px;
+    color: #333;
+}
+
+.today-number {
+    color: #1890ff;
+    background: #e6f7ff;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.day-count {
+    font-size: 12px;
+}
+
+/* 🎯 Contenedor de actividades con drag & drop */
+.activities-container {
+    min-height: 400px;
+    max-height: 400px;
+    overflow-y: auto;
+    position: relative;
+    border: 2px dashed transparent;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    padding: 4px;
+}
+
+.activities-container:hover {
+    border-color: #d9d9d9;
+}
+
+.activities-container.cdk-drop-list-dragging {
+    border-color: #1890ff;
+    background: #f6ffed;
+}
+
+/* 📋 Items de actividades */
+.activity-item {
+    margin-bottom: 8px;
+    position: relative;
+    cursor: move;
+}
+
+.activity-item.cdk-drag-dragging {
+    opacity: 0.8;
+    transform: rotate(5deg);
+    z-index: 1000;
+}
+
+.activity-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid #d9d9d9;
+    position: relative;
+}
+
+.activity-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* 🎨 Estados de actividades */
+.activity-pendiente .activity-card {
+    border-left-color: #fa8c16;
+    background: #fff7e6;
+}
+
+.activity-en_progreso .activity-card {
+    border-left-color: #1890ff;
+    background: #e6f7ff;
+}
+
+.activity-completada .activity-card {
+    border-left-color: #52c41a;
+    background: #f6ffed;
+}
+
+.activity-pospuesta .activity-card {
+    border-left-color: #ff4d4f;
+    background: #fff1f0;
+}
+
+/* 🏷️ Header de actividad */
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 4px;
+}
+
+/* 📝 Contenido de actividad */
+.activity-content {
+    margin-bottom: 8px;
+}
+
+.activity-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 4px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.activity-description {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 4px;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.activity-responsible {
+    font-size: 10px;
+    color: #999;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ⚡ Acciones de actividad */
+.activity-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.activity-item:hover .activity-actions {
+    opacity: 1;
+}
+
+.activity-actions button {
+    padding: 2px 4px;
+    height: auto;
+    font-size: 12px;
+}
+
+/* 🎯 Handle de drag */
+.drag-handle {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    color: #d9d9d9;
+    cursor: grab;
+    padding: 2px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.activity-item:hover .drag-handle {
+    opacity: 1;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* 📭 Placeholder para días vacíos */
+.empty-day {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #bfbfbf;
+    text-align: center;
+    border: 2px dashed #e8e8e8;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    min-height: 100px;
+}
+
+.empty-day:hover {
+    border-color: #d9d9d9;
+    background: #fafafa;
+}
+
+.empty-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.empty-message i {
+    font-size: 24px;
+}
+
+.empty-message span {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* 🎯 Efectos de drag & drop */
+.cdk-drag-preview {
+    box-sizing: border-box;
+    border-radius: 6px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    background: white;
+    max-width: 200px;
+}
+
+.cdk-drag-placeholder {
+    opacity: 0.5;
+    background: #f0f0f0;
+    border: 2px dashed #d9d9d9;
+    border-radius: 6px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 12px;
+}
+
+.cdk-drop-list-dragging .cdk-drag {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drag-animating {
+    transition: transform 300ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* 📱 Responsive Design */
+@media (max-width: 1200px) {
+    .calendar-day-col {
+        margin-bottom: 16px;
+    }
+
+    .day-card {
+        height: auto;
+        min-height: 300px;
+    }
+
+    .activities-container {
+        max-height: 250px;
+    }
+}
+
+@media (max-width: 768px) {
+    .week-header {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .week-navigation {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .week-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .week-actions button {
+        width: 100%;
+    }
+
+    .agenda-area-container {
+        padding: 8px;
+    }
+
+    .calendar-container {
+        padding: 8px;
+    }
+
+    .day-card {
+        height: auto;
+        min-height: 200px;
+    }
+
+    .activities-container {
+        max-height: 150px;
+    }
+}
+
+/* 🎨 Mejoras de animaciones */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.activity-item {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* 🔍 Scrollbar personalizado */
+.activities-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.activities-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.activities-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.activities-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 🎯 Estados de carga */
+.calendar-container[nz-spinning="true"] {
+    opacity: 0.7;
+    pointer-events: none;
+}

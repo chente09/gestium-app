@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { getAuth, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect } from 'firebase/auth';
 import { NzCardModule } from 'ng-zorro-antd/card';
-
+import { UsersService } from '../../services/users/users.service';
 
 @Component({
   selector: 'app-login',
@@ -34,6 +34,7 @@ export class LoginComponent {
 
   constructor(
     private registerService: RegistersService,
+    private usersService: UsersService,
     private formBuilder: FormBuilder,
     private router: Router,
     private message: NzMessageService
@@ -49,8 +50,6 @@ export class LoginComponent {
       confirmPassword: ['', Validators.required]
     }, { validators: this.passwordMatchValidator });
   }
-
-  // Verifica si hay un usuario después de la redirección
 
   emailGestiumValidator(control: AbstractControl): ValidationErrors | null {
     const email = control.value?.trim();
@@ -113,28 +112,32 @@ export class LoginComponent {
       });
   }
 
+  // ✅ MÉTODO CORREGIDO: Auto-registro para usuarios de Google
   onClickLoginGoogle(): void {
-    const auth = getAuth();
-    const provider = new GoogleAuthProvider();
+    this.usersService.loginWithGoogle()
+      .then(async (userCredential) => {
+        if (userCredential && userCredential.user) {
+          const userEmail = userCredential.user.email || '';
 
-    signInWithPopup(auth, provider)
-      .then((response) => {
-        const userEmail = response.user.email?.trim();
-        console.log("Correo del usuario:", userEmail);
+          // 1. Validar el dominio del correo
+          if (!userEmail.includes('gestium')) {
+            this.message.warning('Solo los correos con dominio @gestium pueden iniciar sesión.');
+            this.usersService.logout(); // Cerrar la sesión de Firebase
+            return;
+          }
 
-        if (userEmail && userEmail.includes('gestium') && userEmail.includes('@gmail.com')) {
-          this.message.success('Inicio de sesión con Google exitoso.');
+          // 2. Delegar la creación/verificación del perfil al servicio
+          await this.registerService.ensureUserIsRegistered(userCredential.user);
+          this.message.success('Inicio de sesión exitoso');
           this.router.navigate(['/welcome']);
-          this.resetForms();
+
         } else {
-          this.message.warning('Solo los correos autorizados pueden iniciar sesión.');
-          this.registerService.logout();
-          this.resetForms();
+          throw new Error("No se pudo obtener la información del usuario.");
         }
       })
       .catch((error) => {
-        console.log("Error al iniciar sesión con Google:", error);
-        this.message.error('Error al intentar iniciar sesión con Google.');
+        console.error("❌ Error en el flujo de inicio de sesión con Google:", error);
+        this.message.error('Ocurrió un error durante el inicio de sesión.');
       });
   }
 
@@ -147,5 +150,3 @@ export class LoginComponent {
     this.registerForm.reset();
   }
 }
-
-

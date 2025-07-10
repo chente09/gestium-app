@@ -1,0 +1,278 @@
+<div class="user-admin-container">
+    <!-- 🔝 Breadcrumb -->
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome">
+                <nz-icon nzType="home"></nz-icon>
+            </a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <nz-icon nzType="team"></nz-icon>
+            <span>Administración de Usuarios</span>
+        </nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <nz-divider></nz-divider>
+
+    <!-- 📊 Estadísticas generales -->
+    <nz-row [nzGutter]="16" class="stats-row">
+        <nz-col [nzSpan]="6">
+            <nz-card>
+                <nz-statistic nzTitle="Total Usuarios" [nzValue]="totalUsers" nzPrefix="👥">
+                </nz-statistic>
+            </nz-card>
+        </nz-col>
+        <nz-col [nzSpan]="6">
+            <nz-card>
+                <nz-statistic nzTitle="Con Área Asignada" [nzValue]="usersWithArea" nzPrefix="✅"
+                    [nzValueStyle]="{ color: '#52c41a' }">
+                </nz-statistic>
+            </nz-card>
+        </nz-col>
+        <nz-col [nzSpan]="6">
+            <nz-card>
+                <nz-statistic nzTitle="Sin Asignar" [nzValue]="usersWithoutArea" nzPrefix="⚠️"
+                    [nzValueStyle]="{ color: '#fa8c16' }">
+                </nz-statistic>
+            </nz-card>
+        </nz-col>
+        <nz-col [nzSpan]="6">
+            <nz-card>
+                <nz-statistic nzTitle="Administradores" [nzValue]="adminUsers" nzPrefix="👑"
+                    [nzValueStyle]="{ color: '#1890ff' }">
+                </nz-statistic>
+            </nz-card>
+        </nz-col>
+    </nz-row>
+
+    <!-- 🔧 Panel de control -->
+    <nz-card nzTitle="Gestión de Usuarios y Áreas" class="main-card">
+        <div class="control-panel">
+            <div class="control-actions">
+                <button nz-button nzType="primary" (click)="refreshData()">
+                    <nz-icon nzType="reload"></nz-icon>
+                    Actualizar
+                </button>
+
+                <button nz-button nzType="default" (click)="initializeAllUsers()">
+                    <nz-icon nzType="user-add"></nz-icon>
+                    Inicializar Usuarios
+                </button>
+
+                <button nz-button nzType="default" (click)="showBulkAssignModal()">
+                    <nz-icon nzType="team"></nz-icon>
+                    Asignación Masiva
+                </button>
+
+                
+            </div>
+
+            <div class="control-filters">
+                <nz-select [(ngModel)]="selectedAreaFilter" (ngModelChange)="filterUsers()"
+                    nzPlaceHolder="Filtrar por área" nzAllowClear style="width: 200px; margin-right: 8px;">
+                    <nz-option nzValue="" nzLabel="Todas las áreas"></nz-option>
+                    <nz-option nzValue="sin_asignar" nzLabel="Sin asignar"></nz-option>
+                    <nz-option *ngFor="let area of availableAreas" [nzValue]="area" [nzLabel]="area"></nz-option>
+                </nz-select>
+
+                <nz-select [(ngModel)]="selectedRoleFilter" (ngModelChange)="filterUsers()"
+                    nzPlaceHolder="Filtrar por rol" nzAllowClear style="width: 150px;">
+                    <nz-option nzValue="" nzLabel="Todos los roles"></nz-option>
+                    <nz-option nzValue="admin" nzLabel="Admin"></nz-option>
+                    <nz-option nzValue="coordinador" nzLabel="Coordinador"></nz-option>
+                    <nz-option nzValue="empleado" nzLabel="Empleado"></nz-option>
+                </nz-select>
+            </div>
+        </div>
+
+        <!-- 📋 Tabla de usuarios -->
+        <nz-spin [nzSpinning]="loading">
+            <nz-table #userTable [nzData]="filteredUsers" [nzBordered]="true" [nzSize]="'middle'"
+                [nzShowPagination]="true" [nzPageSize]="10" nzShowSizeChanger>
+
+                <thead>
+                    <tr>
+                        <th nzWidth="60px">Avatar</th>
+                        <th nzWidth="200px">Usuario</th>
+                        <th nzWidth="120px">Estado</th>
+                        <th nzWidth="150px">Área Asignada</th>
+                        <th nzWidth="100px">Rol</th>
+                        <th nzWidth="120px">Fecha Asignación</th>
+                        <th nzWidth="80px">Activo</th>
+                        <th nzWidth="200px">Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr *ngFor="let user of userTable.data; trackBy: trackByUserId">
+                        <!-- Avatar -->
+                        <td>
+                            <nz-avatar [nzSrc]="user.photoURL" [nzIcon]="'user'" [nzSize]="32">
+                            </nz-avatar>
+                        </td>
+
+                        <!-- Información del usuario -->
+                        <td>
+                            <div class="user-info">
+                                <strong>{{ user.displayName || 'Sin nombre' }}</strong>
+                                <div class="user-email">{{ user.email }}</div>
+                            </div>
+                        </td>
+
+                        <!-- Estado -->
+                        <td>
+                            <nz-tag *ngIf="!user.isRegistered" nzColor="red">No Registrado</nz-tag>
+                            <nz-tag *ngIf="user.isRegistered && !user.hasAreaAssigned" nzColor="orange">Sin
+                                Área</nz-tag>
+                            <nz-tag *ngIf="user.isRegistered && user.hasAreaAssigned"
+                                nzColor="green">Configurado</nz-tag>
+                        </td>
+
+                        <!-- Área asignada -->
+                        <td>
+                            <nz-tag *ngIf="user.areaAsignada; else noAreaTag"
+                                [nzColor]="getAreaColor(user.areaAsignada)">
+                                {{ user.areaAsignada }}
+                            </nz-tag>
+                            <ng-template #noAreaTag>
+                                <span class="no-area-text">Sin asignar</span>
+                            </ng-template>
+                        </td>
+
+                        <!-- Rol -->
+                        <td>
+                            <nz-tag *ngIf="user.role; else noRoleTag" [nzColor]="getRoleColor(user.role)">
+                                {{ user.role | titlecase }}
+                            </nz-tag>
+                            <ng-template #noRoleTag>
+                                <span class="no-role-text">-</span>
+                            </ng-template>
+                        </td>
+
+                        <!-- Fecha de asignación -->
+                        <td>
+                            <span *ngIf="user.fechaAsignacion">
+                                {{ user.fechaAsignacion | date:'dd/MM/yyyy' }}
+                            </span>
+                            <span *ngIf="!user.fechaAsignacion" class="no-date-text">-</span>
+                        </td>
+
+                        <!-- Switch activo -->
+                        <td>
+                            <nz-switch [ngModel]="user.activo || false" [nzDisabled]="!user.hasAreaAssigned"
+                                (ngModelChange)="toggleUserStatus(user, $event)">
+                            </nz-switch>
+                        </td>
+
+                        <!-- Acciones -->
+                        <td>
+                            <div class="action-buttons">
+                                <button nz-button nzType="primary" nzSize="small" (click)="assignArea(user)"
+                                    nzTooltipTitle="Asignar área y rol" nz-tooltip>
+                                    <nz-icon nzType="edit"></nz-icon>
+                                </button>
+
+                                <button nz-button nzType="default" nzSize="small" *ngIf="!user.hasAreaAssigned"
+                                    (click)="initializeUser(user)" nzTooltipTitle="Inicializar usuario" nz-tooltip>
+                                    <nz-icon nzType="user-add"></nz-icon>
+                                </button>
+
+                                <button nz-button nzDanger nzSize="small" nz-popconfirm
+                                    nzPopconfirmTitle="¿Eliminar asignación de área?"
+                                    (nzOnConfirm)="removeAreaAssignment(user)" *ngIf="user.hasAreaAssigned"
+                                    nzTooltipTitle="Remover asignación" nz-tooltip>
+                                    <nz-icon nzType="delete"></nz-icon>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </nz-table>
+        </nz-spin>
+    </nz-card>
+</div>
+
+<!-- 🎯 Modal para asignar área -->
+<nz-modal [(nzVisible)]="showAssignModal" nzTitle="Asignar Área y Rol" [nzFooter]="assignModalFooter"
+    (nzOnCancel)="closeAssignModal()" nzWidth="500px">
+
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="assignForm" nzLayout="vertical" *ngIf="selectedUser">
+            <div class="user-preview">
+                <nz-avatar [nzSrc]="selectedUser.photoURL" [nzIcon]="'user'" [nzSize]="40"></nz-avatar>
+                <div class="user-details">
+                    <strong>{{ selectedUser.displayName || 'Sin nombre' }}</strong>
+                    <div>{{ selectedUser.email }}</div>
+                </div>
+            </div>
+
+            <nz-divider></nz-divider>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Área</nz-form-label>
+                <nz-form-control nzErrorTip="Debe seleccionar un área">
+                    <nz-select formControlName="area" nzPlaceHolder="Seleccionar área">
+                        <nz-option *ngFor="let area of availableAreas" [nzValue]="area" [nzLabel]="area"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Rol</nz-form-label>
+                <nz-form-control nzErrorTip="Debe seleccionar un rol">
+                    <nz-select formControlName="role" nzPlaceHolder="Seleccionar rol">
+                        <nz-option nzValue="empleado" nzLabel="Empleado"></nz-option>
+                        <nz-option nzValue="coordinador" nzLabel="Coordinador"></nz-option>
+                        <nz-option nzValue="admin" nzLabel="Administrador"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+
+    <ng-template #assignModalFooter>
+        <button nz-button nzType="default" (click)="closeAssignModal()">
+            Cancelar
+        </button>
+        <button nz-button nzType="primary" [nzLoading]="assigningUser" (click)="saveAssignment()">
+            Asignar
+        </button>
+    </ng-template>
+</nz-modal>
+
+<!-- 📦 Modal para asignación masiva -->
+<nz-modal [(nzVisible)]="showBulkModal" nzTitle="Asignación Masiva" [nzFooter]="bulkModalFooter"
+    (nzOnCancel)="closeBulkModal()" nzWidth="600px">
+
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="bulkForm" nzLayout="vertical">
+            <nz-form-item>
+                <nz-form-label>Usuarios sin asignar: {{ usersWithoutArea }}</nz-form-label>
+                <nz-form-control>
+                    <nz-select formControlName="bulkArea" nzPlaceHolder="Seleccionar área para todos">
+                        <nz-option *ngFor="let area of availableAreas" [nzValue]="area" [nzLabel]="area"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label>Rol por defecto</nz-form-label>
+                <nz-form-control>
+                    <nz-select formControlName="bulkRole" nzPlaceHolder="Seleccionar rol">
+                        <nz-option nzValue="empleado" nzLabel="Empleado"></nz-option>
+                        <nz-option nzValue="coordinador" nzLabel="Coordinador"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+
+    <ng-template #bulkModalFooter>
+        <button nz-button nzType="default" (click)="closeBulkModal()">
+            Cancelar
+        </button>
+        <button nz-button nzType="primary" [nzLoading]="processingBulk" (click)="processBulkAssignment()">
+            Asignar a Todos
+        </button>
+    </ng-template>
+</nz-modal>

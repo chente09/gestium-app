@@ -10,6 +10,8 @@ import { AreaDetailComponentComponent } from './pages/area-detail-component/area
 import { MatrizDocIsffaComponent } from './pages/matriz-doc-isffa/matriz-doc-isffa.component';
 import { ProcesosComponent } from './pages/gestionProcesos/procesos/procesos.component';
 import { ConsultasComponent } from './components/consultas/consultas.component';
+import { UserAreaAdminComponent } from './pages/user-admin/user-area-admin/user-area-admin.component'; // ✅ NUEVA IMPORTACIÓN
+import { AdminGuard } from './guards/guards/admin.guard'; // ✅ IMPORTAR GUARD
 import { pipe } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
@@ -49,6 +51,18 @@ const adminRoutes: Routes = [
   ...canActivate(redirectUnauthorizedToLogin)
 }));
 
+// ✅ NUEVAS RUTAS PROTEGIDAS PARA ADMINISTRADORES
+const superAdminRoutes: Routes = [
+  { 
+    path: 'admin/users', 
+    component: UserAreaAdminComponent,
+    canActivate: [AdminGuard] // ✅ Protegida con guard personalizado
+  },
+].map(route => ({
+  ...route,
+  ...canActivate(redirectUnauthorizedToLogin) // También requiere autenticación
+}));
+
 // Rutas para errores y páginas no encontradas
 const errorRoutes: Routes = [
   { path: 'unauthorized', component: UnauthorizedComponent }, 
@@ -61,5 +75,6 @@ export const routes: Routes = [
   ...publicRoutes,
   ...basicProtectedRoutes,
   ...adminRoutes,
+  ...superAdminRoutes, // ✅ AGREGAR RUTAS DE SUPER ADMIN
   ...errorRoutes
 ];

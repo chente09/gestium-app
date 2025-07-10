@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
 import { UsersService } from '../../../services/users/users.service';
+import { SharedDataService } from '../../../services/sharedData/shared-data.service';// ✅ NUEVO IMPORT
 import { CommonModule } from '@angular/common';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -49,7 +50,7 @@ enum Estado {
 export class ItinerarioFormComponent implements OnInit {
 
   itinerarioForm: FormGroup = new FormGroup({});
-  selectedImage: File | null = null; // 🌟 Ahora manejamos imagen y PDF por separado
+  selectedImage: File | null = null;
   selectedPDF: File | null = null;
   isLoading = false;
   selectedArea: string | null = null;
@@ -58,61 +59,16 @@ export class ItinerarioFormComponent implements OnInit {
   selectDiligencia: string | null = null;
   selectPiso: string | null = null;
   selectJuez: string | null = null;
-  areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
-  unidad: string[] = ['Pague Ya', 'Municipio', 'Notaria', 'SUPERCIAS', 'AMT', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro'];
-  materia: string[] = ['Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales', 'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro'];
-  diligencia: string[] = ['Copias para Citar', 'Desglose', 'Requerimiento', 'Oficios', 'Otro'];
-  piso: string[] = ['Pb', '5to', '8vo', 'Otro'];
-  juecesPorPiso: { [key: string]: string[] } = {
-    "5to": [
-      "Alban Solano Diana Jazmin",
-      "Altamirano Ruiz Santiago David",
-      "Baño Palomino Patricio Gonzalo",
-      "Calero Sánchez Oscar Ramiro",
-      "Cevallos Ampudia Edwin",
-      "Chacón Ortiz Francisco Gabriel",
-      "Eguiguren Bermelo Leonardo Andrés",
-      "Espinosa Venegas Celina Cecilia",
-      "Landazuri Salazar Luis Fernando",
-      "Lemos Trujillo Gabriela Estefanía",
-      "López Tapia Edisson Eduardo",
-      "Martínez Salazar Karina Alejandra",
-      "Mogro Pérez Carlos Alfredo",
-      "Molina Andrade Cinthya Guadalupe",
-      "Narváez Narváez Paul",
-      "Ordoñez Pizarro Rita Geovanna",
-      "Palacios Morillo Vinicio",
-      "Romero Ramírez Carmen Virginia",
-      "Ron Cadena Lizbeth Marisol",
-      "Simbaña Guishpe Martha Cecilia",
-      "Tafur Salazar Jenny Margoth",
-      "Vaca Duque Lucía Alejandra",
-      "Zambrano Ortiz Wilmer Ismael",
-      "Figueroa Costa Maria Lorena",
-    ],
-    "8vo": [
-      "Chango Baños Edith Cristina",
-      "Chinde Chamorro Richard Wilmer",
-      "Erazo Navarrete Grimanesa",
-      "Fierro Vega Johana Alexia",
-      "Flor Pazmiño Monica Jacqueline",
-      "Fuentes López Carlos Francisco",
-      "López Vargas Melany",
-      "Miranda Calvache Jorge Alejandro",
-      "Pila Avendaño Viviana Jeanneth",
-      "Ponce Toala Brenda Leonor",
-      "Rodas Sánchez Silvia Karina",
-      "Salto Dávila Luz",
-      "Saltos Pinto Luis Sebastián",
-      "Sanmartin Solano Dayanna Merced",
-      "Silva Pereira Cristian Danilo",
-      "Tello Aimacaña Ángel Patricio",
-      "Torres Recalde Ana Karina",
-      "Vallejo Naranjo Byron Andrés",
-      "Vela Ribadeneira María"
-    ]
-  };
+
+  // ✅ USAR SERVICIO CENTRALIZADO EN LUGAR DE ARRAYS LOCALES
+  areas: string[] = [];
+  unidad: string[] = [];
+  materia: string[] = [];
+  diligencia: string[] = [];
+  piso: string[] = [];
+  juecesPorPiso: { [key: string]: string[] } = {};
   jueces: string[] = [];
+  
   selectedFileType: string = 'image';
   selectedFileName: string | null = null;
   imageFileList: any[] = [];
@@ -129,41 +85,49 @@ export class ItinerarioFormComponent implements OnInit {
     private itinerarioService: ItinerarioService,
     private usersService: UsersService,
     private message: NzMessageService,
-    private modal: NzModalService
+    private modal: NzModalService,
+    private sharedDataService: SharedDataService // ✅ INYECTAR SERVICIO
   ) {
     this.itinerarioForm = this.fb.group({
-      fileType: [''], // Control para el tipo de archivo (imagen o PDF)
-      file: [null]    // Control para el archivo seleccionado
+      fileType: [''],
+      file: [null]
     });
   }
 
   ngOnInit(): void {
+    this.initializeData(); // ✅ INICIALIZAR DATOS DESDE EL SERVICIO
     this.initForm();
 
-    // Suscripción a cambios del control 'area'
+    // Suscripciones existentes...
     this.itinerarioForm.get('area')?.valueChanges.subscribe((area) => {
       this.onAreaChange(area);
     });
 
-    // Suscripción a cambios del control 'unidad'
     this.itinerarioForm.get('juzgado')?.valueChanges.subscribe((unidad) => {
       this.onJuzgadoChange(unidad);
     });
 
-    // Suscripción a cambios del control 'piso'
     this.itinerarioForm.get('piso')?.valueChanges.subscribe((piso) => {
       this.onPisoChange(piso);
     });
 
-    // Suscripción a cambios del control 'materia'
     this.itinerarioForm.get('materia')?.valueChanges.subscribe((materia) => {
       this.onMateriaChange(materia);
     });
 
-    // Suscripción a cambios del control 'diligencia'
     this.itinerarioForm.get('diligencia')?.valueChanges.subscribe((diligencia) => {
       this.onDiligenciaChange(diligencia);
     });
+  }
+
+  // ✅ NUEVO MÉTODO PARA INICIALIZAR DATOS
+  private initializeData(): void {
+    this.areas = this.sharedDataService.getAreas();
+    this.unidad = this.sharedDataService.getUnidades();
+    this.materia = this.sharedDataService.getMaterias();
+    this.diligencia = this.sharedDataService.getDiligencias();
+    this.piso = this.sharedDataService.getPisos();
+    this.juecesPorPiso = this.sharedDataService.juecesPorPiso;
   }
 
   getCurrentUserName(): string | null {
@@ -202,9 +166,8 @@ export class ItinerarioFormComponent implements OnInit {
     this.slectedUnidad = this.unidad[0];
     this.slectedMateria = this.materia[0];
     this.selectDiligencia = this.diligencia[0];
-    this.selectJuez = null; // 🌟 Inicializar como null
+    this.selectJuez = null;
 
-    // Actualizar jueces basado en el piso inicial, pero sin seleccionar ninguno
     this.actualizarJueces(this.selectPiso);
   }
 
@@ -222,15 +185,10 @@ export class ItinerarioFormComponent implements OnInit {
   }
 
   private actualizarJueces(piso: string): void {
-    if (this.juecesPorPiso[piso]) {
-      this.jueces = this.juecesPorPiso[piso];
-      this.selectJuez = null;
-      this.itinerarioForm.patchValue({ juez: this.selectJuez }, { emitEvent: false });
-    } else {
-      this.jueces = [];
-      this.selectJuez = null;
-      this.itinerarioForm.patchValue({ juez: '' }, { emitEvent: false });
-    }
+    // ✅ USAR EL SERVICIO CENTRALIZADO
+    this.jueces = this.sharedDataService.getJuecesPorPiso(piso);
+    this.selectJuez = null;
+    this.itinerarioForm.patchValue({ juez: this.selectJuez }, { emitEvent: false });
   }
 
   onJuzgadoChange(juzgado: string): void {
@@ -258,7 +216,6 @@ export class ItinerarioFormComponent implements OnInit {
     }
   }
 
-  // 📂 Manejar selección de PDF
   onPDFSelected(event: any) {
     const file = event.file?.originFileObj;
     if (file) {
@@ -266,7 +223,6 @@ export class ItinerarioFormComponent implements OnInit {
     }
   }
 
-  // 🌟 Enviar formulario
   async submitForm(): Promise<void> {
     if (this.itinerarioForm.invalid || !this.selectedArea) {
       this.message.warning('Debe completar todos los campos obligatorios.');
@@ -285,11 +241,9 @@ export class ItinerarioFormComponent implements OnInit {
         if (!existingItinerario.empty) {
           const existingDocs = existingItinerario.docs.map(doc => doc.data() as Itinerario).filter(doc => doc.estado !== Estado.COMPLETADO);
 
-          // 🛑 Construimos el mensaje con todos los duplicados
           const duplicadosMsg = existingDocs.map((doc, index) =>
             `📌 #${index + 1} - Trámite: ${doc.tramite} 📅 Fecha de Solicitud: ${doc.fechaSolicitud} 📝 Observaciones: ${doc.observaciones || 'Sin observaciones'}`).join('\n\n');
 
-          // 🛑 Esperar la confirmación del usuario
           const userConfirmed = await new Promise<boolean>((resolve) => {
             this.modal.confirm({
               nzTitle: 'Número de proceso duplicado',
@@ -315,14 +269,13 @@ export class ItinerarioFormComponent implements OnInit {
             });
           });
           if (!userConfirmed) {
-            console.log('Usuario canceló la operación'); // Depuración
+            console.log('Usuario canceló la operación');
             this.isLoading = false;
             return;
           }
         }
       }
 
-      // ✅ Guardado del itinerario
       await this.itinerarioService.createItinerario(
         this.itinerarioForm.value,
         this.selectedImage ?? undefined,
@@ -340,7 +293,6 @@ export class ItinerarioFormComponent implements OnInit {
     }
   }
 
-  // Método para reiniciar el formulario
   private resetForm() {
     const currentArea = this.itinerarioForm.get('area')?.value;
     this.itinerarioForm.reset({
@@ -368,23 +320,18 @@ export class ItinerarioFormComponent implements OnInit {
     this.pdfFileList = [];
   }
 
-  // 🌟 Método para limpiar los inputs de archivo
   clearFileInputs(): void {
-    // Vacía las listas de archivos en nz-upload
     this.imageFileList = [];
     this.pdfFileList = [];
-
   }
 
   private fechaTerminoValidator(control: AbstractControl): ValidationErrors | null {
-    if (!control.value) return null; // Si el campo está vacío, no validar
+    if (!control.value) return null;
 
     const fechaTermino = new Date(control.value);
     const fechaHoy = new Date();
-    fechaHoy.setHours(0, 0, 0, 0); // Eliminamos la hora para comparar solo la fecha
+    fechaHoy.setHours(0, 0, 0, 0);
 
     return fechaTermino <= fechaHoy ? { fechaInvalida: true } : null;
   }
-
-
 }

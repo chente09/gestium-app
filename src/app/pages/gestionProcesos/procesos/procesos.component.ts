@@ -26,6 +26,7 @@ import { animate, style, transition, trigger } from '@angular/animations';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { RouterModule } from '@angular/router';
+import { SharedDataService } from '../../../services/sharedData/shared-data.service';
 
 @Component({
   selector: 'app-procesos',
@@ -69,7 +70,7 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   procesos: Proceso[] = [];
   procesoSeleccionado: Proceso | null = null;
   formProceso: FormGroup;
-  materias: MateriaProceso[] = ['ISSFA', 'Inmobiliario', 'Produbanco', 'Civil', 'Laboral', 'Tributario', 'Otros'];
+  materias: MateriaProceso[] = [];
   materiaSeleccionada: string = '';
 
   // Estados
@@ -92,7 +93,8 @@ export class ProcesosComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private procesosService: ProcesosService,
     private messageService: NzMessageService,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private sharedDataService: SharedDataService
   ) {
     this.formProceso = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
@@ -104,6 +106,7 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.materias = this.sharedDataService.getAreas() as MateriaProceso[];
     this.cargarProcesos();
   }
 

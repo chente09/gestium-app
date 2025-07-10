@@ -25,6 +25,7 @@ import { Subject, takeUntil } from 'rxjs';
 import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
 import { UsersService } from '../../../services/users/users.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { SharedDataService } from '../../../services/sharedData/shared-data.service';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -72,7 +73,7 @@ export class ItinerarioComponent implements OnInit {
   filteredItinerarios: Itinerario[] = [];
   listOfCurrentPageData: Itinerario[] = [];
   notificaciones: { area: string; tramite: string; fechaTermino: string, solicita: string, id: string }[] = [];
-  
+
   // ========== PROPIEDADES DE ESTADO ==========
   loading = true;
   uploading = false;
@@ -80,22 +81,22 @@ export class ItinerarioComponent implements OnInit {
   formularioValido = false;
   mostrarNotificaciones = false;
   mostrarTodos = false;
-  
+
   // ========== PROPIEDADES DE MODALES ==========
   isVisible = false;
   isEnProcesoVisible = false;
   isConfirmLoading = false;
   isHistorialVisible = false;
-  
+
   // ========== PROPIEDADES DE SELECCIÓN ==========
   setOfCheckedId = new Set<string>();
   checked = false;
   indeterminate = false;
   selectedItem: any = {};
-  
+
   // ========== PROPIEDADES DE EDICIÓN ==========
   editCache: { [key: string]: { edit: boolean } } = {};
-  
+
   // ========== PROPIEDADES DE ACTIVIDADES ==========
   actividad: string = '';
   actividades: string[] = [];
@@ -105,32 +106,32 @@ export class ItinerarioComponent implements OnInit {
   editIndex: number | null = null;
   editActividad: string = '';
   historialActual: any[] = [];
-  
+
   // ========== PROPIEDADES DE ARCHIVOS ==========
   imagenSeleccionada: File | null = null;
   imageFileList: any[] = [];
-  
+
   // ========== PROPIEDADES DE FECHA/HORA ==========
   fechaActual: string = '';
   horaActual: string = '';
-  
+
   // ========== FILTROS ==========
   selectedArea = new FormControl('');
   selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
   selectedEstado = new FormControl(null);
   searchTerm: string = '';
-  
+
   // ========== CONFIGURACIONES ==========
-  areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
-  estados: string[] = ['Incompleto', 'Pendiente'];
+  areas: string[] = [];
+  estados: string[] = [];
   pageSize = 20;
   pageIndex = 1;
   Estado = Estado;
-  
+
   // ========== VIEW CHILDREN ==========
   @ViewChild('rowSelectionTable') rowSelectionTable!: NzTableComponent<Itinerario>;
   @ViewChild('rutaActividades') rutaActividades!: ElementRef;
-  
+
   // ========== OBSERVABLES ==========
   private destroy$ = new Subject<void>();
 
@@ -138,7 +139,8 @@ export class ItinerarioComponent implements OnInit {
     private itinerarioService: ItinerarioService,
     private usersService: UsersService,
     private message: NzMessageService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private sharedDataService: SharedDataService
   ) { }
 
   // ========== MÉTODOS DE CICLO DE VIDA ==========
@@ -154,6 +156,9 @@ export class ItinerarioComponent implements OnInit {
 
   // ========== MÉTODOS DE INICIALIZACIÓN ==========
   private initializeComponent(): void {
+    this.areas = this.sharedDataService.getAreas();
+    this.estados = this.sharedDataService.getEstados();
+
     this.setFechaHoraActual();
     this.loadItinerarios();
     this.cargarActividades();
@@ -281,7 +286,7 @@ export class ItinerarioComponent implements OnInit {
 
   validarFormulario(): void {
     const user = this.usersService.getCurrentUser();
-    
+
     console.log('Validando formulario para usuario:', user?.email);
     console.log('Imagen seleccionada:', this.imagenSeleccionada);
     console.log('Observación:', this.selectedItem?.obsCompletado);

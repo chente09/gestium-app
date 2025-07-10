@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { ItinerarioService, Itinerario } from '../../../services/itinerario/itinerario.service';// Asegúrate de que la ruta sea correcta
+import { ItinerarioService, Itinerario } from '../../../services/itinerario/itinerario.service';
+import { SharedDataService } from '../../../services/sharedData/shared-data.service';// ✅ NUEVO IMPORT
 import { CommonModule } from '@angular/common';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -58,7 +59,6 @@ export class HistoryItinerarioComponent implements OnInit {
   selectedArea = new FormControl('');
   selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
   selectedEstado = new FormControl(null);
-  estados: string[] = ['Completado', 'Incompleto', 'Pendiente'];
   Estado = Estado;
   isHistorialVisible = false;
   historialActual: any[] = [];
@@ -67,67 +67,21 @@ export class HistoryItinerarioComponent implements OnInit {
   pageSize = 10;
   pageIndex = 1;
 
-  // 🌟 Agregar los arreglos necesarios para los selects
-  areas: string[] = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David', 'Otro'];
-  unidad: string[] = ['Pague Ya', 'Municipio', 'Notaria', 'SUPERCIAS', 'AMT', 'ANT', 'SRI', 'ISSFA', 'Consejo Provincial', 'Registro Propiedad', 'Registro Mercantil', 'Quitumbe', 'Iñaquito', 'Mejía', 'Cayambe', 'Rumiñahui', 'Calderon', 'Otro'];
-  materia: string[] = ['Archivo', 'Ingresos', 'Coordinación', 'Diligencias no Penales', 'Oficina de Citaciones', 'Familia', 'Laboral', 'Penal', 'Civil', 'Otro'];
-  diligencia: string[] = ['Copias para Citar', 'Desglose', 'Requerimiento', 'Oficios', 'Otro'];
-  piso: string[] = ['Pb', '5to', '8vo', 'Otro'];
-  juecesPorPiso: { [key: string]: string[] } = {
-    "5to": [
-      "Alban Solano Diana Jazmin",
-      "Altamirano Ruiz Santiago David",
-      "Baño Palomino Patricio Gonzalo",
-      "Calero Sánchez Oscar Ramiro",
-      "Cevallos Ampudia Edwin",
-      "Chacón Ortiz Francisco Gabriel",
-      "Eguiguren Bermelo Leonardo Andrés",
-      "Espinosa Venegas Celina Cecilia",
-      "Landazuri Salazar Luis Fernando",
-      "Lemos Trujillo Gabriela Estefanía",
-      "López Tapia Edisson Eduardo",
-      "Martínez Salazar Karina Alejandra",
-      "Mogro Pérez Carlos Alfredo",
-      "Molina Andrade Cinthya Guadalupe",
-      "Narváez Narváez Paul",
-      "Ordoñez Pizarro Rita Geovanna",
-      "Palacios Morillo Vinicio",
-      "Romero Ramírez Carmen Virginia",
-      "Ron Cadena Lizbeth Marisol",
-      "Simbaña Guishpe Martha Cecilia",
-      "Tafur Salazar Jenny Margoth",
-      "Vaca Duque Lucía Alejandra",
-      "Zambrano Ortiz Wilmer Ismael",
-      "Figueroa Costa Maria Lorena",
-    ],
-    "8vo": [
-      "Chango Baños Edith Cristina",
-      "Chinde Chamorro Richard Wilmer",
-      "Erazo Navarrete Grimanesa",
-      "Fierro Vega Johana Alexia",
-      "Flor Pazmiño Monica Jacqueline",
-      "Fuentes López Carlos Francisco",
-      "López Vargas Melany",
-      "Miranda Calvache Jorge Alejandro",
-      "Pila Avendaño Viviana Jeanneth",
-      "Ponce Toala Brenda Leonor",
-      "Rodas Sánchez Silvia Karina",
-      "Salto Dávila Luz",
-      "Saltos Pinto Luis Sebastián",
-      "Sanmartin Solano Dayanna Merced",
-      "Silva Pereira Cristian Danilo",
-      "Tello Aimacaña Ángel Patricio",
-      "Torres Recalde Ana Karina",
-      "Vallejo Naranjo Byron Andrés",
-      "Vela Ribadeneira María"
-    ]
-  };
+  // ✅ USAR SERVICIO CENTRALIZADO EN LUGAR DE ARRAYS LOCALES
+  areas: string[] = [];
+  unidad: string[] = [];
+  materia: string[] = [];
+  diligencia: string[] = [];
+  piso: string[] = [];
+  estados: string[] = [];
+  juecesPorPiso: { [key: string]: string[] } = {};
 
   constructor(
     private itinerarioService: ItinerarioService,
     private message: NzMessageService,
     private cdr: ChangeDetectorRef,
-    private usersService: UsersService
+    private usersService: UsersService,
+    private sharedDataService: SharedDataService // ✅ INYECTAR SERVICIO
   ) { }
 
   private destroy$ = new Subject<void>();
@@ -137,6 +91,8 @@ export class HistoryItinerarioComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initializeData(); // ✅ INICIALIZAR DATOS DESDE EL SERVICIO
+    
     this.itinerarioService.getItinerarios().subscribe((data) => {
       this.itinerarios = data;
       this.updateEditCache(this.itinerarios);
@@ -146,6 +102,17 @@ export class HistoryItinerarioComponent implements OnInit {
     this.selectedArea.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
     this.selectedDate.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
     this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
+  }
+
+  // ✅ NUEVO MÉTODO PARA INICIALIZAR DATOS
+  private initializeData(): void {
+    this.areas = this.sharedDataService.getAreas();
+    this.unidad = this.sharedDataService.getUnidades();
+    this.materia = this.sharedDataService.getMaterias();
+    this.diligencia = this.sharedDataService.getDiligencias();
+    this.piso = this.sharedDataService.getPisos();
+    this.estados = this.sharedDataService.getEstados();
+    this.juecesPorPiso = this.sharedDataService.juecesPorPiso;
   }
 
   onSearch(): void {
@@ -239,29 +206,26 @@ export class HistoryItinerarioComponent implements OnInit {
     return item.id ?? index;
   }
 
-  // 🌟 Método mejorado para iniciar edición
   startEdit(id: string): void {
-  const item = this.filteredItinerarios.find(i => i.id === id);
-  const user = this.usersService.getCurrentUser();
+    const item = this.filteredItinerarios.find(i => i.id === id);
+    const user = this.usersService.getCurrentUser();
 
-  if (item && user?.email !== 'msaguano.gestium@gmail.com') {
-    this.editCache[id] = {
-      edit: true,
-      data: {
-        ...item,
-        manualArea: item.manualArea || '',
-        manualJuzgado: item.manualJuzgado || '',
-        manualPiso: item.manualPiso || '',
-        manualMateria: item.manualMateria || '',
-        manualDiligencia: item.manualDiligencia || ''
-      }
-    };
-  } else {
-    this.message.error('No tienes permiso para editar este itinerario.');
-  } 
-}
-
-
+    if (item && user?.email !== 'msaguano.gestium@gmail.com') {
+      this.editCache[id] = {
+        edit: true,
+        data: {
+          ...item,
+          manualArea: item.manualArea || '',
+          manualJuzgado: item.manualJuzgado || '',
+          manualPiso: item.manualPiso || '',
+          manualMateria: item.manualMateria || '',
+          manualDiligencia: item.manualDiligencia || ''
+        }
+      };
+    } else {
+      this.message.error('No tienes permiso para editar este itinerario.');
+    } 
+  }
 
   cancelEdit(id: string): void {
     const index = this.itinerarios.findIndex(item => item.id === id);
@@ -273,7 +237,6 @@ export class HistoryItinerarioComponent implements OnInit {
     }
   }
 
-  // 🌟 Método mejorado para guardar con validaciones
   async saveEdit(id: string): Promise<void> {
     if (!this.editCache[id]) return;
 
@@ -320,7 +283,7 @@ export class HistoryItinerarioComponent implements OnInit {
       await this.itinerarioService.updateItinerario(id, updatedItinerario);
       this.itinerarios[index] = { ...updatedItinerario };
       this.editCache[id].edit = false;
-      this.filterItinerarios(); // Refrescar la vista filtrada
+      this.filterItinerarios();
       this.message.success('Itinerario actualizado correctamente.');
     } catch (error) {
       this.message.error('Error al actualizar el itinerario. Intente nuevamente.');
@@ -328,12 +291,9 @@ export class HistoryItinerarioComponent implements OnInit {
     }
   }
 
-  // 🌟 Nuevos métodos para la edición con selects
+  // ✅ USAR EL SERVICIO CENTRALIZADO PARA OBTENER JUECES
   getJuecesPorPiso(piso: string): string[] {
-    if (!piso || !this.juecesPorPiso[piso]) {
-      return [];
-    }
-    return this.juecesPorPiso[piso];
+    return this.sharedDataService.getJuecesPorPiso(piso);
   }
 
   onPisoChangeEdit(itemId: string, nuevoPiso: string): void {
@@ -388,5 +348,4 @@ export class HistoryItinerarioComponent implements OnInit {
   hasEditingItems(): boolean {
     return Object.values(this.editCache).some(item => item?.edit === true);
   }
-
 }

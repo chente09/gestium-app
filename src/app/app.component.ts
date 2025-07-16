@@ -55,7 +55,7 @@ export class AppComponent implements OnInit {
     public registersService: RegistersService,
     private usersService: UsersService,
     private userAreaService: UserAreaService // ✅ NUEVA INYECCIÓN
-  ) {}
+  ) { }
 
   async ngOnInit(): Promise<void> {
     // Tu código existente para detectar cambios de ruta...
@@ -67,7 +67,7 @@ export class AppComponent implements OnInit {
 
     // ✅ Disparar la inicialización completa
     await this.initializeUserIfNeeded();
-    
+
     // Cargar el rol después de la inicialización
     await this.loadUserRole();
   }
@@ -96,7 +96,7 @@ export class AppComponent implements OnInit {
 
     try {
       console.log(`🚀 Inicializando para el usuario: ${firebaseUser.uid}`);
-      
+
       // 1. Asegurar que el usuario existe en la colección 'registers'
       await this.registersService.ensureUserIsRegistered(firebaseUser);
       console.log("✅ Paso 1/2: Usuario asegurado en 'registers'.");
@@ -156,8 +156,13 @@ export class AppComponent implements OnInit {
   }
 
   isStandaloneRoute(): boolean {
-    const standaloneRoutes = ['/login', '/consultas'];
-    return standaloneRoutes.includes(this.activeRoute);
+    // Obtenemos la URL y la normalizamos (quitamos la barra inicial si existe)
+    const currentPath = this.activeRoute.startsWith('/') ? this.activeRoute.substring(1) : this.activeRoute;
+
+    // Lista de rutas sin layout
+    const standaloneRoutes = ['login', 'consultas', '']; // <-- AÑADIR LA RUTA RAÍZ ('')
+
+    return standaloneRoutes.includes(currentPath);
   }
 
   // ✅ NUEVO: Navegar a administración de usuarios

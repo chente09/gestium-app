@@ -25,8 +25,8 @@ export const redirectUnauthorizedToHome = () => redirectUnauthorizedTo(['/welcom
 
 // Agrupación de rutas para mejor organización
 const publicRoutes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: '/login' },
-  { path: 'login', component: LoginComponent },
+  { path: '', component: LoginComponent },
+  { path: 'login', component: LoginComponent }, // Mantenemos /login por si hay enlaces directos
   { path: 'consultas', component: ConsultasComponent },
   // Otras rutas públicas que puedas tener
 ];

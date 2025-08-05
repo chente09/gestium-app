@@ -20,7 +20,8 @@
 
     <!-- Tabla de etapas -->
     <nz-table *ngIf="!isLoading && proceso?.etapas && proceso.etapas.length > 0" [nzBordered]="true"
-        [nzData]="proceso.etapas" [nzSize]="'middle'" [nzLoading]="isLoading" [nzShowPagination]="proceso.etapas.length > 10" [nzPageSize]="10" nzShowSizeChanger>
+        [nzData]="proceso.etapas" [nzSize]="'middle'" [nzLoading]="isLoading"
+        [nzShowPagination]="proceso.etapas.length > 10" [nzPageSize]="10" nzShowSizeChanger>
         <thead>
             <tr>
                 <th nzWidth="20%">Nombre</th>
@@ -35,22 +36,24 @@
                 <td>
                     {{ etapa.descripcion }}
                     <br>
-                    {{ etapa.fechaRegistro }}
+                    <small style="color: #666;">
+                        Fecha: {{ formatearFecha(etapa.fechaRegistro) }}
+                    </small>
                 </td>
                 <td>
                     <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Ver Documentos" nz-tooltip
-                            (click)="seleccionarEtapa(i)">
-                                <i nz-icon nzType="file-text"></i>
+                        (click)="seleccionarEtapa(i)">
+                        <i nz-icon nzType="file-text"></i>
                     </button>
                     <nz-divider nzType="vertical"></nz-divider>
-                    <button nz-button nzType="primary" nzShape="circle"  nzTooltipTitle="Editar Etapa" nz-tooltip
-                    (click)="abrirModal(i)">
+                    <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Editar Etapa" nz-tooltip
+                        (click)="abrirModal(i)">
                         <i nz-icon nzType="edit"></i>
                     </button>
                     <nz-divider nzType="vertical"></nz-divider>
                     <button nz-button nzType="primary" nzShape="circle" nzTooltipTitle="Eliminar Etapa" nz-tooltip
-                    (click)="eliminarEtapa(i)">
-                                <i nz-icon nzType="delete"></i>
+                        (click)="eliminarEtapa(i)">
+                        <i nz-icon nzType="delete"></i>
                     </button>
                 </td>
             </tr>
@@ -80,12 +83,26 @@
                     <nz-form-label nzRequired nzFor="descripcion">Descripción</nz-form-label>
                     <nz-form-control nzHasFeedback [nzErrorTip]="descripcionErrorTpl">
                         <textarea nz-input formControlName="descripcion" id="descripcion"
-                            placeholder="Ingrese la descripción" nzAutosize="{ minRows: 3, maxRows: 6 }"></textarea>
+                            placeholder="Ingrese la descripción" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
                         <ng-template #descripcionErrorTpl let-control>
                             <ng-container *ngIf="control.hasError('required')">La descripción es
                                 obligatoria</ng-container>
                             <ng-container *ngIf="control.hasError('maxlength')">La descripción no puede superar 500
                                 caracteres</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <!-- Campo de Fecha de Registro -->
+                <nz-form-item>
+                    <nz-form-label nzRequired nzFor="fechaRegistro">Fecha de Registro</nz-form-label>
+                    <nz-form-control nzHasFeedback [nzErrorTip]="fechaRegistroErrorTpl">
+                        <nz-date-picker formControlName="fechaRegistro" id="fechaRegistro" nzFormat="dd/MM/yyyy"
+                            style="width: 100%;" nzPlaceHolder="Seleccione la fecha de registro">
+                        </nz-date-picker>
+                        <ng-template #fechaRegistroErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">La fecha de registro es
+                                obligatoria</ng-container>
                         </ng-template>
                     </nz-form-control>
                 </nz-form-item>

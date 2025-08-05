@@ -77,12 +77,26 @@
                 <nz-form-item>
                     <nz-form-label nzRequired nzFor="materia">Materia</nz-form-label>
                     <nz-form-control [nzErrorTip]="materiaErrorTpl">
-                        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la materia" formControlName="materia" id="materia">
+                        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la materia"
+                            formControlName="materia" id="materia">
                             <nz-option *ngFor="let materia of materias" [nzValue]="materia"
                                 [nzLabel]="materia"></nz-option>
                         </nz-select>
                         <ng-template #materiaErrorTpl let-control>
                             <ng-container *ngIf="control.hasError('required')">La materia es obligatoria</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <!-- Fecha de Creación -->
+                <nz-form-item>
+                    <nz-form-label nzRequired nzFor="fechaCreacion">Fecha de Creación</nz-form-label>
+                    <nz-form-control [nzErrorTip]="fechaCreacionErrorTpl">
+                        <nz-date-picker formControlName="fechaCreacion" id="fechaCreacion" nzFormat="dd/MM/yyyy"
+                            style="width: 100%;" nzPlaceHolder="Seleccione la fecha">
+                        </nz-date-picker>
+                        <ng-template #fechaCreacionErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">La fecha es obligatoria</ng-container>
                         </ng-template>
                     </nz-form-control>
                 </nz-form-item>
@@ -99,16 +113,17 @@
 
         <nz-divider nzText="Lista de Procesos"></nz-divider>
         <!-- Selector de materias -->
-        <div class="filters-container" >
+        <div class="filters-container">
             <!-- Selector de materias (izquierda) -->
             <div class="materia-filter">
-                <nz-select [(ngModel)]="materiaSeleccionada" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la materia" style="min-width: 150px;"
+                <nz-select [(ngModel)]="materiaSeleccionada" nzShowSearch nzAllowClear
+                    nzPlaceHolder="Seleccione la materia" style="min-width: 150px;"
                     (ngModelChange)="filtrarPorMateria()">
                     <nz-option nzValue="" nzLabel="Todas"></nz-option>
                     <nz-option *ngFor="let materia of materias" [nzValue]="materia" [nzLabel]="materia"></nz-option>
                 </nz-select>
             </div>
-        
+
             <!-- Buscador para filtrar procesos (derecha) -->
             <div class="search-container" style="width: 300px;">
                 <nz-input-group [nzSuffix]="suffixIconSearch">

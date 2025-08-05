@@ -9,17 +9,14 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { Subject, takeUntil } from 'rxjs';
 
-import { Proceso, ProcesosService } from '../../../services/procesos/procesos.service';
+import { Proceso, ProcesosService, Etapa } from '../../../services/procesos/procesos.service';
 import { DocumentosComponent } from '../documentos/documentos.component';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
+import { NzInputModule } from 'ng-zorro-antd/input';
 
-interface Etapa {
-  nombre: string;
-  descripcion: string;
-  fechaRegistro: Date;
-}
 
 @Component({
   selector: 'app-etapas',
@@ -36,6 +33,8 @@ interface Etapa {
     NzIconModule,
     NzToolTipModule,
     NzDividerModule,
+    NzDatePickerModule, // Agregar aquí
+    NzInputModule
   ],
   templateUrl: './etapas.component.html',
   styleUrls: ['./etapas.component.css']
@@ -87,7 +86,7 @@ export class EtapasComponent implements OnInit, OnDestroy {
     this.formEtapa = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(100)]],
       descripcion: ['', [Validators.required, Validators.maxLength(500)]],
-      fechaRegistro: [new Date().toISOString().split('T')[0], Validators.required],
+      fechaRegistro: [new Date(), Validators.required], // Cambiar a Date object en lugar de string
     });
   }
 
@@ -99,17 +98,26 @@ export class EtapasComponent implements OnInit, OnDestroy {
       this.isEditingEtapa = true;
       this.etapaEditandoIndex = index;
       const etapa = this.proceso.etapas[index];
+
+      // Convertir la fecha si es necesario
+      let fechaRegistro = etapa.fechaRegistro;
+      if (etapa.fechaRegistro && typeof etapa.fechaRegistro === 'string') {
+        fechaRegistro = new Date(etapa.fechaRegistro);
+      } else if (etapa.fechaRegistro && typeof etapa.fechaRegistro === 'object' && 'toDate' in etapa.fechaRegistro) {
+        fechaRegistro = (etapa.fechaRegistro as any).toDate();
+      }
+
       this.formEtapa.patchValue({
         nombre: etapa.nombre,
         descripcion: etapa.descripcion,
-        fechaRegistro: etapa.fechaRegistro // Cargar la fecha de registro de la etapa
+        fechaRegistro: fechaRegistro
       });
     } else {
       // Modo creación: Resetear el formulario
       this.isEditingEtapa = false;
       this.etapaEditandoIndex = null;
       this.formEtapa.reset({
-        fechaRegistro: new Date().toISOString().split('T')[0] // Establecer la fecha actual por defecto
+        fechaRegistro: new Date() // Usar Date object
       });
     }
 
@@ -151,19 +159,25 @@ export class EtapasComponent implements OnInit, OnDestroy {
       this.isSubmitting = true;
 
       try {
-        const etapa: Etapa = {
+        // Asegurarse de que la fecha sea un objeto Date
+        let fechaRegistro = this.formEtapa.get('fechaRegistro')?.value;
+        if (fechaRegistro && !(fechaRegistro instanceof Date)) {
+          fechaRegistro = new Date(fechaRegistro);
+        }
+
+        const etapaData = {
           nombre: this.formEtapa.get('nombre')?.value.trim(),
           descripcion: this.formEtapa.get('descripcion')?.value.trim(),
-          fechaRegistro: this.formEtapa.get('fechaRegistro')?.value // Incluir la fecha de registro
+          fechaRegistro: fechaRegistro
         };
 
         if (this.isEditingEtapa && this.etapaEditandoIndex !== null) {
           // Modo edición: Actualizar la etapa existente
-          await this.procesosService.actualizarEtapa(this.proceso.id, this.etapaEditandoIndex, etapa);
+          await this.procesosService.actualizarEtapa(this.proceso.id, this.etapaEditandoIndex, etapaData);
           this.message.success('Etapa actualizada correctamente');
         } else {
-          // Modo creación: Agregar una nueva etapa
-          await this.procesosService.agregarEtapa(this.proceso.id, etapa);
+          // Modo creación: Agregar una nueva etapa (el servicio agregará documentos: [])
+          await this.procesosService.agregarEtapa(this.proceso.id, etapaData);
           this.message.success('Etapa agregada correctamente');
         }
 
@@ -176,7 +190,6 @@ export class EtapasComponent implements OnInit, OnDestroy {
         this.isSubmitting = false;
       }
     } else {
-      // Mark all fields as touched to trigger validation messages
       Object.keys(this.formEtapa.controls).forEach(key => {
         const control = this.formEtapa.get(key);
         control?.markAsTouched();
@@ -272,4 +285,27 @@ export class EtapasComponent implements OnInit, OnDestroy {
   get nombreControl() { return this.formEtapa.get('nombre'); }
   get descripcionControl() { return this.formEtapa.get('descripcion'); }
   get fechaRegistroControl() { return this.formEtapa.get('fechaRegistro'); }
+  formatearFecha(fecha: any): string {
+    if (!fecha) return 'Sin fecha';
+
+    let dateObj: Date;
+
+    // Manejar diferentes tipos de fecha
+    if (fecha instanceof Date) {
+      dateObj = fecha;
+    } else if (typeof fecha === 'string') {
+      dateObj = new Date(fecha);
+    } else if (fecha && typeof fecha === 'object' && 'toDate' in fecha) {
+      dateObj = fecha.toDate();
+    } else {
+      return 'Fecha inválida';
+    }
+
+    // Formatear la fecha como dd/MM/yyyy
+    const day = dateObj.getDate().toString().padStart(2, '0');
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    const year = dateObj.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  }
 }

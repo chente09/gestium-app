@@ -27,6 +27,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { RouterModule } from '@angular/router';
 import { SharedDataService } from '../../../services/sharedData/shared-data.service';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 
 @Component({
   selector: 'app-procesos',
@@ -60,7 +61,8 @@ import { SharedDataService } from '../../../services/sharedData/shared-data.serv
     FormsModule,
     NzSelectModule,
     NzBreadCrumbModule,
-    RouterModule
+    RouterModule,
+    NzDatePickerModule
   ],
   templateUrl: './procesos.component.html',
   styleUrls: ['./procesos.component.css'],
@@ -99,9 +101,10 @@ export class ProcesosComponent implements OnInit, OnDestroy {
     this.formProceso = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
       descripcion: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(200)]],
-      cedula: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(10)]], // Asumiendo que la cédula tiene 10 dígitos
-      abogadoId: ['', [Validators.required]], // Este campo se llenará con el ID del abogado
-      materia: ['', [Validators.required]] // Campo para seleccionar la materia
+      cedula: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(10)]],
+      abogadoId: ['', [Validators.required]],
+      materia: ['', [Validators.required]],
+      fechaCreacion: [new Date(), [Validators.required]] // Nuevo campo de fecha
     });
   }
 
@@ -161,28 +164,38 @@ export class ProcesosComponent implements OnInit, OnDestroy {
 
     if (this.isFormVisible) {
       if (proceso) {
-        // Modo edición: Cargar los datos del proceso en el formulario
+        // Modo edición
         this.isEditing = true;
         this.procesoEditando = proceso;
+
+        // Convertir la fecha si viene como Timestamp de Firebase
+        let fechaCreacion = proceso.fechaCreacion;
+        if (proceso.fechaCreacion && typeof proceso.fechaCreacion === 'object' && 'toDate' in proceso.fechaCreacion) {
+          fechaCreacion = (proceso.fechaCreacion as any).toDate();
+        }
+
         this.formProceso.patchValue({
           nombre: proceso.nombre,
           cedula: proceso.cedula,
           descripcion: proceso.descripcion,
           materia: proceso.materia,
-          abogadoId: proceso.abogadoId // Mantener el abogadoId
+          abogadoId: proceso.abogadoId,
+          fechaCreacion: fechaCreacion // Agregar la fecha
         });
       } else {
-        // Modo creación: Resetear el formulario y asignar el abogadoId
+        // Modo creación
         this.isEditing = false;
         this.procesoEditando = null;
         const currentUserName = this.getCurrentUserName();
         if (currentUserName) {
-          this.formProceso.patchValue({ abogadoId: currentUserName });
+          this.formProceso.patchValue({
+            abogadoId: currentUserName,
+            fechaCreacion: new Date() // Fecha actual por defecto
+          });
           this.formProceso.get('abogadoId')?.updateValueAndValidity();
         }
       }
     } else {
-      // Ocultar el formulario y resetearlo
       this.formProceso.reset();
       this.isEditing = false;
       this.procesoEditando = null;
@@ -251,23 +264,26 @@ export class ProcesosComponent implements OnInit, OnDestroy {
 
     const procesoData = this.formProceso.value;
 
+    // Asegurarse de que la fecha sea un objeto Date
+    if (procesoData.fechaCreacion) {
+      procesoData.fechaCreacion = new Date(procesoData.fechaCreacion);
+    }
+
     if (this.isEditing && this.procesoEditando) {
-      // Modo edición: Actualizar el proceso existente
+      // Modo edición
       await this.procesosService.actualizarProceso(this.procesoEditando.id!, procesoData);
       this.messageService.success('Proceso actualizado correctamente');
     } else {
-      // Modo creación: Crear un nuevo proceso
+      // Modo creación
       await this.procesosService.crearProceso(procesoData);
       this.messageService.success('Proceso creado correctamente');
     }
 
-    // Reiniciar el formulario y ocultarlo
     this.formProceso.reset();
     this.isFormVisible = false;
     this.isEditing = false;
     this.procesoEditando = null;
 
-    // Recargar la lista de procesos
     this.cargarProcesos();
   }
 

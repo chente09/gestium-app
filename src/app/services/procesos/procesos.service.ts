@@ -38,22 +38,24 @@ export class ProcesosService {
   constructor(private firestore: Firestore, private storage: Storage) { }
 
   // 📌 Crear un proceso judicial con materia
+
   async crearProceso(proceso: {
     nombre: string;
     descripcion: string;
     abogadoId: string;
     cedula: string;
-    materia: MateriaProceso; // Agregamos la materia como campo obligatorio
+    materia: MateriaProceso;
+    fechaCreacion?: Date; // Hacer la fecha opcional
   }): Promise<string> {
     try {
       const docRef = collection(this.firestore, this.collectionName);
       const docSnap = await addDoc(docRef, {
         ...proceso,
-        etapas: [], // Inicializa las etapas como un arreglo vacío
-        fechaCreacion: new Date() // Añade la fecha de creación
+        etapas: [],
+        fechaCreacion: proceso.fechaCreacion || new Date() // Usar la fecha proporcionada o la actual
       });
 
-      return docSnap.id; // Retornamos el ID del documento creado
+      return docSnap.id;
     } catch (error) {
       console.error('Error al crear el proceso:', error);
       throw new Error('No se pudo crear el proceso');

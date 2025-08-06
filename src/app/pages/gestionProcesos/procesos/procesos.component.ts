@@ -100,7 +100,7 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   ) {
     this.formProceso = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
-      descripcion: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(200)]],
+      descripcion: ['', [Validators.minLength(10), Validators.maxLength(200)]],
       cedula: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(10)]],
       abogadoId: ['', [Validators.required]],
       materia: ['', [Validators.required]],
@@ -269,12 +269,13 @@ export class ProcesosComponent implements OnInit, OnDestroy {
       procesoData.fechaCreacion = new Date(procesoData.fechaCreacion);
     }
 
+    // Asegurar que la descripción tenga al menos un string vacío
+    procesoData.descripcion = procesoData.descripcion?.trim() || '';
+
     if (this.isEditing && this.procesoEditando) {
-      // Modo edición
       await this.procesosService.actualizarProceso(this.procesoEditando.id!, procesoData);
       this.messageService.success('Proceso actualizado correctamente');
     } else {
-      // Modo creación
       await this.procesosService.crearProceso(procesoData);
       this.messageService.success('Proceso creado correctamente');
     }

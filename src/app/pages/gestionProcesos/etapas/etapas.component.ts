@@ -7,16 +7,16 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { Subject, takeUntil } from 'rxjs';
-
-import { Proceso, ProcesosService, Etapa } from '../../../services/procesos/procesos.service';
-import { DocumentosComponent } from '../documentos/documentos.component';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzSelectModule } from 'ng-zorro-antd/select'; // Agregar este import
+import { Subject, takeUntil } from 'rxjs';
 
+import { Proceso, ProcesosService, Etapa } from '../../../services/procesos/procesos.service';
+import { DocumentosComponent } from '../documentos/documentos.component';
 
 @Component({
   selector: 'app-etapas',
@@ -33,8 +33,9 @@ import { NzInputModule } from 'ng-zorro-antd/input';
     NzIconModule,
     NzToolTipModule,
     NzDividerModule,
-    NzDatePickerModule, // Agregar aquí
-    NzInputModule
+    NzDatePickerModule,
+    NzInputModule,
+    NzSelectModule // Agregar aquí
   ],
   templateUrl: './etapas.component.html',
   styleUrls: ['./etapas.component.css']
@@ -47,13 +48,27 @@ export class EtapasComponent implements OnInit, OnDestroy {
   etapaSeleccionada: number | null = null;
   isLoading = false;
   isSubmitting = false;
-  isEditingEtapa = false; // Indica si estamos editando una etapa
-  etapaEditandoIndex: number | null = null; // Almacena el índice de la etapa que se está editando
-
-  // Error states
+  isEditingEtapa = false;
+  etapaEditandoIndex: number | null = null;
   formSubmitted = false;
+  
+  // Agregar estas propiedades
+  mostrarInputPersonalizado = false;
+  etapasPredefinidas: string[] = [
+    'PAGO DE HONORARIOS',
+    'ELABORACIÓN MATRIZ',
+    'FACTRURACIÓN NOTARÍA',
+    'REVISIÓN DE MATRIZ',
+    'INGRESO A ISSFA',
+    'RETIRO DE ISSFA',
+    'INGRESO A NOTARIA PARA CIERRE',
+    'RETIRO DE ESCRITURA',
+    'INSCRIPCIÓN REGISTRO DE LA PROPIEDAD',
+    'RETIRO DE REGISTRO DE LA PROPIEDAD',
+    'FINALIZADO',
+    'Otra' // Opción para personalizar
+  ];
 
-  // Subject for unsubscribing from observables
   private destroy$ = new Subject<void>();
 
   @ViewChild('documentosContainer') documentosContainer!: ElementRef;
@@ -69,64 +84,95 @@ export class EtapasComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    // Verify that proceso is properly initialized
     if (!this.proceso) {
       console.error('Proceso input is required');
       this.message.error('Error: No se ha seleccionado un proceso');
     }
+    
+    // Suscribirse a los cambios del selector de etapa
+    this.formEtapa.get('nombreSelector')?.valueChanges.subscribe(value => {
+      if (value === 'Otra') {
+        this.mostrarInputPersonalizado = true;
+        this.formEtapa.get('nombre')?.setValidators([Validators.required, Validators.maxLength(100)]);
+        this.formEtapa.get('nombre')?.enable();
+      } else {
+        this.mostrarInputPersonalizado = false;
+        this.formEtapa.get('nombre')?.setValue(value);
+        this.formEtapa.get('nombre')?.clearValidators();
+        this.formEtapa.get('nombre')?.disable();
+      }
+      this.formEtapa.get('nombre')?.updateValueAndValidity();
+    });
   }
 
   ngOnDestroy(): void {
-    // Unsubscribe from all observables
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   private initForm(): void {
     this.formEtapa = this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(100)]],
-      descripcion: ['', [Validators.required, Validators.maxLength(500)]],
-      fechaRegistro: [new Date(), Validators.required], // Cambiar a Date object en lugar de string
+      nombreSelector: ['', [Validators.required]], // Selector de etapa
+      nombre: [{value: '', disabled: true}], // Campo de texto personalizado
+      descripcion: ['', [Validators.maxLength(500)]],
+      fechaRegistro: [new Date(), Validators.required],
     });
   }
 
-  // Open modal with clean form
-  // Método para abrir el modal (tanto para agregar como para editar)
   abrirModal(index?: number): void {
     if (index !== undefined) {
-      // Modo edición: Cargar los datos de la etapa en el formulario
+      // Modo edición
       this.isEditingEtapa = true;
       this.etapaEditandoIndex = index;
       const etapa = this.proceso.etapas[index];
-
-      // Convertir la fecha si es necesario
+      
       let fechaRegistro = etapa.fechaRegistro;
       if (etapa.fechaRegistro && typeof etapa.fechaRegistro === 'string') {
         fechaRegistro = new Date(etapa.fechaRegistro);
       } else if (etapa.fechaRegistro && typeof etapa.fechaRegistro === 'object' && 'toDate' in etapa.fechaRegistro) {
         fechaRegistro = (etapa.fechaRegistro as any).toDate();
       }
-
-      this.formEtapa.patchValue({
-        nombre: etapa.nombre,
-        descripcion: etapa.descripcion,
-        fechaRegistro: fechaRegistro
-      });
+      
+      // Verificar si el nombre está en las opciones predefinidas
+      const nombreEnOpciones = this.etapasPredefinidas.includes(etapa.nombre);
+      
+      if (nombreEnOpciones) {
+        this.formEtapa.patchValue({
+          nombreSelector: etapa.nombre,
+          nombre: etapa.nombre,
+          descripcion: etapa.descripcion,
+          fechaRegistro: fechaRegistro
+        });
+        this.mostrarInputPersonalizado = false;
+        this.formEtapa.get('nombre')?.disable();
+      } else {
+        // Es un nombre personalizado
+        this.formEtapa.patchValue({
+          nombreSelector: 'Otra',
+          nombre: etapa.nombre,
+          descripcion: etapa.descripcion,
+          fechaRegistro: fechaRegistro
+        });
+        this.mostrarInputPersonalizado = true;
+        this.formEtapa.get('nombre')?.enable();
+      }
     } else {
-      // Modo creación: Resetear el formulario
+      // Modo creación
       this.isEditingEtapa = false;
       this.etapaEditandoIndex = null;
+      this.mostrarInputPersonalizado = false;
       this.formEtapa.reset({
-        fechaRegistro: new Date() // Usar Date object
+        nombreSelector: '',
+        nombre: '',
+        fechaRegistro: new Date()
       });
+      this.formEtapa.get('nombre')?.disable();
     }
 
-    // Mostrar el modal
     this.mostrarModal = true;
     this.formSubmitted = false;
   }
 
-  // Cerrar el modal y resetear el formulario
   cerrarModal(): void {
     if (this.formEtapa.dirty) {
       this.modal.confirm({
@@ -149,34 +195,45 @@ export class EtapasComponent implements OnInit, OnDestroy {
     this.formSubmitted = false;
     this.isEditingEtapa = false;
     this.etapaEditandoIndex = null;
+    this.mostrarInputPersonalizado = false;
   }
 
-  // Guardar una nueva etapa o actualizar una existente
   async guardarEtapa(): Promise<void> {
     this.formSubmitted = true;
 
-    if (this.formEtapa.valid && this.proceso?.id) {
+    // Validar el formulario
+    if (this.mostrarInputPersonalizado && !this.formEtapa.get('nombre')?.value?.trim()) {
+      this.message.warning('Por favor, ingrese el nombre de la etapa personalizada');
+      return;
+    }
+
+    if (this.formEtapa.get('nombreSelector')?.valid && this.proceso?.id) {
       this.isSubmitting = true;
 
       try {
-        // Asegurarse de que la fecha sea un objeto Date
         let fechaRegistro = this.formEtapa.get('fechaRegistro')?.value;
         if (fechaRegistro && !(fechaRegistro instanceof Date)) {
           fechaRegistro = new Date(fechaRegistro);
         }
 
+        // Obtener el nombre correcto (del selector o del campo personalizado)
+        let nombreEtapa = '';
+        if (this.mostrarInputPersonalizado) {
+          nombreEtapa = this.formEtapa.get('nombre')?.value?.trim();
+        } else {
+          nombreEtapa = this.formEtapa.get('nombreSelector')?.value;
+        }
+
         const etapaData = {
-          nombre: this.formEtapa.get('nombre')?.value.trim(),
-          descripcion: this.formEtapa.get('descripcion')?.value.trim(),
+          nombre: nombreEtapa,
+          descripcion: this.formEtapa.get('descripcion')?.value?.trim() || '',
           fechaRegistro: fechaRegistro
         };
 
         if (this.isEditingEtapa && this.etapaEditandoIndex !== null) {
-          // Modo edición: Actualizar la etapa existente
           await this.procesosService.actualizarEtapa(this.proceso.id, this.etapaEditandoIndex, etapaData);
           this.message.success('Etapa actualizada correctamente');
         } else {
-          // Modo creación: Agregar una nueva etapa (el servicio agregará documentos: [])
           await this.procesosService.agregarEtapa(this.proceso.id, etapaData);
           this.message.success('Etapa agregada correctamente');
         }
@@ -199,20 +256,19 @@ export class EtapasComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Seleccionar una etapa para ver sus documentos
+  // Resto de los métodos permanecen igual...
   seleccionarEtapa(index: number): void {
     this.etapaSeleccionada = this.etapaSeleccionada === index ? null : index;
-    this.scrollPending = true; // Indica que se debe hacer scroll después de la actualización
+    this.scrollPending = true;
   }
 
   ngAfterViewChecked(): void {
     if (this.scrollPending && this.etapaSeleccionada !== null && this.documentosContainer) {
       this.documentosContainer.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      this.scrollPending = false; // Evita scrolls innecesarios
+      this.scrollPending = false;
     }
   }
 
-  // Actualizar la lista de etapas
   private actualizarEtapas(): void {
     if (!this.proceso?.id) {
       this.message.error('Error: No se ha seleccionado un proceso');
@@ -241,7 +297,6 @@ export class EtapasComponent implements OnInit, OnDestroy {
       });
   }
 
-  // Eliminar una etapa
   eliminarEtapa(index: number): void {
     if (!this.proceso?.id || !this.proceso.etapas || index >= this.proceso.etapas.length) {
       this.message.error('Error: No se puede eliminar la etapa');
@@ -263,11 +318,9 @@ export class EtapasComponent implements OnInit, OnDestroy {
           await this.procesosService.eliminarEtapa(this.proceso.id!, index);
           this.message.success('Etapa eliminada correctamente');
 
-          // Reset etapaSeleccionada if the deleted etapa was selected
           if (this.etapaSeleccionada === index) {
             this.etapaSeleccionada = null;
           } else if (this.etapaSeleccionada && this.etapaSeleccionada > index) {
-            // Adjust the selected index if needed
             this.etapaSeleccionada--;
           }
 
@@ -281,16 +334,11 @@ export class EtapasComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Helper for template
-  get nombreControl() { return this.formEtapa.get('nombre'); }
-  get descripcionControl() { return this.formEtapa.get('descripcion'); }
-  get fechaRegistroControl() { return this.formEtapa.get('fechaRegistro'); }
   formatearFecha(fecha: any): string {
     if (!fecha) return 'Sin fecha';
-
+    
     let dateObj: Date;
-
-    // Manejar diferentes tipos de fecha
+    
     if (fecha instanceof Date) {
       dateObj = fecha;
     } else if (typeof fecha === 'string') {
@@ -300,12 +348,15 @@ export class EtapasComponent implements OnInit, OnDestroy {
     } else {
       return 'Fecha inválida';
     }
-
-    // Formatear la fecha como dd/MM/yyyy
+    
     const day = dateObj.getDate().toString().padStart(2, '0');
     const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
     const year = dateObj.getFullYear();
-
+    
     return `${day}/${month}/${year}`;
   }
+
+  get nombreControl() { return this.formEtapa.get('nombre'); }
+  get descripcionControl() { return this.formEtapa.get('descripcion'); }
+  get fechaRegistroControl() { return this.formEtapa.get('fechaRegistro'); }
 }

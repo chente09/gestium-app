@@ -66,11 +66,28 @@
         [nzOkDisabled]="formSubmitted && !formEtapa.valid" (nzOnOk)="guardarEtapa()" [nzOkLoading]="isSubmitting">
         <ng-container *nzModalContent>
             <form nz-form [formGroup]="formEtapa" nzLayout="vertical">
+                <!-- Selector de etapa predefinida -->
                 <nz-form-item>
-                    <nz-form-label nzRequired nzFor="nombre">Nombre</nz-form-label>
+                    <nz-form-label nzRequired nzFor="nombreSelector">Tipo de Etapa</nz-form-label>
+                    <nz-form-control nzHasFeedback [nzErrorTip]="nombreSelectorErrorTpl">
+                        <nz-select formControlName="nombreSelector" id="nombreSelector" nzShowSearch nzAllowClear
+                            nzPlaceHolder="Seleccione el tipo de etapa">
+                            <nz-option *ngFor="let etapa of etapasPredefinidas" [nzValue]="etapa" [nzLabel]="etapa">
+                            </nz-option>
+                        </nz-select>
+                        <ng-template #nombreSelectorErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">Debe seleccionar un tipo de
+                                etapa</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <!-- Input personalizado cuando se selecciona "Otra" -->
+                <nz-form-item *ngIf="mostrarInputPersonalizado">
+                    <nz-form-label nzRequired nzFor="nombre">Nombre Personalizado</nz-form-label>
                     <nz-form-control nzHasFeedback [nzErrorTip]="nombreErrorTpl">
                         <input nz-input formControlName="nombre" id="nombre"
-                            placeholder="Ingrese el nombre de la etapa" />
+                            placeholder="Ingrese el nombre personalizado de la etapa" />
                         <ng-template #nombreErrorTpl let-control>
                             <ng-container *ngIf="control.hasError('required')">El nombre es obligatorio</ng-container>
                             <ng-container *ngIf="control.hasError('maxlength')">El nombre no puede superar 100
@@ -79,14 +96,14 @@
                     </nz-form-control>
                 </nz-form-item>
 
+                <!-- Descripción -->
                 <nz-form-item>
-                    <nz-form-label nzRequired nzFor="descripcion">Descripción</nz-form-label>
+                    <nz-form-label nzFor="descripcion">Descripción</nz-form-label>
                     <nz-form-control nzHasFeedback [nzErrorTip]="descripcionErrorTpl">
                         <textarea nz-input formControlName="descripcion" id="descripcion"
-                            placeholder="Ingrese la descripción" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
+                            placeholder="Ingrese la descripción (opcional)"
+                            [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
                         <ng-template #descripcionErrorTpl let-control>
-                            <ng-container *ngIf="control.hasError('required')">La descripción es
-                                obligatoria</ng-container>
                             <ng-container *ngIf="control.hasError('maxlength')">La descripción no puede superar 500
                                 caracteres</ng-container>
                         </ng-template>

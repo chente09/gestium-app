@@ -58,15 +58,12 @@
 
                 <!-- Descripción -->
                 <nz-form-item>
-                    <nz-form-label nzRequired nzFor="descripcion">Descripción</nz-form-label>
+                    <nz-form-label nzFor="descripcion">Descripción</nz-form-label> <!-- Removemos nzRequired -->
                     <nz-form-control [nzErrorTip]="descripcionErrorTpl">
                         <textarea nz-input formControlName="descripcion" id="descripcion"
-                            [nzAutosize]="{ minRows: 3, maxRows: 6 }" placeholder="Ingrese la descripción"></textarea>
+                            [nzAutosize]="{ minRows: 3, maxRows: 6 }"
+                            placeholder="Ingrese la descripción (opcional)"></textarea>
                         <ng-template #descripcionErrorTpl let-control>
-                            <ng-container *ngIf="control.hasError('required')">La descripción es
-                                obligatoria</ng-container>
-                            <ng-container *ngIf="control.hasError('minlength')">La descripción debe tener al menos 10
-                                caracteres</ng-container>
                             <ng-container *ngIf="control.hasError('maxlength')">La descripción no debe exceder 200
                                 caracteres</ng-container>
                         </ng-template>

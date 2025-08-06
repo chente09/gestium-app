@@ -82,6 +82,14 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   searchValue = '';
   procesosOriginales: Proceso[] = [];
 
+  // 🆕 Propiedades para el selector de descripción
+  mostrarInputDescripcionPersonalizada = false;
+  descripcionesPredefinidas: string[] = [
+    'CANCELACIÓN DE HIPOTECA',
+    'COMPRAVENTA',
+    'Otro' // Opción para personalizar
+  ];
+
   // Variable para manejar la destrucción del componente
   private destroy$ = new Subject<void>();
 
@@ -100,17 +108,33 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   ) {
     this.formProceso = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
-      descripcion: ['', [Validators.minLength(10), Validators.maxLength(200)]],
+      descripcionSelector: ['', [Validators.required]], // 🆕 Selector de descripción predefinida
+      descripcion: [{value: '', disabled: true}], // 🆕 Campo personalizado (inicialmente deshabilitado)
       cedula: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(10)]],
       abogadoId: ['', [Validators.required]],
       materia: ['', [Validators.required]],
-      fechaCreacion: [new Date(), [Validators.required]] // Nuevo campo de fecha
+      fechaCreacion: [new Date(), [Validators.required]]
     });
   }
 
   ngOnInit(): void {
     this.materias = this.sharedDataService.getAreas() as MateriaProceso[];
     this.cargarProcesos();
+    
+    // 🆕 Suscribirse a los cambios del selector de descripción
+    this.formProceso.get('descripcionSelector')?.valueChanges.subscribe(value => {
+      if (value === 'Otro') {
+        this.mostrarInputDescripcionPersonalizada = true;
+        this.formProceso.get('descripcion')?.setValidators([Validators.required, Validators.maxLength(200)]);
+        this.formProceso.get('descripcion')?.enable();
+      } else {
+        this.mostrarInputDescripcionPersonalizada = false;
+        this.formProceso.get('descripcion')?.setValue(value);
+        this.formProceso.get('descripcion')?.clearValidators();
+        this.formProceso.get('descripcion')?.disable();
+      }
+      this.formProceso.get('descripcion')?.updateValueAndValidity();
+    });
   }
 
   getCurrentUserName(): string | null {
@@ -174,31 +198,57 @@ export class ProcesosComponent implements OnInit, OnDestroy {
           fechaCreacion = (proceso.fechaCreacion as any).toDate();
         }
 
-        this.formProceso.patchValue({
-          nombre: proceso.nombre,
-          cedula: proceso.cedula,
-          descripcion: proceso.descripcion,
-          materia: proceso.materia,
-          abogadoId: proceso.abogadoId,
-          fechaCreacion: fechaCreacion // Agregar la fecha
-        });
+        // 🆕 Verificar si la descripción está en las opciones predefinidas
+        const descripcionEnOpciones = this.descripcionesPredefinidas.includes(proceso.descripcion);
+        
+        if (descripcionEnOpciones) {
+          this.formProceso.patchValue({
+            nombre: proceso.nombre,
+            cedula: proceso.cedula,
+            descripcionSelector: proceso.descripcion,
+            descripcion: proceso.descripcion,
+            materia: proceso.materia,
+            abogadoId: proceso.abogadoId,
+            fechaCreacion: fechaCreacion
+          });
+          this.mostrarInputDescripcionPersonalizada = false;
+          this.formProceso.get('descripcion')?.disable();
+        } else {
+          // Es una descripción personalizada
+          this.formProceso.patchValue({
+            nombre: proceso.nombre,
+            cedula: proceso.cedula,
+            descripcionSelector: 'Otro',
+            descripcion: proceso.descripcion,
+            materia: proceso.materia,
+            abogadoId: proceso.abogadoId,
+            fechaCreacion: fechaCreacion
+          });
+          this.mostrarInputDescripcionPersonalizada = true;
+          this.formProceso.get('descripcion')?.enable();
+        }
       } else {
         // Modo creación
         this.isEditing = false;
         this.procesoEditando = null;
+        this.mostrarInputDescripcionPersonalizada = false;
         const currentUserName = this.getCurrentUserName();
         if (currentUserName) {
           this.formProceso.patchValue({
             abogadoId: currentUserName,
-            fechaCreacion: new Date() // Fecha actual por defecto
+            fechaCreacion: new Date(),
+            descripcionSelector: '',
+            descripcion: ''
           });
           this.formProceso.get('abogadoId')?.updateValueAndValidity();
+          this.formProceso.get('descripcion')?.disable();
         }
       }
     } else {
       this.formProceso.reset();
       this.isEditing = false;
       this.procesoEditando = null;
+      this.mostrarInputDescripcionPersonalizada = false;
     }
   }
 
@@ -256,38 +306,66 @@ export class ProcesosComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Método para guardar los cambios (tanto para crear como para editar)
+  // 🆕 Método mejorado para guardar procesos
   async guardarProceso(): Promise<void> {
-    if (this.formProceso.invalid) {
+    // 🆕 Validar el formulario y el campo personalizado si es necesario
+    if (this.mostrarInputDescripcionPersonalizada && !this.formProceso.get('descripcion')?.value?.trim()) {
+      this.messageService.warning('Por favor, ingrese la descripción personalizada');
       return;
     }
 
-    const procesoData = this.formProceso.value;
+    if (this.formProceso.get('descripcionSelector')?.valid && this.formProceso.valid) {
+      this.isCreating = true;
 
-    // Asegurarse de que la fecha sea un objeto Date
-    if (procesoData.fechaCreacion) {
-      procesoData.fechaCreacion = new Date(procesoData.fechaCreacion);
-    }
+      try {
+        const procesoData = this.formProceso.value;
 
-    // Asegurar que la descripción tenga al menos un string vacío
-    procesoData.descripcion = procesoData.descripcion?.trim() || '';
+        // Asegurarse de que la fecha sea un objeto Date
+        if (procesoData.fechaCreacion) {
+          procesoData.fechaCreacion = new Date(procesoData.fechaCreacion);
+        }
 
-    if (this.isEditing && this.procesoEditando) {
-      await this.procesosService.actualizarProceso(this.procesoEditando.id!, procesoData);
-      this.messageService.success('Proceso actualizado correctamente');
+        // 🆕 Obtener la descripción correcta (del selector o del campo personalizado)
+        let descripcionFinal = '';
+        if (this.mostrarInputDescripcionPersonalizada) {
+          descripcionFinal = this.formProceso.get('descripcion')?.value?.trim();
+        } else {
+          descripcionFinal = this.formProceso.get('descripcionSelector')?.value;
+        }
+
+        // Actualizar el procesoData con la descripción final
+        procesoData.descripcion = descripcionFinal;
+
+        if (this.isEditing && this.procesoEditando) {
+          await this.procesosService.actualizarProceso(this.procesoEditando.id!, procesoData);
+          this.messageService.success('Proceso actualizado correctamente');
+        } else {
+          await this.procesosService.crearProceso(procesoData);
+          this.messageService.success('Proceso creado correctamente');
+        }
+
+        this.formProceso.reset();
+        this.isFormVisible = false;
+        this.isEditing = false;
+        this.procesoEditando = null;
+        this.mostrarInputDescripcionPersonalizada = false;
+
+        this.cargarProcesos();
+      } catch (error) {
+        console.error('Error al guardar el proceso:', error);
+        this.messageService.error('No se pudo guardar el proceso');
+      } finally {
+        this.isCreating = false;
+      }
     } else {
-      await this.procesosService.crearProceso(procesoData);
-      this.messageService.success('Proceso creado correctamente');
+      Object.keys(this.formProceso.controls).forEach(key => {
+        const control = this.formProceso.get(key);
+        control?.markAsTouched();
+      });
+
+      this.messageService.warning('Complete todos los campos requeridos correctamente');
     }
-
-    this.formProceso.reset();
-    this.isFormVisible = false;
-    this.isEditing = false;
-    this.procesoEditando = null;
-
-    this.cargarProcesos();
   }
-
 
   seleccionarProceso(proceso: Proceso): void {
     this.procesoSeleccionado = this.procesoSeleccionado?.id === proceso.id ? null : proceso;

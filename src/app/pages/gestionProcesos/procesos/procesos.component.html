@@ -56,14 +56,30 @@
                     </nz-form-control>
                 </nz-form-item>
 
-                <!-- Descripción -->
+                <!-- 🆕 Selector de descripción predefinida -->
                 <nz-form-item>
-                    <nz-form-label nzFor="descripcion">Descripción</nz-form-label> <!-- Removemos nzRequired -->
-                    <nz-form-control [nzErrorTip]="descripcionErrorTpl">
+                    <nz-form-label nzRequired nzFor="descripcionSelector">Tipo de Proceso</nz-form-label>
+                    <nz-form-control [nzErrorTip]="descripcionSelectorErrorTpl">
+                        <nz-select formControlName="descripcionSelector" id="descripcionSelector" nzShowSearch nzAllowClear
+                            nzPlaceHolder="Seleccione el tipo de proceso">
+                            <nz-option *ngFor="let desc of descripcionesPredefinidas" [nzValue]="desc" [nzLabel]="desc">
+                            </nz-option>
+                        </nz-select>
+                        <ng-template #descripcionSelectorErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">Debe seleccionar un tipo de proceso</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <!-- 🆕 Input personalizado cuando se selecciona "Otro" -->
+                <nz-form-item *ngIf="mostrarInputDescripcionPersonalizada">
+                    <nz-form-label nzRequired nzFor="descripcion">Descripción Personalizada</nz-form-label>
+                    <nz-form-control [nzErrorTip]="descripcionPersonalizadaErrorTpl">
                         <textarea nz-input formControlName="descripcion" id="descripcion"
                             [nzAutosize]="{ minRows: 3, maxRows: 6 }"
-                            placeholder="Ingrese la descripción (opcional)"></textarea>
-                        <ng-template #descripcionErrorTpl let-control>
+                            placeholder="Ingrese la descripción personalizada del proceso"></textarea>
+                        <ng-template #descripcionPersonalizadaErrorTpl let-control>
+                            <ng-container *ngIf="control.hasError('required')">La descripción es obligatoria</ng-container>
                             <ng-container *ngIf="control.hasError('maxlength')">La descripción no debe exceder 200
                                 caracteres</ng-container>
                         </ng-template>
@@ -97,10 +113,12 @@
                         </ng-template>
                     </nz-form-control>
                 </nz-form-item>
+
                 <!-- Botones del formulario -->
                 <div class="form-buttons">
                     <button nz-button (click)="toggleFormulario()">Cancelar</button>
-                    <button nz-button nzType="primary" [nzLoading]="isCreating" [disabled]="!formProceso.valid">
+                    <button nz-button nzType="primary" [nzLoading]="isCreating" 
+                        [disabled]="!formProceso.get('descripcionSelector')?.valid || !formProceso.valid">
                         <i nz-icon nzType="save"></i>
                         {{ isEditing ? 'Actualizar Proceso' : 'Guardar Proceso' }}
                     </button>

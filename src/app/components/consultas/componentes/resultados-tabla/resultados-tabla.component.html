@@ -1,0 +1,66 @@
+<div class="results-container">
+    <div class="header">
+        <img src="https://i.postimg.cc/qM5m65P4/image.png" alt="logo" class="table-logo">
+        <button nz-button (click)="newSearch()" class="clear-button">
+            <i nz-icon nzType="reload"></i> Nueva Consulta
+        </button>
+    </div>
+
+    <!-- Vista de Tarjetas para Móviles -->
+    <div class="mobile-card-view">
+        <div *ngFor="let proceso of procesos" class="proceso-card">
+            <div class="card-body">
+                <div class="card-item">
+                    <span class="item-label">Cliente:</span>
+                    <span class="item-value">{{ proceso.nombre }}</span>
+                </div>
+                <div class="card-item">
+                    <span class="item-label">Cédula:</span>
+                    <span class="item-value">{{ proceso.cedula }}</span>
+                </div>
+                <div class="card-item">
+                    <span class="item-label">Materia:</span>
+                    <span class="item-value">{{ proceso.materia }}</span>
+                </div>
+                <div class="card-item">
+                    <span class="item-label">Fecha de Inicio:</span>
+                    <span class="item-value">{{ formatDate(proceso.fechaCreacion) }}</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button nz-button nzType="primary" nzBlock (click)="selectProceso(proceso)">
+                    <i nz-icon nzType="eye"></i> Ver Detalle Completo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vista de Tabla para Escritorio -->
+    <div class="desktop-table-view">
+        <nz-table #basicTable [nzData]="procesos" [nzShowPagination]="procesos.length > 5" [nzPageSize]="5"
+            [nzScroll]="{ x: '800px' }">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Cédula</th>
+                    <th>Materia</th>
+                    <th>Fecha de Inicio</th>
+                    <th nzAlign="center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let proceso of basicTable.data">
+                    <td>{{ proceso.nombre }}</td>
+                    <td>{{ proceso.cedula }}</td>
+                    <td>{{ proceso.materia }}</td>
+                    <td>{{ formatDate(proceso.fechaCreacion) }}</td>
+                    <td nzAlign="center">
+                        <button nz-button nzType="primary" nzSize="small" (click)="selectProceso(proceso)">
+                            <i nz-icon nzType="eye"></i> Ver Detalle
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </nz-table>
+    </div>
+</div>

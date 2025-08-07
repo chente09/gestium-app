@@ -1,0 +1,134 @@
+<div *ngIf="proceso">
+    <!-- Card de Información Principal (sin cambios) -->
+    <!-- Tarjeta de Información Principal con nueva estructura de rejilla -->
+        <nz-card class="detalle-card">
+            <h4 class="card-title"><i nz-icon nzType="user-switch"></i> Información Principal</h4>
+            <div nz-row [nzGutter]="[16, 24]" class="proceso-datos-grid">
+                <!-- Fila 1 -->
+                <div nz-col [nzXs]="24" [nzSm]="12">
+                    <div class="dato-item">
+                        <i nz-icon nzType="user" class="dato-icon"></i>
+                        <div>
+                            <span class="dato-label">Cliente</span>
+                            <span class="dato-value">{{ proceso.nombre }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div nz-col [nzXs]="24" [nzSm]="12">
+                    <div class="dato-item">
+                        <i nz-icon nzType="idcard" class="dato-icon"></i>
+                        <div>
+                            <span class="dato-label">Cédula</span>
+                            <span class="dato-value">{{ proceso.cedula }}</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Fila 2 -->
+                <div nz-col [nzXs]="24" [nzSm]="12">
+                    <div class="dato-item">
+                        <i nz-icon nzType="folder-open" class="dato-icon"></i>
+                        <div>
+                            <span class="dato-label">Materia</span>
+                            <span class="dato-value">{{ proceso.materia }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div nz-col [nzXs]="24" [nzSm]="12">
+                    <div class="dato-item">
+                        <i nz-icon nzType="calendar" class="dato-icon"></i>
+                        <div>
+                            <span class="dato-label">Fecha de Inicio</span>
+                            <span class="dato-value">{{ formatearFecha(proceso.fechaCreacion) }}</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Fila 3 (Ancho completo) -->
+                <div nz-col [nzSpan]="24" [nzSm]="12">
+                    <div class="dato-item">
+                        <i nz-icon nzType="file-text" class="dato-icon"></i>
+                        <div>
+                            <span class="dato-label">Descripción del Proceso</span>
+                            <span class="dato-value">{{ proceso.descripcion }}</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Fila 4 (Ancho completo) -->
+                <div nz-col [nzSpan]="24" [nzSm]="12">
+                    <div class="dato-item">
+                        <i nz-icon nzType="team" class="dato-icon"></i>
+                        <div>
+                            <span class="dato-label">Abogado Asignado</span>
+                            <span class="dato-value">{{ proceso.abogadoId }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nz-card>
+
+    <!-- Contenedor de Etapas -->
+    <div class="etapas-container" *ngIf="etapasOrdenadas.length > 0">
+        <h4 class="card-title"><i nz-icon nzType="schedule"></i> Etapas del Proceso</h4>
+
+        <!-- NUEVO: Mensaje Instructivo -->
+        <div class="timeline-instructions">
+            <i nz-icon nzType="info-circle" nzTheme="twotone"></i>
+            <span>Desliza hacia la derecha para ver las etapas más antiguas.</span>
+        </div>
+
+        <!-- Línea de Tiempo Horizontal -->
+        <div class="horizontal-timeline">
+            <div *ngFor="let etapa of etapasOrdenadas; let i = index" class="timeline-item"
+                [ngClass]="{ 'actual': i === 0, 'finalizado': i > 0 }">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="etapa-info">
+                        <p class="etapa-nombre">{{ etapa.nombre }}</p>
+                        <p class="etapa-fecha">{{ formatearFechaEtapa(etapa.fechaRegistro) }}</p>
+                    </div>
+                    <nz-collapse [nzBordered]="false" class="docs-collapse">
+                        <nz-collapse-panel nzHeader="Detalles y Documentos" [nzExtra]="documentIcon">
+                            <ng-template #documentIcon>
+                                <i nz-icon nzType="down" class="collapse-icon"></i>
+                            </ng-template>
+                            <p class="etapa-descripcion">{{ etapa.descripcion }}</p>
+                            <nz-divider nzText="Documentos" nzOrientation="left" nzPlain></nz-divider>
+
+                            <!-- Lista de Documentos con su template -->
+                            <nz-list *ngIf="etapa.documentos && etapa.documentos.length > 0"
+                                [nzDataSource]="etapa.documentos">
+                                <ng-template #documentoTemplate let-documento>
+                                    <nz-list-item class="documento-item">
+                                        <nz-list-item-meta [nzTitle]="documento.nombre"
+                                            [nzAvatar]="avatarTemplate"></nz-list-item-meta>
+                                        <ng-template #avatarTemplate>
+                                            <i nz-icon nzType="file-pdf" nzTheme="outline" style="font-size: 20px;"></i>
+                                        </ng-template>
+                                        <ul nz-list-item-actions>
+                                            <nz-list-item-action>
+                                                <a href="{{ documento.url }}" target="_blank" nz-button nzType="primary"
+                                                    nzSize="small">
+                                                    <i nz-icon nzType="download"></i> Ver
+                                                </a>
+                                            </nz-list-item-action>
+                                        </ul>
+                                    </nz-list-item>
+                                </ng-template>
+                            </nz-list>
+
+                            <div *ngIf="!etapa.documentos || etapa.documentos.length === 0"
+                                class="empty-docs-container">
+                                <p class="empty-docs-message">No hay documentos disponibles.</p>
+                            </div>
+                        </nz-collapse-panel>
+                    </nz-collapse>
+                </div>
+            </div>
+        </div>
+
+        <!-- NUEVO: Leyenda de Indicadores -->
+        <div class="timeline-legend">
+            <div class="legend-item"><span class="dot actual"></span> Etapa Actual</div>
+            <div class="legend-item"><span class="dot finalizado"></span> Etapa Finalizada</div>
+        </div>
+    </div>
+</div>

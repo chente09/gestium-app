@@ -1,0 +1,43 @@
+<div class="form-container">
+    <div class="logo-container">
+        <img src="https://i.postimg.cc/qM5m65P4/image.png" alt="Logo del Estudio Jurídico" class="consulta-logo">
+    </div>
+    <h2 class="consulta-title">Consulta el estado de tu proceso</h2>
+    <form nz-form [formGroup]="searchForm" (ngSubmit)="submitForm()" class="search-form">
+        <div nz-row [nzGutter]="[16, 16]">
+            <div nz-col [nzXs]="24" [nzSm]="8">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Buscar por</nz-form-label>
+                    <nz-form-control>
+                        <nz-select formControlName="tipoBusqueda">
+                            <nz-option *ngFor="let tipo of tiposBusqueda" [nzValue]="tipo.value"
+                                [nzLabel]="tipo.label"></nz-option>
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+            </div>
+            <div nz-col [nzXs]="24" [nzSm]="12">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Valor</nz-form-label>
+                    <nz-form-control [nzErrorTip]="errorTip">
+                        <input nz-input formControlName="valorBusqueda" placeholder="Ingrese el dato a buscar" />
+                        <ng-template #errorTip let-control>
+                            <ng-container *ngIf="control.hasError('required')">El valor es obligatorio.</ng-container>
+                            <ng-container *ngIf="control.hasError('pattern')">Ingrese una cédula válida (10
+                                dígitos).</ng-container>
+                            <ng-container *ngIf="control.hasError('minlength')">El nombre debe tener al menos 3
+                                letras.</ng-container>
+                        </ng-template>
+                    </nz-form-control>
+                </nz-form-item>
+            </div>
+            <div nz-col [nzXs]="24" [nzSm]="4">
+                <nz-form-item>
+                    <button nz-button nzType="primary" nzBlock class="search-button">
+                        <i nz-icon nzType="search"></i><span>Buscar</span>
+                    </button>
+                </nz-form-item>
+            </div>
+        </div>
+    </form>
+</div>

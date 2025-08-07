@@ -1,0 +1,203 @@
+/* --- Estructura Principal y Contenedores --- */
+.detalle-card, .etapas-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 10px;
+}
+
+/* --- Estilos para la Rejilla de Información Principal --- */
+.proceso-datos-grid .dato-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+.proceso-datos-grid .dato-icon {
+    font-size: 1.5rem;
+    color: #D9534F; /* Color de acento */
+    margin-top: 4px;
+}
+.proceso-datos-grid .dato-item div {
+    display: flex;
+    flex-direction: column;
+}
+.proceso-datos-grid .dato-label {
+    font-size: 0.85em;
+    font-weight: 500;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+.proceso-datos-grid .dato-value {
+    font-size: 1em;
+    font-weight: 500;
+    color: #1e293b;
+    line-height: 1.4;
+}
+
+/* --- Estilos para la Línea de Tiempo --- */
+.etapas-container {
+    background-color: #f7f9fc;
+}
+.timeline-instructions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+    color: #64748b;
+    margin-top: -10px;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background-color: #eef2ff;
+    border-radius: 6px;
+}
+.horizontal-timeline {
+    display: flex;
+    overflow-x: auto;
+    padding: 20px 0 40px 0;
+}
+.timeline-item {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 240px;
+    position: relative;
+    text-align: center;
+}
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    top: 9px;
+    left: -50%;
+    width: 100%;
+    height: 3px;
+    background-color: #cbd5e1;
+}
+.timeline-item:first-child::before {
+    width: 50%;
+    left: 50%;
+}
+.timeline-dot {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 3px solid #cbd5e1;
+    margin: 0 auto;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+/* Estado: Etapa Finalizada (Azul Marino) */
+.timeline-item.finalizado .timeline-dot {
+    border-color: #3b82f6;
+    background-color: #3b82f6;
+}
+.timeline-item.finalizado::before {
+    background-color: #3b82f6;
+}
+.timeline-item.finalizado .timeline-dot::after {
+    content: '✓';
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -51%);
+}
+
+/* Estado: Etapa Actual (Rojo) */
+.timeline-item.actual .timeline-dot {
+    border-color: #D9534F;
+    animation: pulsate 1.5s infinite;
+}
+.timeline-item.actual::before {
+    background: linear-gradient(to right, #3b82f6 50%, #cbd5e1 50%);
+}
+
+/* --- Estilos para las Tarjetas de la Línea de Tiempo --- */
+.timeline-content {
+    background-color: #ffffff;
+    padding: 15px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+.etapa-info {
+    flex-grow: 1;
+}
+.etapa-nombre {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+    min-height: 40px;
+}
+.etapa-fecha {
+    font-size: 0.85em;
+    color: #64748b;
+    margin-bottom: 0;
+}
+.docs-collapse {
+    margin-top: 15px;
+    text-align: left;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 10px;
+}
+:host ::ng-deep .ant-collapse-header {
+    padding: 8px 4px !important;
+    color: #3b82f6;
+    font-weight: 500;
+}
+:host ::ng-deep .ant-collapse-content {
+    background: #fff;
+    border-top: none !important;
+}
+
+/* --- Leyenda y Animación --- */
+.timeline-legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 25px;
+    padding-top: 15px;
+    border-top: 1px solid #e2e8f0;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9em;
+}
+.legend-item .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.legend-item .dot.actual { background-color: #D9534F; }
+.legend-item .dot.finalizado { background-color: #3b82f6; }
+
+@keyframes pulsate {
+    0% {
+        box-shadow: 0 0 0 0 rgba(217, 83, 79, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(217, 83, 79, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(217, 83, 79, 0);
+    }
+}

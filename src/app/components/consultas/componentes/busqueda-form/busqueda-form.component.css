@@ -1,0 +1,59 @@
+.form-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 30px;
+    background: #ffffffcf;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.logo-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.consulta-logo {
+    max-width: 200px;
+    transition: max-width 0.3s ease;
+}
+.consulta-title {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 25px;
+}
+.search-form nz-form-item {
+    margin-bottom: 0; /* Para alinear el botón */
+}
+.search-button {
+    background-color: #D9534F;
+    border-color: #D9534F;
+    height: 100%;
+}
+.search-button:hover {
+    background-color: #c9302c;
+    border-color: #c9302c;
+}
+
+/* --- NUEVO: Media Queries para Responsividad --- */
+@media (max-width: 768px) {
+    .form-container {
+        margin: 20px auto;
+        padding: 20px;
+    }
+    .consulta-logo {
+        max-width: 150px;
+    }
+    .consulta-title {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .search-form nz-form-item {
+        /* Permite que los campos se apilen correctamente */
+        margin-bottom: 16px;
+    }
+    .search-button {
+        width: 100%;
+    }
+}

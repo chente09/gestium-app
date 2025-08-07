@@ -1,0 +1,91 @@
+/* --- Contenedor y Encabezado --- */
+.results-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #ffffffcf;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+}
+.table-logo { height: 40px; }
+.clear-button {
+    background-color: #D9534F;
+    border-color: #D9534F;
+    color: white;
+}
+.clear-button:hover {
+    background-color: #c9302c;
+    border-color: #c9302c;
+}
+
+/* --- LÓGICA DE VISIBILIDAD (Móvil-Primero) --- */
+.desktop-table-view {
+    display: none; /* La tabla está oculta por defecto */
+}
+.mobile-card-view {
+    display: grid; /* Las tarjetas son visibles por defecto */
+    gap: 20px;
+    grid-template-columns: 1fr;
+}
+
+/* --- Estilos para las Tarjetas (Vista Móvil) --- */
+.proceso-card {
+    background: #ffffffcf;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.card-body { padding: 20px; display: grid; gap: 12px; flex-grow: 1; }
+.card-item { display: flex; flex-direction: column; }
+.item-label { font-size: 0.8em; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+.item-value { font-size: 1em; color: #1e293b; }
+.card-footer { padding: 15px; background-color: #f7f9fc; border-top: 1px solid #e2e8f0; }
+.card-footer button { background-color: #D9534F; border-color: #D9534F; }
+.card-footer button:hover { background-color: #c9302c; border-color: #c9302c; }
+
+/* --- Estilos para la Tabla (Vista Escritorio) --- */
+.desktop-table-view nz-table {
+    background: #ffffffcf;
+    border-radius: 8px;
+    overflow: hidden; /* Para que el borde redondeado afecte a la tabla */
+}
+.desktop-table-view th {
+    background-color: #f7f9fc !important;
+    font-weight: 600;
+    color: #1e293b;
+}
+.desktop-table-view button[nz-button] {
+    background-color: #D9534F;
+    border-color: #D9534F;
+}
+.desktop-table-view button[nz-button]:hover {
+    background-color: #c9302c;
+    border-color: #c9302c;
+}
+
+/* --- Media Query para el cambio de vista --- */
+@media (min-width: 768px) {
+    .desktop-table-view {
+        display: block; /* Muestra la tabla en pantallas grandes */
+    }
+    .mobile-card-view {
+        display: none; /* Oculta las tarjetas en pantallas grandes */
+    }
+}
+
+/* Media Query para el header responsivo */
+@media (max-width: 768px) {
+    .results-container { padding: 10px; margin: 20px auto; }
+    .header { flex-direction: column; gap: 15px; align-items: stretch; }
+    .clear-button { width: 100%; text-align: center; }
+    .table-logo { align-self: center; }
+}

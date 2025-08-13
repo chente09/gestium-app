@@ -1,6 +1,12 @@
 <div class="etapas-container">
     <!-- Header with process name and add button -->
     <div class="header-container">
+        <!-- 🆕 Mostrar el tipo de proceso actual -->
+        <div>
+            <h4 style="color: #001529d1; margin: 0;">{{ getTituloTipoEtapas() }}</h4>
+            <small style="color: #666;">{{ etapasPredefinidas.length - 1 }} etapas predefinidas disponibles</small>
+        </div>
+        
         <button nz-button nzType="primary" (click)="abrirModal()">
             <span nz-icon nzType="plus"></span>Agregar Etapa
         </button>
@@ -15,6 +21,7 @@
     <div *ngIf="!isLoading && (!proceso?.etapas || proceso.etapas.length === 0)" class="empty-container">
         <span nz-icon nzType="inbox" nzTheme="outline"></span>
         <p>No hay etapas definidas para este proceso</p>
+        <p><small>Tipo de proceso: <strong>{{ tipoProceso }}</strong></small></p>
         <button nz-button nzType="primary" (click)="abrirModal()">Agregar Primera Etapa</button>
     </div>
 
@@ -65,6 +72,13 @@
         (nzOnCancel)="cerrarModal()" [nzOkText]="isEditingEtapa ? 'Actualizar' : 'Guardar'" [nzCancelText]="'Cancelar'"
         [nzOkDisabled]="formSubmitted && !formEtapa.valid" (nzOnOk)="guardarEtapa()" [nzOkLoading]="isSubmitting">
         <ng-container *nzModalContent>
+            <!-- 🆕 Información del tipo de proceso en el modal -->
+            <div style="background-color: #f6f7f9; padding: 12px; border-radius: 4px; margin-bottom: 16px;">
+                <strong style="color: #001529d1;">Tipo de Proceso:</strong> {{ tipoProceso }}
+                <br>
+                <small style="color: #666;">Las etapas mostradas corresponden a este tipo de proceso</small>
+            </div>
+
             <form nz-form [formGroup]="formEtapa" nzLayout="vertical">
                 <!-- Selector de etapa predefinida -->
                 <nz-form-item>

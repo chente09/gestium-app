@@ -12,11 +12,12 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzSelectModule } from 'ng-zorro-antd/select'; // Agregar este import
+import { NzSelectModule } from 'ng-zorro-antd/select';
 import { Subject, takeUntil } from 'rxjs';
 
 import { Proceso, ProcesosService, Etapa } from '../../../services/procesos/procesos.service';
 import { DocumentosComponent } from '../documentos/documentos.component';
+import { SharedDataService } from '../../../services/sharedData/shared-data.service'; // 🆕 Importar SharedDataService
 
 @Component({
   selector: 'app-etapas',
@@ -35,7 +36,7 @@ import { DocumentosComponent } from '../documentos/documentos.component';
     NzDividerModule,
     NzDatePickerModule,
     NzInputModule,
-    NzSelectModule // Agregar aquí
+    NzSelectModule
   ],
   templateUrl: './etapas.component.html',
   styleUrls: ['./etapas.component.css']
@@ -52,22 +53,10 @@ export class EtapasComponent implements OnInit, OnDestroy {
   etapaEditandoIndex: number | null = null;
   formSubmitted = false;
   
-  // Agregar estas propiedades
+  // 🆕 Propiedades dinámicas para etapas según tipo de proceso
   mostrarInputPersonalizado = false;
-  etapasPredefinidas: string[] = [
-    'PAGO DE HONORARIOS',
-    'ELABORACIÓN MATRIZ',
-    'FACTRURACIÓN NOTARÍA',
-    'REVISIÓN DE MATRIZ',
-    'INGRESO A ISSFA',
-    'RETIRO DE ISSFA',
-    'INGRESO A NOTARIA PARA CIERRE',
-    'RETIRO DE ESCRITURA',
-    'INSCRIPCIÓN REGISTRO DE LA PROPIEDAD',
-    'RETIRO DE REGISTRO DE LA PROPIEDAD',
-    'FINALIZADO',
-    'Otra' // Opción para personalizar
-  ];
+  etapasPredefinidas: string[] = []; // 🆕 Ahora será dinámico
+  tipoProceso: string = ''; // 🆕 Para almacenar el tipo de proceso actual
 
   private destroy$ = new Subject<void>();
 
@@ -78,7 +67,8 @@ export class EtapasComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private procesosService: ProcesosService,
     private message: NzMessageService,
-    private modal: NzModalService
+    private modal: NzModalService,
+    private sharedDataService: SharedDataService // 🆕 Inyectar SharedDataService
   ) {
     this.initForm();
   }
@@ -87,7 +77,11 @@ export class EtapasComponent implements OnInit, OnDestroy {
     if (!this.proceso) {
       console.error('Proceso input is required');
       this.message.error('Error: No se ha seleccionado un proceso');
+      return;
     }
+    
+    // 🆕 Configurar etapas según el tipo de proceso
+    this.configurarEtapasPorTipo();
     
     // Suscribirse a los cambios del selector de etapa
     this.formEtapa.get('nombreSelector')?.valueChanges.subscribe(value => {
@@ -108,6 +102,22 @@ export class EtapasComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // 🆕 Método para configurar etapas según el tipo de proceso
+  private configurarEtapasPorTipo(): void {
+    if (!this.proceso?.descripcion) {
+      console.warn('No se encontró descripción del proceso, usando etapas por defecto');
+      this.tipoProceso = 'CANCELACIÓN DE HIPOTECA';
+    } else {
+      this.tipoProceso = this.proceso.descripcion;
+    }
+
+    // Obtener las etapas correspondientes al tipo de proceso
+    this.etapasPredefinidas = this.sharedDataService.getEtapasPorTipoProceso(this.tipoProceso);
+    
+    console.log(`📋 Configurando etapas para tipo: "${this.tipoProceso}"`);
+    console.log(`🔧 Etapas disponibles:`, this.etapasPredefinidas);
   }
 
   private initForm(): void {
@@ -133,7 +143,7 @@ export class EtapasComponent implements OnInit, OnDestroy {
         fechaRegistro = (etapa.fechaRegistro as any).toDate();
       }
       
-      // Verificar si el nombre está en las opciones predefinidas
+      // 🆕 Verificar si el nombre está en las opciones predefinidas ACTUALES
       const nombreEnOpciones = this.etapasPredefinidas.includes(etapa.nombre);
       
       if (nombreEnOpciones) {
@@ -256,6 +266,11 @@ export class EtapasComponent implements OnInit, OnDestroy {
     }
   }
 
+  // 🆕 Método para obtener el título dinámico del modal
+  getTituloTipoEtapas(): string {
+    return `Etapas para: ${this.tipoProceso}`;
+  }
+
   // Resto de los métodos permanecen igual...
   seleccionarEtapa(index: number): void {
     this.etapaSeleccionada = this.etapaSeleccionada === index ? null : index;
@@ -284,6 +299,11 @@ export class EtapasComponent implements OnInit, OnDestroy {
           const procesoActualizado = procesos.find(p => p.id === this.proceso.id);
           if (procesoActualizado) {
             this.proceso.etapas = procesoActualizado.etapas;
+            
+            // 🆕 Verificar si cambió el tipo de proceso y reconfigurar etapas
+            if (procesoActualizado.descripcion !== this.tipoProceso) {
+              this.configurarEtapasPorTipo();
+            }
           } else {
             this.message.warning('No se encontró el proceso seleccionado');
           }

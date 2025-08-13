@@ -118,7 +118,7 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.materias = this.sharedDataService.getAreas() as MateriaProceso[];
+    this.materias = this.sharedDataService.getMaterias() as MateriaProceso[];
     this.cargarProcesos();
     
     // 🆕 Suscribirse a los cambios del selector de descripción

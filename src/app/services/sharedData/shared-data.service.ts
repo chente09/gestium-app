@@ -72,6 +72,63 @@ export class SharedDataService {
     'Pendiente'
   ];
 
+  // 🆕 ETAPAS POR TIPO DE PROCESO
+  readonly etapasPorTipoProceso: { [key: string]: string[] } = {
+    'CANCELACIÓN DE HIPOTECA': [
+      'PAGO DE HONORARIOS',
+      'ELABORACIÓN MATRIZ',
+      'FACTURACIÓN NOTARÍA',
+      'REVISIÓN DE MATRIZ',
+      'INGRESO A ISSFA',
+      'RETIRO DE ISSFA',
+      'INGRESO A NOTARIA PARA CIERRE',
+      'RETIRO DE ESCRITURA',
+      'INSCRIPCIÓN REGISTRO DE LA PROPIEDAD',
+      'RETIRO DE REGISTRO DE LA PROPIEDAD',
+      'FINALIZADO',
+      'Otra'
+    ],
+    'COMPRAVENTA': [
+      'RETIRO EXPEDIENTE',
+      'REVISION EXPEDIENTE',
+      'COMUNICACION A CLIENTE',
+      'SORTEO DE NOTARIA',
+      'SOLICITUD CERTIFICADO GRAVAMEN',
+      'INGRESO PROFORMA DE GASTOS A ISSFA',
+      'ASIGNACION DE NOTARIA',
+      'EMISION CERTIFICADO GRAVAMEN',
+      'DESEMBOLSO DINERO DE GASTOS',
+      'DECLARACION IMPUESTOS MUNICIPIO',
+      'RECEPCION DE FIRMAS EN NOTARIA',
+      'REVISION DE MATRIZ',
+      'INGRESO A FIRMA EN ISSFA',
+      'RETIRO ISSFA',
+      'CIERRE ESCRITURAS NOTARIA',
+      'INGRESO REGISTRO PROPIEDAD',
+      'RETIRO REGISTRO PROPIEDAD',
+      'SOLICITUD CERTIFICADO GRAVAMEN',
+      'EMISION CERTIFICADO DE GRAVAMEN',
+      'ELABORACION EXPEDIENTE FINALIZADO',
+      'INGRESO EXPEDIENTE FINALIZADO A ISSFA',
+      'Otra'
+    ],
+    // Para procesos personalizados (tipo "Otro"), usar etapas por defecto
+    'Otro': [
+      'PAGO DE HONORARIOS',
+      'ELABORACIÓN MATRIZ',
+      'FACTURACIÓN NOTARÍA',
+      'REVISIÓN DE MATRIZ',
+      'INGRESO A ISSFA',
+      'RETIRO DE ISSFA',
+      'INGRESO A NOTARIA PARA CIERRE',
+      'RETIRO DE ESCRITURA',
+      'INSCRIPCIÓN REGISTRO DE LA PROPIEDAD',
+      'RETIRO DE REGISTRO DE LA PROPIEDAD',
+      'FINALIZADO',
+      'Otra'
+    ]
+  };
+
   readonly juecesPorPiso: { [key: string]: string[] } = {
     "5to": [
       "Alban Solano Diana Jazmin",
@@ -154,6 +211,20 @@ export class SharedDataService {
     return [...this.juecesPorPiso[piso]];
   }
 
+  // 🆕 Método para obtener etapas según el tipo de proceso
+  getEtapasPorTipoProceso(tipoProceso: string): string[] {
+    if (!tipoProceso || !this.etapasPorTipoProceso[tipoProceso]) {
+      // Si no existe el tipo, devolver las etapas por defecto (CANCELACIÓN DE HIPOTECA)
+      return [...this.etapasPorTipoProceso['CANCELACIÓN DE HIPOTECA']];
+    }
+    return [...this.etapasPorTipoProceso[tipoProceso]];
+  }
+
+  // 🆕 Método para obtener todos los tipos de proceso disponibles
+  getTiposProcesosDisponibles(): string[] {
+    return Object.keys(this.etapasPorTipoProceso).filter(tipo => tipo !== 'Otro');
+  }
+
   // 🔍 Métodos de utilidad
   isValidArea(area: string): boolean {
     return this.areas.includes(area);
@@ -165,6 +236,11 @@ export class SharedDataService {
 
   isValidMateria(materia: string): boolean {
     return this.materias.includes(materia);
+  }
+
+  // 🆕 Validar si existe el tipo de proceso
+  isValidTipoProceso(tipoProceso: string): boolean {
+    return Object.keys(this.etapasPorTipoProceso).includes(tipoProceso);
   }
 
   // 📊 Estadísticas útiles

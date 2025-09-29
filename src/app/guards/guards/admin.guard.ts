@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
-import { UserAreaService } from '../../services/userArea/user-area.service';
+import { RegistersService } from '../../services/registers/registers.service';
 import { UsersService } from '../../services/users/users.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 
@@ -10,7 +10,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 export class AdminGuard implements CanActivate {
 
   constructor(
-    private userAreaService: UserAreaService,
+    private registersService: RegistersService,
     private usersService: UsersService,
     private router: Router,
     private message: NzMessageService
@@ -26,9 +26,9 @@ export class AdminGuard implements CanActivate {
     }
 
     try {
-      const userInfo = await this.userAreaService.getUserAreaInfo(user.uid);
+      const userRegister = await this.registersService.getRegisterByUid(user.uid);
       
-      if (userInfo?.role === 'admin') {
+      if (userRegister?.role === 'admin') {
         return true;
       } else {
         this.message.error('No tiene permisos de administrador para acceder a esta página');

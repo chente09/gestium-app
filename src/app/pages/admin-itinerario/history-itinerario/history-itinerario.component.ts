@@ -210,7 +210,7 @@ export class HistoryItinerarioComponent implements OnInit {
     const item = this.filteredItinerarios.find(i => i.id === id);
     const user = this.usersService.getCurrentUser();
 
-    if (item && user?.email !== 'msaguano.gestium@gmail.com') {
+    if (item && user?.email !== 'mmarcillo.gestium@gmail.com') {
       this.editCache[id] = {
         edit: true,
         data: {

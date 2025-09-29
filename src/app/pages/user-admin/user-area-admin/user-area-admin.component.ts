@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, takeUntil, combineLatest } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 
 // NG-Zorro imports
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -23,25 +23,11 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { RouterModule } from '@angular/router';
+import { NzAvatarModule } from 'ng-zorro-antd/avatar';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 
 // Services
-import { UserAreaService, UserArea } from '../../../services/userArea/user-area.service';
-import { RegistersService, Register } from '../../../services/registers/registers.service'; 
-import { UsersService } from '../../../services/users/users.service';
-import { NzAvatarModule } from 'ng-zorro-antd/avatar';
-
-interface UserDisplay {
-  uid: string;
-  email: string;
-  displayName: string;
-  photoURL?: string;
-  areaAsignada?: string;
-  role?: 'admin' | 'coordinador' | 'empleado';
-  fechaAsignacion?: Date;
-  activo?: boolean;
-  isRegistered: boolean; // Si está en el sistema de registros
-  hasAreaAssigned: boolean; // Si tiene área asignada
-}
+import { RegistersService, Register } from '../../../services/registers/registers.service';
 
 @Component({
   selector: 'app-user-area-admin',
@@ -68,17 +54,16 @@ interface UserDisplay {
     NzBreadCrumbModule,
     NzStatisticModule,
     NzGridModule,
-    NzAvatarModule
+    NzAvatarModule,
+    NzAlertModule
   ],
   templateUrl: './user-area-admin.component.html',
   styleUrls: ['./user-area-admin.component.css']
 })
 export class UserAreaAdminComponent implements OnInit, OnDestroy {
   // 📊 Datos
-  allUsers: UserDisplay[] = [];
-  filteredUsers: UserDisplay[] = [];
-  registers: Register[] = [];
-  userAreas: UserArea[] = [];
+  allUsers: Register[] = [];
+  filteredUsers: Register[] = [];
   
   // 🎛️ Estados
   loading = false;
@@ -88,31 +73,45 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   // 🎯 Modales
   showAssignModal = false;
   showBulkModal = false;
-  selectedUser: UserDisplay | null = null;
+  showAreaModal = false;
+  selectedUser: Register | null = null;
   
   // 📝 Formularios
   assignForm: FormGroup;
   bulkForm: FormGroup;
+  areaForm: FormGroup;
   
   // 🔍 Filtros
   selectedAreaFilter = '';
   selectedRoleFilter = '';
   
   // 📋 Configuración
-  availableAreas = ['ISSFA', 'Bco. Pichincha', 'Bco. Produbanco', 'BNF', 'Inmobiliaria', 'David'];
+  availableAreas: string[] = [
+    'ISSFA', 
+    'Bco. Pichincha', 
+    'Bco. Produbanco', 
+    'BNF', 
+    'Inmobiliaria', 
+    'David',
+    'IESS'
+  ];
   
   // 📊 Estadísticas
   get totalUsers(): number { return this.allUsers.length; }
-  get usersWithArea(): number { return this.allUsers.filter(u => u.hasAreaAssigned).length; }
-  get usersWithoutArea(): number { return this.allUsers.filter(u => !u.hasAreaAssigned).length; }
-  get adminUsers(): number { return this.allUsers.filter(u => u.role === 'admin').length; }
+  get usersWithArea(): number { 
+    return this.allUsers.filter(u => u.areaAsignada !== 'sin_asignar').length; 
+  }
+  get usersWithoutArea(): number { 
+    return this.allUsers.filter(u => u.areaAsignada === 'sin_asignar').length; 
+  }
+  get adminUsers(): number { 
+    return this.allUsers.filter(u => u.role === 'admin').length; 
+  }
   
   private destroy$ = new Subject<void>();
 
   constructor(
-    private userAreaService: UserAreaService,
     private registersService: RegistersService,
-    private usersService: UsersService,
     private fb: FormBuilder,
     private message: NzMessageService,
     private modal: NzModalService
@@ -125,6 +124,10 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     this.bulkForm = this.fb.group({
       bulkArea: ['', [Validators.required]], 
       bulkRole: ['empleado', [Validators.required]]
+    });
+
+    this.areaForm = this.fb.group({
+      newArea: ['', [Validators.required, Validators.minLength(3)]]
     });
   }
 
@@ -141,68 +144,32 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   private loadData(): void {
     this.loading = true;
     
-    combineLatest([
-      this.registersService.getRegisters(),
-      this.userAreaService.getAllUsersAreas()
-    ]).pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: ([registers, userAreas]) => {
-        this.registers = registers;
-        this.userAreas = userAreas;
-        this.combineUserData();
-        this.filterUsers();
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error cargando datos:', error);
-        this.message.error('Error al cargar los datos de usuarios');
-        this.loading = false;
-      }
-    });
-  }
-
-  // 🔄 Combinar datos de registros y áreas
-  private combineUserData(): void {
-    this.allUsers = this.registers.map(register => {
-      const userArea = this.userAreas.find(ua => ua.uid === register.uid);
-      
-      return {
-        uid: register.uid,
-        email: register.email,
-        displayName: register.nickname || register.email,
-        photoURL: register.photoURL,
-        areaAsignada: userArea?.areaAsignada,
-        role: userArea?.role,
-        fechaAsignacion: userArea?.fechaAsignacion,
-        activo: userArea?.activo,
-        isRegistered: true,
-        hasAreaAssigned: !!userArea
-      } as UserDisplay;
-    });
-    
-    // ✅ NUEVO: Log para debugging
-    console.log('📊 Datos combinados:', {
-      registers: this.registers.length,
-      userAreas: this.userAreas.length,
-      allUsers: this.allUsers.length
-    });
-    
-    // ✅ NUEVO: Mostrar información detallada en consola
-    if (this.allUsers.length === 0) {
-      console.log('⚠️ No se encontraron usuarios. Verifica:');
-      console.log('1. Que los usuarios estén autenticados');
-      console.log('2. Que el auto-registro esté funcionando');
-      console.log('3. Que la colección "registers" tenga datos');
-    }
+    this.registersService.getRegisters()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (registers) => {
+          this.allUsers = registers;
+          this.filterUsers();
+          this.loading = false;
+          
+          console.log('📊 Usuarios cargados:', this.allUsers.length);
+        },
+        error: (error) => {
+          console.error('Error cargando datos:', error);
+          this.message.error('Error al cargar los datos de usuarios');
+          this.loading = false;
+        }
+      });
   }
 
   // 🔍 Filtrar usuarios
   filterUsers(): void {
     this.filteredUsers = this.allUsers.filter(user => {
       const areaMatch = !this.selectedAreaFilter || 
-        (this.selectedAreaFilter === 'sin_asignar' ? !user.hasAreaAssigned : user.areaAsignada === this.selectedAreaFilter);
+        user.areaAsignada === this.selectedAreaFilter;
       
-      const roleMatch = !this.selectedRoleFilter || user.role === this.selectedRoleFilter;
+      const roleMatch = !this.selectedRoleFilter || 
+        user.role === this.selectedRoleFilter;
       
       return areaMatch && roleMatch;
     });
@@ -214,70 +181,38 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     this.message.success('Datos actualizados');
   }
 
-  // 👤 Inicializar un usuario específico
-  async initializeUser(user: UserDisplay): Promise<void> {
-    try {
-      await this.userAreaService.assignUserToArea(user.uid, 'sin_asignar', 'empleado');
-      this.message.success(`Usuario ${user.displayName} inicializado`);
-      this.refreshData();
-    } catch (error) {
-      console.error('Error inicializando usuario:', error);
-      this.message.error('Error al inicializar el usuario');
-    }
-  }
-
-  // 👥 Inicializar todos los usuarios sin área
-  async initializeAllUsers(): Promise<void> {
-    const usersToInitialize = this.allUsers.filter(u => !u.hasAreaAssigned);
-    
-    if (usersToInitialize.length === 0) {
-      this.message.info('Todos los usuarios ya están inicializados');
-      return;
-    }
-
-    this.modal.confirm({
-      nzTitle: 'Inicializar Usuarios',
-      nzContent: `¿Inicializar ${usersToInitialize.length} usuarios sin área asignada?`,
-      nzOnOk: async () => {
-        this.loading = true;
-        try {
-          for (const user of usersToInitialize) {
-            await this.userAreaService.assignUserToArea(user.uid, 'sin_asignar', 'empleado');
-          }
-          this.message.success(`${usersToInitialize.length} usuarios inicializados`);
-          this.refreshData();
-        } catch (error) {
-          console.error('Error en inicialización masiva:', error);
-          this.message.error('Error en la inicialización masiva');
-        } finally {
-          this.loading = false;
-        }
-      }
-    });
-  }
-
   // 🎯 Asignar área a usuario
-  assignArea(user: UserDisplay): void {
+  assignArea(user: Register): void {
     this.selectedUser = user;
     this.assignForm.patchValue({
-      area: user.areaAsignada || '',
-      role: user.role || 'empleado'
+      area: user.areaAsignada === 'sin_asignar' ? '' : user.areaAsignada,
+      role: user.role
     });
     this.showAssignModal = true;
   }
 
   // 💾 Guardar asignación
   async saveAssignment(): Promise<void> {
-    if (this.assignForm.invalid || !this.selectedUser) return;
+    if (this.assignForm.invalid || !this.selectedUser) {
+      this.message.warning('Debe seleccionar un área y rol');
+      return;
+    }
 
     this.assigningUser = true;
+    
     try {
       const { area, role } = this.assignForm.value;
-      await this.userAreaService.assignUserToArea(this.selectedUser.uid, area, role);
+      
+      await this.registersService.assignAreaAndRole(
+        this.selectedUser.uid, 
+        area, 
+        role
+      );
       
       this.message.success(`Área asignada a ${this.selectedUser.displayName}`);
       this.closeAssignModal();
       this.refreshData();
+      
     } catch (error) {
       console.error('Error asignando área:', error);
       this.message.error('Error al asignar el área');
@@ -287,11 +222,17 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   }
 
   // 🗑️ Remover asignación de área
-  async removeAreaAssignment(user: UserDisplay): Promise<void> {
+  async removeAreaAssignment(user: Register): Promise<void> {
     try {
-      await this.userAreaService.assignUserToArea(user.uid, 'sin_asignar', 'empleado');
+      await this.registersService.assignAreaAndRole(
+        user.uid, 
+        'sin_asignar', 
+        'empleado'
+      );
+      
       this.message.success(`Asignación removida para ${user.displayName}`);
       this.refreshData();
+      
     } catch (error) {
       console.error('Error removiendo asignación:', error);
       this.message.error('Error al remover la asignación');
@@ -299,11 +240,11 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   }
 
   // 🔄 Toggle estado activo
-  async toggleUserStatus(user: UserDisplay, active: boolean): Promise<void> {
+  async toggleUserStatus(user: Register, active: boolean): Promise<void> {
     try {
-      await this.userAreaService.toggleUserStatus(user.uid, active);
+      await this.registersService.toggleUserStatus(user.uid, active);
       this.message.success(`Usuario ${active ? 'activado' : 'desactivado'}`);
-      this.refreshData();
+      
     } catch (error) {
       console.error('Error cambiando estado:', error);
       this.message.error('Error al cambiar el estado del usuario');
@@ -312,29 +253,42 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
 
   // 📦 Asignación masiva
   showBulkAssignModal(): void {
+    const usersToAssign = this.allUsers.filter(u => u.areaAsignada === 'sin_asignar');
+    
+    if (usersToAssign.length === 0) {
+      this.message.info('No hay usuarios sin asignar');
+      return;
+    }
+    
     this.showBulkModal = true;
   }
 
   async processBulkAssignment(): Promise<void> {
-    if (this.bulkForm.invalid) return;
+    if (this.bulkForm.invalid) {
+      this.message.warning('Debe seleccionar área y rol');
+      return;
+    }
 
-    const usersToAssign = this.allUsers.filter(u => !u.hasAreaAssigned);
+    const usersToAssign = this.allUsers.filter(u => u.areaAsignada === 'sin_asignar');
+    
     if (usersToAssign.length === 0) {
       this.message.info('No hay usuarios sin asignar');
       return;
     }
 
     this.processingBulk = true;
+    
     try {
       const { bulkArea, bulkRole } = this.bulkForm.value;
       
       for (const user of usersToAssign) {
-        await this.userAreaService.assignUserToArea(user.uid, bulkArea, bulkRole);
+        await this.registersService.assignAreaAndRole(user.uid, bulkArea, bulkRole);
       }
       
       this.message.success(`${usersToAssign.length} usuarios asignados a ${bulkArea}`);
       this.closeBulkModal();
       this.refreshData();
+      
     } catch (error) {
       console.error('Error en asignación masiva:', error);
       this.message.error('Error en la asignación masiva');
@@ -343,8 +297,66 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     }
   }
 
+  // 🆕 Agregar nueva área
+  openAddAreaModal(): void {
+    this.showAreaModal = true;
+  }
+
+  async addNewArea(): Promise<void> {
+    if (this.areaForm.invalid) {
+      this.message.warning('Debe ingresar un nombre de área válido');
+      return;
+    }
+
+    const newArea = this.areaForm.value.newArea.trim();
+    
+    if (this.availableAreas.includes(newArea)) {
+      this.message.warning('Esta área ya existe');
+      return;
+    }
+
+    this.availableAreas.push(newArea);
+    this.availableAreas.sort();
+    
+    this.message.success(`Área "${newArea}" agregada exitosamente`);
+    this.closeAreaModal();
+  }
+
+  removeArea(area: string): void {
+    this.modal.confirm({
+      nzTitle: 'Eliminar Área',
+      nzContent: `¿Está seguro de eliminar el área "${area}"? Los usuarios asignados a esta área quedarán sin asignar.`,
+      nzOkText: 'Eliminar',
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          // Primero, reasignar usuarios de esta área
+          const usersInArea = this.allUsers.filter(u => u.areaAsignada === area);
+          
+          for (const user of usersInArea) {
+            await this.registersService.assignAreaAndRole(
+              user.uid, 
+              'sin_asignar', 
+              'empleado'
+            );
+          }
+          
+          // Eliminar área del listado
+          this.availableAreas = this.availableAreas.filter(a => a !== area);
+          
+          this.message.success(`Área "${area}" eliminada. ${usersInArea.length} usuarios reasignados.`);
+          this.refreshData();
+          
+        } catch (error) {
+          console.error('Error eliminando área:', error);
+          this.message.error('Error al eliminar el área');
+        }
+      }
+    });
+  }
+
   // 🛠️ Métodos de utilidad
-  trackByUserId(index: number, user: UserDisplay): string {
+  trackByUserId(index: number, user: Register): string {
     return user.uid;
   }
 
@@ -358,7 +370,7 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
       'David': 'magenta',
       'sin_asignar': 'default'
     };
-    return colors[area] || 'default';
+    return colors[area] || 'geekblue';
   }
 
   getRoleColor(role: string): string {
@@ -370,15 +382,34 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     return colors[role] || 'default';
   }
 
+  getStatusText(user: Register): string {
+    if (user.areaAsignada === 'sin_asignar') {
+      return 'Sin Área';
+    }
+    return 'Configurado';
+  }
+
+  getStatusColor(user: Register): string {
+    if (user.areaAsignada === 'sin_asignar') {
+      return 'orange';
+    }
+    return 'green';
+  }
+
   // 🎭 Manejadores de modales
   closeAssignModal(): void {
     this.showAssignModal = false;
     this.selectedUser = null;
-    this.assignForm.reset();
+    this.assignForm.reset({ role: 'empleado' });
   }
 
   closeBulkModal(): void {
     this.showBulkModal = false;
-    this.bulkForm.reset();
+    this.bulkForm.reset({ bulkRole: 'empleado' });
+  }
+
+  closeAreaModal(): void {
+    this.showAreaModal = false;
+    this.areaForm.reset();
   }
 }

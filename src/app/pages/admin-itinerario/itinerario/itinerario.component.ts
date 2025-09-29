@@ -291,7 +291,7 @@ export class ItinerarioComponent implements OnInit {
     console.log('Imagen seleccionada:', this.imagenSeleccionada);
     console.log('Observación:', this.selectedItem?.obsCompletado);
 
-    if (user?.email === 'msaguano.gestium@gmail.com') {
+    if (user?.email === 'mmarcillo.gestium@gmail.com') {
       this.formularioValido = !!(this.selectedItem?.obsCompletado?.trim() && this.imagenSeleccionada);
       console.log('Usuario específico - Formulario válido:', this.formularioValido);
     } else {

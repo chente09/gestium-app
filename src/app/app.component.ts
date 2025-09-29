@@ -11,7 +11,6 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { RegistersService } from './services/registers/registers.service';
 import { UsersService } from './services/users/users.service';
-import { UserAreaService } from './services/userArea/user-area.service'; // ✅ NUEVA IMPORTACIÓN
 import { filter } from 'rxjs/operators';
 
 @Component({
@@ -38,9 +37,8 @@ export class AppComponent implements OnInit {
   isCollapsed = false;
   activeRoute = '';
   isDrawerOpen = false;
-  currentUserRole: string | null = null; // ✅ NUEVA PROPIEDAD
+  currentUserRole: 'admin' | 'coordinador' | 'empleado' | null = null;
 
-  // ✅ ACTUALIZADO: Menu items básicos
   menuItems = [
     { title: 'ISSFA', route: '/area/issfa' },
     { title: 'Bco. Pichincha', route: '/area/pichincha' },
@@ -53,69 +51,52 @@ export class AppComponent implements OnInit {
   constructor(
     private router: Router,
     public registersService: RegistersService,
-    private usersService: UsersService,
-    private userAreaService: UserAreaService // ✅ NUEVA INYECCIÓN
+    private usersService: UsersService
   ) { }
 
   async ngOnInit(): Promise<void> {
-    // Tu código existente para detectar cambios de ruta...
+    // Detectar cambios de ruta
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: NavigationEnd) => {
       this.activeRoute = event.url;
     });
 
-    // ✅ Disparar la inicialización completa
-    await this.initializeUserIfNeeded();
-
-    // Cargar el rol después de la inicialización
+    // Cargar rol del usuario si está autenticado
     await this.loadUserRole();
   }
 
-  // ✅ NUEVO: Cargar rol del usuario actual
+  // ✅ Cargar rol del usuario actual desde RegistersService
   private async loadUserRole(): Promise<void> {
     try {
       const user = this.usersService.getCurrentUser();
+      
       if (user) {
-        const userInfo = await this.userAreaService.getUserAreaInfo(user.uid);
-        this.currentUserRole = userInfo?.role || null;
-        console.log('🔑 Rol del usuario:', this.currentUserRole);
+        // Intentar obtener el registro del usuario
+        const userRegister = await this.registersService.getRegisterByUid(user.uid);
+        
+        if (userRegister) {
+          this.currentUserRole = userRegister.role;
+          console.log('🔑 Rol del usuario:', this.currentUserRole);
+        } else {
+          // Si no existe registro, podría ser un nuevo usuario de Google
+          // El auto-registro se encargará en el login
+          this.currentUserRole = null;
+          console.log('⚠️ Usuario sin registro encontrado');
+        }
       }
     } catch (error) {
       console.error('Error cargando rol del usuario:', error);
+      this.currentUserRole = null;
     }
   }
 
-  // ✅ NUEVO: Inicializar usuario si es necesario
-  private async initializeUserIfNeeded(): Promise<void> {
-    const firebaseUser = this.usersService.getCurrentUser();
-    if (!firebaseUser) {
-      console.log("No hay usuario autenticado, omitiendo inicialización.");
-      return;
-    }
-
-    try {
-      console.log(`🚀 Inicializando para el usuario: ${firebaseUser.uid}`);
-
-      // 1. Asegurar que el usuario existe en la colección 'registers'
-      await this.registersService.ensureUserIsRegistered(firebaseUser);
-      console.log("✅ Paso 1/2: Usuario asegurado en 'registers'.");
-
-      // 2. Asegurar que el usuario tiene un área asignada (o 'sin_asignar')
-      await this.userAreaService.initializeUserIfNotExists();
-      console.log("✅ Paso 2/2: Usuario asegurado en 'users_areas'.");
-
-    } catch (error) {
-      console.error('❌ Error fatal durante la inicialización del usuario:', error);
-    }
-  }
-
-  // ✅ NUEVO: Verificar si el usuario es administrador
+  // ✅ Verificar si el usuario es administrador
   isAdmin(): boolean {
     return this.currentUserRole === 'admin';
   }
 
-  // ✅ NUEVO: Verificar si el usuario es coordinador o admin
+  // ✅ Verificar si el usuario es coordinador o admin
   isCoordinatorOrAdmin(): boolean {
     return this.currentUserRole === 'admin' || this.currentUserRole === 'coordinador';
   }
@@ -145,29 +126,28 @@ export class AppComponent implements OnInit {
   }
 
   getCurrentUserName(): string | null {
-    const user = this.usersService.getCurrentUser();
-    return user ? user.displayName : null;
+    const currentRegister = this.registersService.getCurrentRegister();
+    return currentRegister ? currentRegister.displayName : null;
   }
 
   async logout(): Promise<void> {
     await this.registersService.logout();
-    this.currentUserRole = null; // ✅ Limpiar rol al cerrar sesión
+    this.currentUserRole = null;
     this.router.navigate(['/login']);
   }
 
   isStandaloneRoute(): boolean {
-    // Obtenemos la URL y la normalizamos (quitamos la barra inicial si existe)
-    const currentPath = this.activeRoute.startsWith('/') ? this.activeRoute.substring(1) : this.activeRoute;
+    const currentPath = this.activeRoute.startsWith('/') 
+      ? this.activeRoute.substring(1) 
+      : this.activeRoute;
 
-    // Lista de rutas sin layout
-    const standaloneRoutes = ['login', 'consultas', '']; // <-- AÑADIR LA RUTA RAÍZ ('')
-
+    const standaloneRoutes = ['login', 'consultas', ''];
     return standaloneRoutes.includes(currentPath);
   }
 
-  // ✅ NUEVO: Navegar a administración de usuarios
+  // ✅ Navegar a administración de usuarios
   goToUserAdmin(): void {
     this.router.navigate(['/admin/users']);
-    this.closeDrawer(); // Cerrar drawer si está abierto
+    this.closeDrawer();
   }
 }

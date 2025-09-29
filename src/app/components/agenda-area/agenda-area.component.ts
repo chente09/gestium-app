@@ -22,10 +22,10 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzGridModule } from 'ng-zorro-antd/grid';
-import { NzSpinModule } from 'ng-zorro-antd/spin'; // ✅ AGREGAR IMPORT
+import { NzSpinModule } from 'ng-zorro-antd/spin';
 
 import { AreaActivitiesService, AreaActivity } from '../../services/areaActivities/area-activities.service';
-import { UserAreaService } from '../../services/userArea/user-area.service';
+import { RegistersService } from '../../services/registers/registers.service'; // ✅ CAMBIO
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -48,7 +48,7 @@ import { Subject, takeUntil } from 'rxjs';
     NzPopconfirmModule,
     NzToolTipModule,
     NzGridModule,
-    NzSpinModule // ✅ AGREGAR AL IMPORTS ARRAY
+    NzSpinModule
   ],
   templateUrl: './agenda-area.component.html',
   styleUrls: ['./agenda-area.component.css']
@@ -77,7 +77,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
 
   constructor(
     private areaActivitiesService: AreaActivitiesService,
-    private userAreaService: UserAreaService,
+    private registersService: RegistersService, // ✅ CAMBIO
     private messageService: NzMessageService,
     private fb: FormBuilder
   ) {
@@ -147,7 +147,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
       this.weekActivities[dateKey] = activities?.filter(activity => {
         const activityDate = new Date(activity.fechaLimite);
         return this.isSameDay(activityDate, date);
-      }) || []; // ✅ Valor por defecto si activities es undefined
+      }) || [];
     });
   }
 
@@ -214,7 +214,6 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
         responsableNombre: formValue.responsableNombre,
         estado: 'pendiente',
         etiquetas: formValue.etiquetas || []
-        // ✅ Ya no necesitamos pasar 'area' porque se asigna automáticamente
       });
 
       this.messageService.success('Actividad creada correctamente');
@@ -293,13 +292,10 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   // 🎯 Drag & Drop
   onDrop(event: CdkDragDrop<AreaActivity[]>, targetDate: Date): void {
     if (event.previousContainer === event.container) {
-      // Mover dentro del mismo día
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
-      // Mover a otro día
       const activity = event.previousContainer.data[event.previousIndex];
       
-      // Actualizar fecha límite de la actividad
       this.areaActivitiesService.postponeActivity(activity.id!, targetDate)
         .then(() => {
           this.messageService.success('Actividad movida correctamente');
@@ -326,7 +322,6 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     return activity.id || index.toString();
   }
 
-  // ✅ AGREGAR: TrackBy para días de la semana
   trackByDate(index: number, date: Date): string {
     return date.toISOString().split('T')[0];
   }
@@ -364,7 +359,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     return this.isSameDay(date, today);
   }
 
-  // 📝 Manejadores de modales
+  // 🎭 Manejadores de modales
   openCreateModal(): void {
     this.showCreateModal = true;
     this.createForm.reset();

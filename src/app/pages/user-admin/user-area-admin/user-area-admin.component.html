@@ -1,5 +1,5 @@
 <div class="user-admin-container">
-    <!-- 🔝 Breadcrumb -->
+    <!-- 🔍 Breadcrumb -->
     <nz-breadcrumb>
         <nz-breadcrumb-item>
             <a routerLink="/welcome">
@@ -18,28 +18,44 @@
     <nz-row [nzGutter]="16" class="stats-row">
         <nz-col [nzSpan]="6">
             <nz-card>
-                <nz-statistic nzTitle="Total Usuarios" [nzValue]="totalUsers" nzPrefix="👥">
+                <nz-statistic 
+                    nzTitle="Total Usuarios" 
+                    [nzValue]="totalUsers"
+                    [nzPrefix]="totalUsersIcon">
+                    <ng-template #totalUsersIcon><nz-icon nzType="team"></nz-icon></ng-template>
                 </nz-statistic>
             </nz-card>
         </nz-col>
         <nz-col [nzSpan]="6">
             <nz-card>
-                <nz-statistic nzTitle="Con Área Asignada" [nzValue]="usersWithArea" nzPrefix="✅"
-                    [nzValueStyle]="{ color: '#52c41a' }">
+                <nz-statistic 
+                    nzTitle="Con Área Asignada" 
+                    [nzValue]="usersWithArea"
+                    [nzValueStyle]="{ color: '#52c41a' }"
+                    [nzPrefix]="usersWithAreaIcon">
+                    <ng-template #usersWithAreaIcon><nz-icon nzType="check-circle"></nz-icon></ng-template>
                 </nz-statistic>
             </nz-card>
         </nz-col>
         <nz-col [nzSpan]="6">
             <nz-card>
-                <nz-statistic nzTitle="Sin Asignar" [nzValue]="usersWithoutArea" nzPrefix="⚠️"
-                    [nzValueStyle]="{ color: '#fa8c16' }">
+                <nz-statistic 
+                    nzTitle="Sin Asignar" 
+                    [nzValue]="usersWithoutArea"
+                    [nzValueStyle]="{ color: '#fa8c16' }"
+                    [nzPrefix]="usersWithoutAreaIcon">
+                    <ng-template #usersWithoutAreaIcon><nz-icon nzType="exclamation-circle"></nz-icon></ng-template>
                 </nz-statistic>
             </nz-card>
         </nz-col>
         <nz-col [nzSpan]="6">
             <nz-card>
-                <nz-statistic nzTitle="Administradores" [nzValue]="adminUsers" nzPrefix="👑"
-                    [nzValueStyle]="{ color: '#1890ff' }">
+                <nz-statistic 
+                    nzTitle="Administradores" 
+                    [nzValue]="adminUsers"
+                    [nzValueStyle]="{ color: '#1890ff' }"
+                    [nzPrefix]="adminUsersIcon">
+                    <ng-template #adminUsersIcon><nz-icon nzType="crown"></nz-icon></ng-template>
                 </nz-statistic>
             </nz-card>
         </nz-col>
@@ -54,29 +70,35 @@
                     Actualizar
                 </button>
 
-                <button nz-button nzType="default" (click)="initializeAllUsers()">
-                    <nz-icon nzType="user-add"></nz-icon>
-                    Inicializar Usuarios
-                </button>
-
                 <button nz-button nzType="default" (click)="showBulkAssignModal()">
                     <nz-icon nzType="team"></nz-icon>
                     Asignación Masiva
                 </button>
 
-                
+                <button nz-button nzType="dashed" (click)="openAddAreaModal()">
+                    <nz-icon nzType="plus-circle"></nz-icon>
+                    Agregar Área
+                </button>
             </div>
 
             <div class="control-filters">
-                <nz-select [(ngModel)]="selectedAreaFilter" (ngModelChange)="filterUsers()"
-                    nzPlaceHolder="Filtrar por área" nzAllowClear style="width: 200px; margin-right: 8px;">
+                <nz-select 
+                    [(ngModel)]="selectedAreaFilter" 
+                    (ngModelChange)="filterUsers()"
+                    nzPlaceHolder="Filtrar por área" 
+                    nzAllowClear 
+                    style="width: 200px; margin-right: 8px;">
                     <nz-option nzValue="" nzLabel="Todas las áreas"></nz-option>
                     <nz-option nzValue="sin_asignar" nzLabel="Sin asignar"></nz-option>
                     <nz-option *ngFor="let area of availableAreas" [nzValue]="area" [nzLabel]="area"></nz-option>
                 </nz-select>
 
-                <nz-select [(ngModel)]="selectedRoleFilter" (ngModelChange)="filterUsers()"
-                    nzPlaceHolder="Filtrar por rol" nzAllowClear style="width: 150px;">
+                <nz-select 
+                    [(ngModel)]="selectedRoleFilter" 
+                    (ngModelChange)="filterUsers()"
+                    nzPlaceHolder="Filtrar por rol" 
+                    nzAllowClear 
+                    style="width: 150px;">
                     <nz-option nzValue="" nzLabel="Todos los roles"></nz-option>
                     <nz-option nzValue="admin" nzLabel="Admin"></nz-option>
                     <nz-option nzValue="coordinador" nzLabel="Coordinador"></nz-option>
@@ -87,8 +109,14 @@
 
         <!-- 📋 Tabla de usuarios -->
         <nz-spin [nzSpinning]="loading">
-            <nz-table #userTable [nzData]="filteredUsers" [nzBordered]="true" [nzSize]="'middle'"
-                [nzShowPagination]="true" [nzPageSize]="10" nzShowSizeChanger>
+            <nz-table 
+                #userTable 
+                [nzData]="filteredUsers" 
+                [nzBordered]="true" 
+                [nzSize]="'middle'"
+                [nzShowPagination]="true" 
+                [nzPageSize]="10" 
+                nzShowSizeChanger>
 
                 <thead>
                     <tr>
@@ -99,7 +127,7 @@
                         <th nzWidth="100px">Rol</th>
                         <th nzWidth="120px">Fecha Asignación</th>
                         <th nzWidth="80px">Activo</th>
-                        <th nzWidth="200px">Acciones</th>
+                        <th nzWidth="150px">Acciones</th>
                     </tr>
                 </thead>
 
@@ -107,7 +135,10 @@
                     <tr *ngFor="let user of userTable.data; trackBy: trackByUserId">
                         <!-- Avatar -->
                         <td>
-                            <nz-avatar [nzSrc]="user.photoURL" [nzIcon]="'user'" [nzSize]="32">
+                            <nz-avatar 
+                                [nzSrc]="user.photoURL" 
+                                [nzIcon]="'user'" 
+                                [nzSize]="32">
                             </nz-avatar>
                         </td>
 
@@ -121,16 +152,15 @@
 
                         <!-- Estado -->
                         <td>
-                            <nz-tag *ngIf="!user.isRegistered" nzColor="red">No Registrado</nz-tag>
-                            <nz-tag *ngIf="user.isRegistered && !user.hasAreaAssigned" nzColor="orange">Sin
-                                Área</nz-tag>
-                            <nz-tag *ngIf="user.isRegistered && user.hasAreaAssigned"
-                                nzColor="green">Configurado</nz-tag>
+                            <nz-tag [nzColor]="getStatusColor(user)">
+                                {{ getStatusText(user) }}
+                            </nz-tag>
                         </td>
 
                         <!-- Área asignada -->
                         <td>
-                            <nz-tag *ngIf="user.areaAsignada; else noAreaTag"
+                            <nz-tag 
+                                *ngIf="user.areaAsignada !== 'sin_asignar'; else noAreaTag"
                                 [nzColor]="getAreaColor(user.areaAsignada)">
                                 {{ user.areaAsignada }}
                             </nz-tag>
@@ -141,12 +171,9 @@
 
                         <!-- Rol -->
                         <td>
-                            <nz-tag *ngIf="user.role; else noRoleTag" [nzColor]="getRoleColor(user.role)">
+                            <nz-tag [nzColor]="getRoleColor(user.role)">
                                 {{ user.role | titlecase }}
                             </nz-tag>
-                            <ng-template #noRoleTag>
-                                <span class="no-role-text">-</span>
-                            </ng-template>
                         </td>
 
                         <!-- Fecha de asignación -->
@@ -159,7 +186,8 @@
 
                         <!-- Switch activo -->
                         <td>
-                            <nz-switch [ngModel]="user.activo || false" [nzDisabled]="!user.hasAreaAssigned"
+                            <nz-switch 
+                                [ngModel]="user.activo" 
                                 (ngModelChange)="toggleUserStatus(user, $event)">
                             </nz-switch>
                         </td>
@@ -167,20 +195,26 @@
                         <!-- Acciones -->
                         <td>
                             <div class="action-buttons">
-                                <button nz-button nzType="primary" nzSize="small" (click)="assignArea(user)"
-                                    nzTooltipTitle="Asignar área y rol" nz-tooltip>
+                                <button 
+                                    nz-button 
+                                    nzType="primary" 
+                                    nzSize="small" 
+                                    (click)="assignArea(user)"
+                                    nzTooltipTitle="Asignar área y rol" 
+                                    nz-tooltip>
                                     <nz-icon nzType="edit"></nz-icon>
                                 </button>
 
-                                <button nz-button nzType="default" nzSize="small" *ngIf="!user.hasAreaAssigned"
-                                    (click)="initializeUser(user)" nzTooltipTitle="Inicializar usuario" nz-tooltip>
-                                    <nz-icon nzType="user-add"></nz-icon>
-                                </button>
-
-                                <button nz-button nzDanger nzSize="small" nz-popconfirm
+                                <button 
+                                    nz-button 
+                                    nzDanger 
+                                    nzSize="small" 
+                                    nz-popconfirm
                                     nzPopconfirmTitle="¿Eliminar asignación de área?"
-                                    (nzOnConfirm)="removeAreaAssignment(user)" *ngIf="user.hasAreaAssigned"
-                                    nzTooltipTitle="Remover asignación" nz-tooltip>
+                                    (nzOnConfirm)="removeAreaAssignment(user)" 
+                                    *ngIf="user.areaAsignada !== 'sin_asignar'"
+                                    nzTooltipTitle="Remover asignación" 
+                                    nz-tooltip>
                                     <nz-icon nzType="delete"></nz-icon>
                                 </button>
                             </div>
@@ -190,19 +224,47 @@
             </nz-table>
         </nz-spin>
     </nz-card>
+
+    <!-- 📋 Gestión de Áreas -->
+    <nz-card nzTitle="Áreas Disponibles" class="areas-card" style="margin-top: 20px;">
+        <nz-row [nzGutter]="[8, 8]">
+            <nz-col *ngFor="let area of availableAreas" [nzSpan]="6">
+                <nz-tag 
+                    [nzColor]="getAreaColor(area)" 
+                    style="width: 100%; padding: 8px; font-size: 14px;">
+                    {{ area }}
+                    <nz-icon 
+                        nzType="close" 
+                        style="margin-left: 8px; cursor: pointer;" 
+                        (click)="removeArea(area)"
+                        nz-tooltip
+                        nzTooltipTitle="Eliminar área">
+                    </nz-icon>
+                </nz-tag>
+            </nz-col>
+        </nz-row>
+    </nz-card>
 </div>
 
 <!-- 🎯 Modal para asignar área -->
-<nz-modal [(nzVisible)]="showAssignModal" nzTitle="Asignar Área y Rol" [nzFooter]="assignModalFooter"
-    (nzOnCancel)="closeAssignModal()" nzWidth="500px">
+<nz-modal 
+    [(nzVisible)]="showAssignModal" 
+    nzTitle="Asignar Área y Rol" 
+    [nzFooter]="assignModalFooter"
+    (nzOnCancel)="closeAssignModal()" 
+    nzWidth="500px">
 
     <ng-container *nzModalContent>
         <form nz-form [formGroup]="assignForm" nzLayout="vertical" *ngIf="selectedUser">
-            <div class="user-preview">
-                <nz-avatar [nzSrc]="selectedUser.photoURL" [nzIcon]="'user'" [nzSize]="40"></nz-avatar>
-                <div class="user-details">
+            <div class="user-preview" style="display: flex; align-items: center; margin-bottom: 20px;">
+                <nz-avatar 
+                    [nzSrc]="selectedUser.photoURL" 
+                    [nzIcon]="'user'" 
+                    [nzSize]="40">
+                </nz-avatar>
+                <div class="user-details" style="margin-left: 12px;">
                     <strong>{{ selectedUser.displayName || 'Sin nombre' }}</strong>
-                    <div>{{ selectedUser.email }}</div>
+                    <div style="color: #8c8c8c; font-size: 12px;">{{ selectedUser.email }}</div>
                 </div>
             </div>
 
@@ -212,7 +274,11 @@
                 <nz-form-label nzRequired>Área</nz-form-label>
                 <nz-form-control nzErrorTip="Debe seleccionar un área">
                     <nz-select formControlName="area" nzPlaceHolder="Seleccionar área">
-                        <nz-option *ngFor="let area of availableAreas" [nzValue]="area" [nzLabel]="area"></nz-option>
+                        <nz-option 
+                            *ngFor="let area of availableAreas" 
+                            [nzValue]="area" 
+                            [nzLabel]="area">
+                        </nz-option>
                     </nz-select>
                 </nz-form-control>
             </nz-form-item>
@@ -241,23 +307,38 @@
 </nz-modal>
 
 <!-- 📦 Modal para asignación masiva -->
-<nz-modal [(nzVisible)]="showBulkModal" nzTitle="Asignación Masiva" [nzFooter]="bulkModalFooter"
-    (nzOnCancel)="closeBulkModal()" nzWidth="600px">
+<nz-modal 
+    [(nzVisible)]="showBulkModal" 
+    nzTitle="Asignación Masiva" 
+    [nzFooter]="bulkModalFooter"
+    (nzOnCancel)="closeBulkModal()" 
+    nzWidth="600px">
 
     <ng-container *nzModalContent>
         <form nz-form [formGroup]="bulkForm" nzLayout="vertical">
+            <nz-alert
+                nzType="info"
+                [nzMessage]="'Usuarios sin asignar: ' + usersWithoutArea"
+                nzShowIcon
+                style="margin-bottom: 20px;">
+            </nz-alert>
+
             <nz-form-item>
-                <nz-form-label>Usuarios sin asignar: {{ usersWithoutArea }}</nz-form-label>
-                <nz-form-control>
+                <nz-form-label nzRequired>Área para todos</nz-form-label>
+                <nz-form-control nzErrorTip="Debe seleccionar un área">
                     <nz-select formControlName="bulkArea" nzPlaceHolder="Seleccionar área para todos">
-                        <nz-option *ngFor="let area of availableAreas" [nzValue]="area" [nzLabel]="area"></nz-option>
+                        <nz-option 
+                            *ngFor="let area of availableAreas" 
+                            [nzValue]="area" 
+                            [nzLabel]="area">
+                        </nz-option>
                     </nz-select>
                 </nz-form-control>
             </nz-form-item>
 
             <nz-form-item>
-                <nz-form-label>Rol por defecto</nz-form-label>
-                <nz-form-control>
+                <nz-form-label nzRequired>Rol por defecto</nz-form-label>
+                <nz-form-control nzErrorTip="Debe seleccionar un rol">
                     <nz-select formControlName="bulkRole" nzPlaceHolder="Seleccionar rol">
                         <nz-option nzValue="empleado" nzLabel="Empleado"></nz-option>
                         <nz-option nzValue="coordinador" nzLabel="Coordinador"></nz-option>
@@ -273,6 +354,45 @@
         </button>
         <button nz-button nzType="primary" [nzLoading]="processingBulk" (click)="processBulkAssignment()">
             Asignar a Todos
+        </button>
+    </ng-template>
+</nz-modal>
+
+<!-- ➕ Modal para agregar nueva área -->
+<nz-modal 
+    [(nzVisible)]="showAreaModal" 
+    nzTitle="Agregar Nueva Área" 
+    [nzFooter]="areaModalFooter"
+    (nzOnCancel)="closeAreaModal()" 
+    nzWidth="500px">
+
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="areaForm" nzLayout="vertical">
+            <nz-form-item>
+                <nz-form-label nzRequired>Nombre del Área</nz-form-label>
+                <nz-form-control nzErrorTip="Debe ingresar un nombre válido (mínimo 3 caracteres)">
+                    <input 
+                        nz-input 
+                        formControlName="newArea" 
+                        placeholder="Ej: Bco. Guayaquil"
+                        maxlength="50" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-alert
+                nzType="info"
+                nzMessage="Las áreas se almacenan tal como las escribes. Usa un formato consistente."
+                nzShowIcon>
+            </nz-alert>
+        </form>
+    </ng-container>
+
+    <ng-template #areaModalFooter>
+        <button nz-button nzType="default" (click)="closeAreaModal()">
+            Cancelar
+        </button>
+        <button nz-button nzType="primary" (click)="addNewArea()" [disabled]="areaForm.invalid">
+            Agregar Área
         </button>
     </ng-template>
 </nz-modal>

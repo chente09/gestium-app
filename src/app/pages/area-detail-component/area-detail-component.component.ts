@@ -7,10 +7,11 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzLayoutComponent } from 'ng-zorro-antd/layout';
 import { AgendaAreaComponent } from "../../components/agenda-area/agenda-area.component";
-import { UserAreaService } from '../../services/userArea/user-area.service';
+import { RegistersService } from '../../services/registers/registers.service';
 
 @Component({
   selector: 'app-area-detail-component',
+  standalone: true,
   imports: [
     CommonModule,
     NzLayoutComponent,
@@ -29,8 +30,6 @@ export class AreaDetailComponentComponent implements OnInit {
   areaId: string | null = '';
   options: any[] = [];
   currentUserArea: string | null = null;
-  
-  // ✅ NUEVO: Propiedad para evitar el bucle infinito
   showAgenda: boolean = false;
 
   areasOptions: any = {
@@ -49,7 +48,8 @@ export class AreaDetailComponentComponent implements OnInit {
     pichincha: [
       {
         title: 'Elaboración de demandas',
-        route: '/dmd-proc-ordinario', icon: 'edit',
+        route: '/dmd-proc-ordinario', 
+        icon: 'edit',
         externalLinks: [
           { name: 'Emerix', url: 'https://solucionespagueya.com:1023/Emerix/login/login.aspx', img: 'https://i.postimg.cc/9fnrydbv/descarga-1.jpg' },
           { name: 'Solverix', url: 'https://solucionespagueya.com:1050/SolverixSeguridad/', img: 'https://i.postimg.cc/t4RcxWYd/Imagen-de-Whats-App-2025-03-13-a-las-11-29-46-8933b036.jpg' },
@@ -66,7 +66,7 @@ export class AreaDetailComponentComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private userAreaService: UserAreaService
+    private registersService: RegistersService
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -78,34 +78,41 @@ export class AreaDetailComponentComponent implements OnInit {
         this.options = this.areasOptions[this.areaId] || [];
         console.log('🎯 AreaId actual:', this.areaId);
         
-        // ✅ Recalcular el acceso cuando cambia el área
+        // Recalcular el acceso cuando cambia el área
         await this.checkUserAccess();
       }
     });
 
-    // ✅ Obtener el área del usuario actual
+    // Obtener el área del usuario actual
     await this.loadUserArea();
   }
 
-  // ✅ NUEVO: Método para cargar área del usuario
+  // ✅ Cargar área del usuario actual
   private async loadUserArea(): Promise<void> {
     try {
-      this.currentUserArea = await this.userAreaService.getCurrentUserArea();
-      console.log('👤 Área del usuario:', this.currentUserArea);
+      const currentRegister = this.registersService.getCurrentRegister();
       
-      // ✅ Calcular acceso después de obtener el área
-      await this.checkUserAccess();
+      if (currentRegister) {
+        this.currentUserArea = currentRegister.areaAsignada;
+        console.log('👤 Área del usuario:', this.currentUserArea);
+        
+        // Calcular acceso después de obtener el área
+        await this.checkUserAccess();
+      } else {
+        // Usuario no autenticado o sin registro
+        this.currentUserArea = null;
+        this.showAgenda = false;
+        console.log('⚠️ Usuario no autenticado');
+      }
       
     } catch (error) {
       console.error('Error al obtener área del usuario:', error);
-      // ✅ Para testing: asignar área manualmente
-      this.currentUserArea = 'sin_asignar';
-      console.log('🎯 Área asignada para testing:', this.currentUserArea);
-      await this.checkUserAccess();
+      this.currentUserArea = null;
+      this.showAgenda = false;
     }
   }
 
-  // ✅ NUEVO: Método para verificar acceso y actualizar la propiedad
+  // ✅ Verificar acceso y actualizar la propiedad
   private async checkUserAccess(): Promise<void> {
     
     console.log('🔍 Verificando acceso...');
@@ -118,24 +125,21 @@ export class AreaDetailComponentComponent implements OnInit {
       return;
     }
 
-    
-    // ✅ Lógica para determinar si mostrar agenda
+    // Lógica para determinar si mostrar agenda
     const currentAreaNormalized = this.normalizeAreaName(this.currentUserArea);
     const viewingAreaNormalized = this.normalizeAreaName(this.areaId);
     
     console.log('  - currentAreaNormalized:', currentAreaNormalized);
     console.log('  - viewingAreaNormalized:', viewingAreaNormalized);
 
+    // Verificar si es admin usando el servicio
+    const isAdmin = this.registersService.isCurrentUserAdmin();
+    
     this.showAgenda = currentAreaNormalized === viewingAreaNormalized ||
-      this.currentUserArea === 'admin' ||
+      isAdmin ||
       this.currentUserArea === 'sin_asignar';
     
     console.log('  ✅ ShowAgenda resultado:', this.showAgenda);
-  }
-
-  // ✅ MEJORADO: Ahora es solo un getter simple (sin lógica compleja)
-  shouldShowAgenda(): boolean {
-    return this.showAgenda;
   }
 
   // ✅ Normalizar nombres de áreas
@@ -152,12 +156,12 @@ export class AreaDetailComponentComponent implements OnInit {
     return areaMapping[area.toLowerCase()] || area;
   }
 
-  // ✅ Método para verificar acceso del usuario
+  // ✅ Verificar acceso del usuario
   hasAccessToArea(): boolean {
     return this.showAgenda;
   }
 
-  // ✅ NUEVO: Método para debug (opcional)
+  // ✅ Método para debug (opcional)
   getDebugInfo(): string {
     return `Area: ${this.areaId}, UserArea: ${this.currentUserArea}, Show: ${this.showAgenda}`;
   }

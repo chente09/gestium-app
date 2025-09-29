@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Firestore, addDoc, collection, collectionData, doc, updateDoc, deleteDoc, query, where, orderBy } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
-import { UserAreaService } from '../userArea/user-area.service';
+import { RegistersService } from '../registers/registers.service'; // ✅ CAMBIO
 import { UsersService } from '../users/users.service';
 
 export interface AreaActivity {
@@ -12,14 +12,14 @@ export interface AreaActivity {
   fechaCreacion: Date;
   estado: 'pendiente' | 'en_progreso' | 'completada' | 'pospuesta';
   area: string;
-  responsable: string; // UID del usuario responsable
-  responsableNombre: string; // Nombre del responsable para mostrar
-  creadoPor: string; // UID del usuario que creó la actividad
-  creadoPorNombre: string; // Nombre del creador
+  responsable: string;
+  responsableNombre: string;
+  creadoPor: string;
+  creadoPorNombre: string;
   prioridad: 'baja' | 'media' | 'alta';
   notas?: string;
   fechaCompletada?: Date;
-  etiquetas?: string[]; // Para categorizar actividades
+  etiquetas?: string[];
 }
 
 @Injectable({
@@ -30,7 +30,7 @@ export class AreaActivitiesService {
 
   constructor(
     private firestore: Firestore,
-    private userAreaService: UserAreaService,
+    private registersService: RegistersService, // ✅ CAMBIO
     private usersService: UsersService
   ) {}
 
@@ -39,15 +39,21 @@ export class AreaActivitiesService {
     const user = this.usersService.getCurrentUser();
     if (!user) throw new Error('Usuario no autenticado');
 
-    const userArea = await this.userAreaService.getCurrentUserArea();
-    if (!userArea) throw new Error('Usuario sin área asignada');
+    // ✅ CAMBIO: Obtener área desde RegistersService
+    const currentRegister = this.registersService.getCurrentRegister();
+    if (!currentRegister) throw new Error('Usuario sin registro');
+    
+    const userArea = currentRegister.areaAsignada;
+    if (!userArea || userArea === 'sin_asignar') {
+      throw new Error('Usuario sin área asignada');
+    }
 
     const newActivity: Omit<AreaActivity, 'id'> = {
       ...activityData,
-      area: userArea, // ✅ Se asigna automáticamente desde el usuario
+      area: userArea,
       fechaCreacion: new Date(),
       creadoPor: user.uid,
-      creadoPorNombre: user.displayName || user.email || 'Usuario'
+      creadoPorNombre: currentRegister.displayName || user.email || 'Usuario'
     };
 
     const activitiesRef = collection(this.firestore, this.collectionName);
@@ -58,22 +64,22 @@ export class AreaActivitiesService {
   // 📋 Obtener actividades del área del usuario actual
   getCurrentUserAreaActivities(): Observable<AreaActivity[]> {
     return new Observable(observer => {
-      this.userAreaService.getCurrentUserArea().then(userArea => {
-        if (!userArea) {
-          observer.next([]);
-          return;
-        }
+      const currentRegister = this.registersService.getCurrentRegister();
+      
+      if (!currentRegister || currentRegister.areaAsignada === 'sin_asignar') {
+        observer.next([]);
+        return;
+      }
 
-        const activitiesRef = collection(this.firestore, this.collectionName);
-        const q = query(
-          activitiesRef,
-          where('area', '==', userArea),
-          orderBy('fechaLimite', 'asc')
-        );
+      const activitiesRef = collection(this.firestore, this.collectionName);
+      const q = query(
+        activitiesRef,
+        where('area', '==', currentRegister.areaAsignada),
+        orderBy('fechaLimite', 'asc')
+      );
 
-        const activities$ = collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>;
-        activities$.subscribe(activities => observer.next(activities));
-      });
+      const activities$ = collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>;
+      activities$.subscribe(activities => observer.next(activities));
     });
   }
 
@@ -94,23 +100,26 @@ export class AreaActivitiesService {
   // 📅 Obtener actividades de la semana actual
   getCurrentWeekActivities(): Observable<AreaActivity[]> {
     return new Observable(observer => {
-      this.userAreaService.getCurrentUserArea().then(userArea => {
-        if (!userArea) {
-          observer.next([]);
-          return;
-        }
+      const currentRegister = this.registersService.getCurrentRegister();
+      
+      if (!currentRegister || currentRegister.areaAsignada === 'sin_asignar') {
+        observer.next([]);
+        return;
+      }
 
-        const now = new Date();
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-        const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-        
-        // Normalizar fechas
-        startOfWeek.setHours(0, 0, 0, 0);
-        endOfWeek.setHours(23, 59, 59, 999);
+      const now = new Date();
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+      
+      startOfWeek.setHours(0, 0, 0, 0);
+      endOfWeek.setHours(23, 59, 59, 999);
 
-        const activities$ = this.getActivitiesByAreaAndDateRange(userArea, startOfWeek, endOfWeek);
-        activities$.subscribe(activities => observer.next(activities));
-      });
+      const activities$ = this.getActivitiesByAreaAndDateRange(
+        currentRegister.areaAsignada, 
+        startOfWeek, 
+        endOfWeek
+      );
+      activities$.subscribe(activities => observer.next(activities));
     });
   }
 
@@ -118,7 +127,6 @@ export class AreaActivitiesService {
   async updateActivity(activityId: string, updates: Partial<AreaActivity>): Promise<void> {
     const docRef = doc(this.firestore, `${this.collectionName}/${activityId}`);
     
-    // Si se está completando la actividad, agregar fecha de completado
     if (updates.estado === 'completada' && !updates.fechaCompletada) {
       updates.fechaCompletada = new Date();
     }
@@ -126,7 +134,7 @@ export class AreaActivitiesService {
     await updateDoc(docRef, updates);
   }
 
-  // 📅 Posponer actividad (cambiar fecha límite)
+  // 📅 Posponer actividad
   async postponeActivity(activityId: string, newDate: Date): Promise<void> {
     await this.updateActivity(activityId, {
       fechaLimite: newDate,
@@ -134,7 +142,7 @@ export class AreaActivitiesService {
     });
   }
 
-  // ✅ Marcar actividad como completada
+  // ✅ Marcar como completada
   async completeActivity(activityId: string, notas?: string): Promise<void> {
     const updates: Partial<AreaActivity> = {
       estado: 'completada',
@@ -148,7 +156,7 @@ export class AreaActivitiesService {
     await this.updateActivity(activityId, updates);
   }
 
-  // 🔄 Cambiar estado de actividad
+  // 🔄 Cambiar estado
   async changeActivityStatus(activityId: string, newStatus: AreaActivity['estado']): Promise<void> {
     await this.updateActivity(activityId, { estado: newStatus });
   }
@@ -159,7 +167,7 @@ export class AreaActivitiesService {
     await deleteDoc(docRef);
   }
 
-  // 👤 Asignar responsable a actividad
+  // 👤 Asignar responsable
   async assignResponsible(activityId: string, responsableUid: string, responsableNombre: string): Promise<void> {
     await this.updateActivity(activityId, {
       responsable: responsableUid,
@@ -167,7 +175,7 @@ export class AreaActivitiesService {
     });
   }
 
-  // 📊 Obtener estadísticas del área
+  // 📊 Estadísticas del área
   async getAreaStatistics(area: string): Promise<{
     total: number;
     pendientes: number;
@@ -175,8 +183,6 @@ export class AreaActivitiesService {
     completadas: number;
     pospuestas: number;
   }> {
-    // Esta implementación sería más compleja en un caso real
-    // Por ahora, una implementación básica
     return {
       total: 0,
       pendientes: 0,
@@ -186,48 +192,48 @@ export class AreaActivitiesService {
     };
   }
 
-  // 🏷️ Obtener actividades por etiqueta
+  // 🏷️ Obtener por etiqueta
   getActivitiesByTag(tag: string): Observable<AreaActivity[]> {
     return new Observable(observer => {
-      this.userAreaService.getCurrentUserArea().then(userArea => {
-        if (!userArea) {
-          observer.next([]);
-          return;
-        }
+      const currentRegister = this.registersService.getCurrentRegister();
+      
+      if (!currentRegister || currentRegister.areaAsignada === 'sin_asignar') {
+        observer.next([]);
+        return;
+      }
 
-        const activitiesRef = collection(this.firestore, this.collectionName);
-        const q = query(
-          activitiesRef,
-          where('area', '==', userArea),
-          where('etiquetas', 'array-contains', tag)
-        );
+      const activitiesRef = collection(this.firestore, this.collectionName);
+      const q = query(
+        activitiesRef,
+        where('area', '==', currentRegister.areaAsignada),
+        where('etiquetas', 'array-contains', tag)
+      );
 
-        const activities$ = collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>;
-        activities$.subscribe(activities => observer.next(activities));
-      });
+      const activities$ = collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>;
+      activities$.subscribe(activities => observer.next(activities));
     });
   }
 
-  // 📈 Obtener actividades por prioridad
+  // 📈 Obtener por prioridad
   getActivitiesByPriority(priority: 'baja' | 'media' | 'alta'): Observable<AreaActivity[]> {
     return new Observable(observer => {
-      this.userAreaService.getCurrentUserArea().then(userArea => {
-        if (!userArea) {
-          observer.next([]);
-          return;
-        }
+      const currentRegister = this.registersService.getCurrentRegister();
+      
+      if (!currentRegister || currentRegister.areaAsignada === 'sin_asignar') {
+        observer.next([]);
+        return;
+      }
 
-        const activitiesRef = collection(this.firestore, this.collectionName);
-        const q = query(
-          activitiesRef,
-          where('area', '==', userArea),
-          where('prioridad', '==', priority),
-          orderBy('fechaLimite', 'asc')
-        );
+      const activitiesRef = collection(this.firestore, this.collectionName);
+      const q = query(
+        activitiesRef,
+        where('area', '==', currentRegister.areaAsignada),
+        where('prioridad', '==', priority),
+        orderBy('fechaLimite', 'asc')
+      );
 
-        const activities$ = collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>;
-        activities$.subscribe(activities => observer.next(activities));
-      });
+      const activities$ = collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>;
+      activities$.subscribe(activities => observer.next(activities));
     });
   }
 }

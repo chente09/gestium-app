@@ -52,16 +52,6 @@
     </nz-card>
 </nz-layout>
 
-<!-- ✅ DEBUG: Información de estado (solo en desarrollo) -->
-<!-- Puedes comentar o eliminar esta sección en producción -->
-<div style="background: #e6f7ff; padding: 10px; margin: 10px 0; border: 1px solid #91d5ff;" *ngIf="true">
-  <strong>🔧 DEBUG INFO:</strong><br>
-  - AreaId: {{ areaId }}<br>
-  - CurrentUserArea: {{ currentUserArea }}<br>
-  - ShowAgenda (propiedad): {{ showAgenda }}<br>
-  - Options length: {{ options.length }}
-</div>
-
 <!-- ✅ CORREGIDO: Ahora usa la propiedad showAgenda en lugar del método -->
 <div class="agenda-section" *ngIf="showAgenda && areaId">
     <nz-card [nzBordered]="true" class="agenda-card">

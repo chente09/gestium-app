@@ -62,31 +62,48 @@ export class AppComponent implements OnInit {
       this.activeRoute = event.url;
     });
 
-    // Cargar rol del usuario si está autenticado
-    await this.loadUserRole();
+    // ✅ NUEVO: Esperar a que Firebase Auth se inicialice
+    console.log('🚀 [App Init] Esperando inicialización de Firebase Auth...');
+
+    // Suscribirse al observable de autenticación
+    this.usersService.user$.subscribe(async (user) => {
+      console.log('👤 [Auth State Changed] Usuario:', user?.uid, user?.email);
+
+      if (user) {
+        await this.loadUserRole();
+      } else {
+        console.log('⚠️ [Auth State] No hay usuario autenticado');
+        this.currentUserRole = null;
+        this.registersService.currentRegister = undefined;
+      }
+    });
   }
 
   // ✅ Cargar rol del usuario actual desde RegistersService
   private async loadUserRole(): Promise<void> {
     try {
+      console.log('🔍 [loadUserRole] Iniciando...');
+
       const user = this.usersService.getCurrentUser();
-      
+      console.log('👤 [loadUserRole] Usuario Firebase:', user?.uid, user?.email);
+
       if (user) {
-        // Intentar obtener el registro del usuario
         const userRegister = await this.registersService.getRegisterByUid(user.uid);
-        
+        console.log('📄 [loadUserRole] Registro obtenido:', userRegister);
+
         if (userRegister) {
+          // ✅ CRÍTICO: Asignar currentRegister si no existe
+          if (!this.registersService.currentRegister) {
+            this.registersService.currentRegister = userRegister;
+            console.log('✅ [loadUserRole] currentRegister reasignado');
+          }
+
           this.currentUserRole = userRegister.role;
-          console.log('🔑 Rol del usuario:', this.currentUserRole);
-        } else {
-          // Si no existe registro, podría ser un nuevo usuario de Google
-          // El auto-registro se encargará en el login
-          this.currentUserRole = null;
-          console.log('⚠️ Usuario sin registro encontrado');
+          console.log('✅ [loadUserRole] Rol asignado:', this.currentUserRole);
         }
       }
     } catch (error) {
-      console.error('Error cargando rol del usuario:', error);
+      console.error('❌ [loadUserRole] Error:', error);
       this.currentUserRole = null;
     }
   }
@@ -137,8 +154,8 @@ export class AppComponent implements OnInit {
   }
 
   isStandaloneRoute(): boolean {
-    const currentPath = this.activeRoute.startsWith('/') 
-      ? this.activeRoute.substring(1) 
+    const currentPath = this.activeRoute.startsWith('/')
+      ? this.activeRoute.substring(1)
       : this.activeRoute;
 
     const standaloneRoutes = ['login', 'consultas', ''];

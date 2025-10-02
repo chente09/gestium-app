@@ -4,14 +4,14 @@ import {
   collection,
   collectionData,
   doc,
-  addDoc,
   updateDoc,
   deleteDoc,
   query,
   where,
   getDocs,
   setDoc,
-  getDoc
+  getDoc,
+  addDoc
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { UsersService, LoginInfo } from '../users/users.service';
@@ -22,6 +22,7 @@ export interface Register {
   uid: string;
   email: string;
   displayName: string; // Renombrado de "nickname" para mayor claridad
+  nickname?: string;
   photoURL?: string;
   phoneNumber?: string;
   role: 'admin' | 'coordinador' | 'empleado';
@@ -30,6 +31,15 @@ export interface Register {
   fechaAsignacion?: Date; // Fecha cuando se asignó área/rol específico
   activo: boolean;
 }
+
+export interface AreaOficina {
+  id?: string;
+  nombre: string;
+  descripcion?: string;
+  fechaCreacion: Date;
+  activo: boolean;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -63,8 +73,13 @@ export class RegistersService {
   }
 
   // 🔐 Login con Google
+
   async loginWithGoogle(): Promise<Register | null> {
     try {
+      // NUEVO: Establecer persistencia LOCAL antes del login
+      await this.usersService.setLocalPersistence();
+      console.log('✅ Persistencia local establecida');
+
       const userCredential: UserCredential = await this.usersService.loginWithGoogle();
       const uid = userCredential.user.uid;
 
@@ -83,7 +98,7 @@ export class RegistersService {
         register = await this.createRegisterFromFirebaseUser(userCredential.user);
       }
 
-      // ⚠️ CRÍTICO: Asignar a currentRegister ANTES de retornar
+      // CRÍTICO: Asignar a currentRegister ANTES de retornar
       this.currentRegister = register;
       console.log('✅ currentRegister asignado:', this.currentRegister);
 
@@ -169,14 +184,17 @@ export class RegistersService {
   // 🆕 Auto-registro desde Firebase Auth (para Google Sign-In)
   private async createRegisterFromFirebaseUser(firebaseUser: any): Promise<Register> {
     try {
+      console.log('📸 [Auto-registro] photoURL de Google:', firebaseUser.photoURL);
+
       const newRegister: Register = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || '',
         displayName: firebaseUser.displayName || 'Usuario Gestium',
-        photoURL: firebaseUser.photoURL || '',
+        nickname: firebaseUser.displayName || 'Usuario Gestium', // ✅ Agregar nickname también
+        photoURL: firebaseUser.photoURL || '', // ✅ Asegurar que se guarde la foto
         phoneNumber: firebaseUser.phoneNumber || '',
-        role: 'empleado', // Por defecto
-        areaAsignada: 'sin_asignar', // Por defecto
+        role: 'empleado',
+        areaAsignada: 'sin_asignar',
         fechaCreacion: new Date(),
         activo: true
       };
@@ -184,7 +202,7 @@ export class RegistersService {
       const docRef = doc(this.firestore, `${this.collectionName}/${firebaseUser.uid}`);
       await setDoc(docRef, newRegister);
 
-      console.log('✅ Usuario auto-registrado desde Google:', newRegister);
+      console.log('✅ Usuario auto-registrado con foto:', newRegister.photoURL);
 
       return newRegister;
 
@@ -318,4 +336,120 @@ export class RegistersService {
     // Usuarios solo acceden a su área asignada
     return this.currentRegister.areaAsignada === area;
   }
+
+  // ========================================
+  // 🏢 GESTIÓN DE ÁREAS DE OFICINA
+  // ========================================
+
+  // 📋 Obtener todas las áreas (Observable)
+  getAreasOficina(): Observable<AreaOficina[]> {
+    const areasRef = collection(this.firestore, 'areasOficina');
+    return collectionData(areasRef, { idField: 'id' }) as Observable<AreaOficina[]>;
+  }
+
+  // 📋 Obtener todas las áreas (Promise) - útil para cargas únicas
+  async getAreasOficinaOnce(): Promise<AreaOficina[]> {
+    try {
+      const areasRef = collection(this.firestore, 'areasOficina');
+      const querySnapshot = await getDocs(areasRef);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as AreaOficina[];
+    } catch (error) {
+      console.error('Error obteniendo áreas:', error);
+      return [];
+    }
+  }
+
+  // ➕ Crear nueva área
+  async createArea(nombre: string, descripcion?: string): Promise<string> {
+    try {
+      // Validar que el nombre no exista
+      const areas = await this.getAreasOficinaOnce();
+      const exists = areas.some(area =>
+        area.nombre.toLowerCase() === nombre.toLowerCase()
+      );
+
+      if (exists) {
+        throw new Error('Ya existe un área con este nombre');
+      }
+
+      const newArea: Omit<AreaOficina, 'id'> = {
+        nombre: nombre.trim(),
+        descripcion: descripcion?.trim() || '',
+        fechaCreacion: new Date(),
+        activo: true
+      };
+
+      const areasRef = collection(this.firestore, 'areasOficina');
+      const docRef = await addDoc(areasRef, newArea);
+
+      console.log('✅ Área creada:', nombre);
+      return docRef.id;
+
+    } catch (error) {
+      console.error('❌ Error creando área:', error);
+      throw error;
+    }
+  }
+
+  // ✏️ Actualizar área
+  async updateArea(areaId: string, updates: Partial<Omit<AreaOficina, 'id' | 'fechaCreacion'>>): Promise<void> {
+    try {
+      const docRef = doc(this.firestore, `areasOficina/${areaId}`);
+      await updateDoc(docRef, { ...updates });
+
+      console.log('✅ Área actualizada:', areaId);
+
+    } catch (error) {
+      console.error('❌ Error actualizando área:', error);
+      throw error;
+    }
+  }
+
+  // 🗑️ Eliminar área (soft delete - desactivar)
+  async deleteArea(areaId: string): Promise<void> {
+    try {
+      await this.updateArea(areaId, { activo: false });
+      console.log('✅ Área desactivada:', areaId);
+
+    } catch (error) {
+      console.error('❌ Error eliminando área:', error);
+      throw error;
+    }
+  }
+
+  // 🗑️ Eliminar área permanentemente (hard delete)
+  async deleteAreaPermanently(areaId: string, nombreArea: string): Promise<void> {
+    try {
+      // Primero reasignar usuarios de esta área
+      const usersInArea = await this.getUsersByArea(nombreArea);
+
+      for (const user of usersInArea) {
+        await this.assignAreaAndRole(user.uid, 'sin_asignar', 'empleado');
+      }
+
+      // Luego eliminar el área
+      const docRef = doc(this.firestore, `areasOficina/${areaId}`);
+      await deleteDoc(docRef);
+
+      console.log(`✅ Área "${nombreArea}" eliminada. ${usersInArea.length} usuarios reasignados.`);
+
+    } catch (error) {
+      console.error('❌ Error eliminando área permanentemente:', error);
+      throw error;
+    }
+  }
+
+  // 📊 Obtener solo áreas activas
+  getActiveAreas(): Observable<AreaOficina[]> {
+    return new Observable(observer => {
+      this.getAreasOficina().subscribe(areas => {
+        const activeAreas = areas.filter(area => area.activo);
+        observer.next(activeAreas);
+      });
+    });
+  }
+
 }

@@ -27,7 +27,7 @@ import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 
 // Services
-import { RegistersService, Register } from '../../../services/registers/registers.service';
+import { RegistersService, Register, AreaOficina } from '../../../services/registers/registers.service';
 
 @Component({
   selector: 'app-user-area-admin',
@@ -64,50 +64,48 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   // 📊 Datos
   allUsers: Register[] = [];
   filteredUsers: Register[] = [];
-  
+  allAreas: AreaOficina[] = [];
+
   // 🎛️ Estados
   loading = false;
   assigningUser = false;
   processingBulk = false;
-  
+
   // 🎯 Modales
   showAssignModal = false;
   showBulkModal = false;
   showAreaModal = false;
   selectedUser: Register | null = null;
-  
+
   // 📝 Formularios
   assignForm: FormGroup;
   bulkForm: FormGroup;
   areaForm: FormGroup;
-  
+
   // 🔍 Filtros
   selectedAreaFilter = '';
   selectedRoleFilter = '';
-  
+
   // 📋 Configuración
-  availableAreas: string[] = [
-    'ISSFA', 
-    'Bco. Pichincha', 
-    'Bco. Produbanco', 
-    'BNF', 
-    'Inmobiliaria', 
-    'David',
-    'IESS'
-  ];
-  
+  get availableAreas(): string[] {
+    return this.allAreas
+      .filter(area => area.activo)
+      .map(area => area.nombre)
+      .sort();
+  }
+
   // 📊 Estadísticas
   get totalUsers(): number { return this.allUsers.length; }
-  get usersWithArea(): number { 
-    return this.allUsers.filter(u => u.areaAsignada !== 'sin_asignar').length; 
+  get usersWithArea(): number {
+    return this.allUsers.filter(u => u.areaAsignada !== 'sin_asignar').length;
   }
-  get usersWithoutArea(): number { 
-    return this.allUsers.filter(u => u.areaAsignada === 'sin_asignar').length; 
+  get usersWithoutArea(): number {
+    return this.allUsers.filter(u => u.areaAsignada === 'sin_asignar').length;
   }
-  get adminUsers(): number { 
-    return this.allUsers.filter(u => u.role === 'admin').length; 
+  get adminUsers(): number {
+    return this.allUsers.filter(u => u.role === 'admin').length;
   }
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -120,9 +118,9 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
       area: ['', [Validators.required]],
       role: ['empleado', [Validators.required]]
     });
-    
+
     this.bulkForm = this.fb.group({
-      bulkArea: ['', [Validators.required]], 
+      bulkArea: ['', [Validators.required]],
       bulkRole: ['empleado', [Validators.required]]
     });
 
@@ -143,20 +141,34 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   // 📊 Cargar todos los datos
   private loadData(): void {
     this.loading = true;
-    
+
+    // ✅ Cargar usuarios
     this.registersService.getRegisters()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (registers) => {
           this.allUsers = registers;
           this.filterUsers();
-          this.loading = false;
-          
           console.log('📊 Usuarios cargados:', this.allUsers.length);
         },
         error: (error) => {
-          console.error('Error cargando datos:', error);
+          console.error('Error cargando usuarios:', error);
           this.message.error('Error al cargar los datos de usuarios');
+        }
+      });
+
+    // ✅ Cargar áreas desde Firestore
+    this.registersService.getAreasOficina()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (areas) => {
+          this.allAreas = areas;
+          this.loading = false;
+          console.log('🏢 Áreas cargadas:', this.allAreas.length);
+        },
+        error: (error) => {
+          console.error('Error cargando áreas:', error);
+          this.message.error('Error al cargar las áreas');
           this.loading = false;
         }
       });
@@ -165,12 +177,12 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   // 🔍 Filtrar usuarios
   filterUsers(): void {
     this.filteredUsers = this.allUsers.filter(user => {
-      const areaMatch = !this.selectedAreaFilter || 
+      const areaMatch = !this.selectedAreaFilter ||
         user.areaAsignada === this.selectedAreaFilter;
-      
-      const roleMatch = !this.selectedRoleFilter || 
+
+      const roleMatch = !this.selectedRoleFilter ||
         user.role === this.selectedRoleFilter;
-      
+
       return areaMatch && roleMatch;
     });
   }
@@ -199,20 +211,20 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     }
 
     this.assigningUser = true;
-    
+
     try {
       const { area, role } = this.assignForm.value;
-      
+
       await this.registersService.assignAreaAndRole(
-        this.selectedUser.uid, 
-        area, 
+        this.selectedUser.uid,
+        area,
         role
       );
-      
+
       this.message.success(`Área asignada a ${this.selectedUser.displayName}`);
       this.closeAssignModal();
       this.refreshData();
-      
+
     } catch (error) {
       console.error('Error asignando área:', error);
       this.message.error('Error al asignar el área');
@@ -225,14 +237,14 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   async removeAreaAssignment(user: Register): Promise<void> {
     try {
       await this.registersService.assignAreaAndRole(
-        user.uid, 
-        'sin_asignar', 
+        user.uid,
+        'sin_asignar',
         'empleado'
       );
-      
+
       this.message.success(`Asignación removida para ${user.displayName}`);
       this.refreshData();
-      
+
     } catch (error) {
       console.error('Error removiendo asignación:', error);
       this.message.error('Error al remover la asignación');
@@ -244,7 +256,7 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     try {
       await this.registersService.toggleUserStatus(user.uid, active);
       this.message.success(`Usuario ${active ? 'activado' : 'desactivado'}`);
-      
+
     } catch (error) {
       console.error('Error cambiando estado:', error);
       this.message.error('Error al cambiar el estado del usuario');
@@ -254,12 +266,12 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   // 📦 Asignación masiva
   showBulkAssignModal(): void {
     const usersToAssign = this.allUsers.filter(u => u.areaAsignada === 'sin_asignar');
-    
+
     if (usersToAssign.length === 0) {
       this.message.info('No hay usuarios sin asignar');
       return;
     }
-    
+
     this.showBulkModal = true;
   }
 
@@ -270,25 +282,25 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     }
 
     const usersToAssign = this.allUsers.filter(u => u.areaAsignada === 'sin_asignar');
-    
+
     if (usersToAssign.length === 0) {
       this.message.info('No hay usuarios sin asignar');
       return;
     }
 
     this.processingBulk = true;
-    
+
     try {
       const { bulkArea, bulkRole } = this.bulkForm.value;
-      
+
       for (const user of usersToAssign) {
         await this.registersService.assignAreaAndRole(user.uid, bulkArea, bulkRole);
       }
-      
+
       this.message.success(`${usersToAssign.length} usuarios asignados a ${bulkArea}`);
       this.closeBulkModal();
       this.refreshData();
-      
+
     } catch (error) {
       console.error('Error en asignación masiva:', error);
       this.message.error('Error en la asignación masiva');
@@ -308,45 +320,55 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const newArea = this.areaForm.value.newArea.trim();
-    
-    if (this.availableAreas.includes(newArea)) {
+    const newAreaName = this.areaForm.value.newArea.trim();
+
+    // Validar si ya existe localmente (por si acaso)
+    if (this.allAreas.some(a => a.nombre.toLowerCase() === newAreaName.toLowerCase())) {
       this.message.warning('Esta área ya existe');
       return;
     }
 
-    this.availableAreas.push(newArea);
-    this.availableAreas.sort();
-    
-    this.message.success(`Área "${newArea}" agregada exitosamente`);
-    this.closeAreaModal();
+    try {
+      // ✅ Crear en Firestore
+      await this.registersService.createArea(newAreaName);
+
+      this.message.success(`Área "${newAreaName}" agregada exitosamente`);
+      this.closeAreaModal();
+      // No es necesario refreshData(), el Observable lo actualiza automáticamente
+
+    } catch (error: any) {
+      console.error('Error creando área:', error);
+
+      if (error.message?.includes('Ya existe')) {
+        this.message.error('Ya existe un área con este nombre');
+      } else {
+        this.message.error('Error al crear el área');
+      }
+    }
   }
 
-  removeArea(area: string): void {
+  removeArea(areaName: string): void {
+    // Buscar el área por nombre
+    const area = this.allAreas.find(a => a.nombre === areaName);
+
+    if (!area || !area.id) {
+      this.message.error('Área no encontrada');
+      return;
+    }
+
     this.modal.confirm({
       nzTitle: 'Eliminar Área',
-      nzContent: `¿Está seguro de eliminar el área "${area}"? Los usuarios asignados a esta área quedarán sin asignar.`,
+      nzContent: `¿Está seguro de eliminar el área "${areaName}"? Los usuarios asignados a esta área quedarán sin asignar.`,
       nzOkText: 'Eliminar',
       nzOkDanger: true,
       nzOnOk: async () => {
         try {
-          // Primero, reasignar usuarios de esta área
-          const usersInArea = this.allUsers.filter(u => u.areaAsignada === area);
-          
-          for (const user of usersInArea) {
-            await this.registersService.assignAreaAndRole(
-              user.uid, 
-              'sin_asignar', 
-              'empleado'
-            );
-          }
-          
-          // Eliminar área del listado
-          this.availableAreas = this.availableAreas.filter(a => a !== area);
-          
-          this.message.success(`Área "${area}" eliminada. ${usersInArea.length} usuarios reasignados.`);
-          this.refreshData();
-          
+          // ✅ Eliminar permanentemente desde Firestore (incluye reasignación de usuarios)
+          await this.registersService.deleteAreaPermanently(area.id!, areaName);
+
+          this.message.success(`Área "${areaName}" eliminada exitosamente`);
+          this.refreshData(); // Actualizar usuarios reasignados
+
         } catch (error) {
           console.error('Error eliminando área:', error);
           this.message.error('Error al eliminar el área');
@@ -361,9 +383,9 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   }
 
   getAreaColor(area: string): string {
-    const colors: {[key: string]: string} = {
+    const colors: { [key: string]: string } = {
       'ISSFA': 'blue',
-      'Bco. Pichincha': 'green', 
+      'Bco. Pichincha': 'green',
       'Bco. Produbanco': 'orange',
       'BNF': 'purple',
       'Inmobiliaria': 'cyan',
@@ -374,7 +396,7 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   }
 
   getRoleColor(role: string): string {
-    const colors: {[key: string]: string} = {
+    const colors: { [key: string]: string } = {
       'admin': 'red',
       'coordinador': 'orange',
       'empleado': 'blue'

@@ -92,7 +92,7 @@ export class HistoryItinerarioComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeData(); // ✅ INICIALIZAR DATOS DESDE EL SERVICIO
-    
+
     this.itinerarioService.getItinerarios().subscribe((data) => {
       this.itinerarios = data;
       this.updateEditCache(this.itinerarios);
@@ -210,7 +210,12 @@ export class HistoryItinerarioComponent implements OnInit {
     const item = this.filteredItinerarios.find(i => i.id === id);
     const user = this.usersService.getCurrentUser();
 
-    if (item && user?.email !== 'mmarcillo.gestium@gmail.com') {
+    const usuariosRestringidos = [
+      'mmarcillo.gestium@gmail.com',
+      'msaguano.gestium@gmail.com'
+    ];
+
+    if (item && !usuariosRestringidos.includes(user?.email ?? '')) {
       this.editCache[id] = {
         edit: true,
         data: {
@@ -224,8 +229,9 @@ export class HistoryItinerarioComponent implements OnInit {
       };
     } else {
       this.message.error('No tienes permiso para editar este itinerario.');
-    } 
+    }
   }
+
 
   cancelEdit(id: string): void {
     const index = this.itinerarios.findIndex(item => item.id === id);

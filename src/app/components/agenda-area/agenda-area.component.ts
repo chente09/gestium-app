@@ -25,7 +25,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 
 import { AreaActivitiesService, AreaActivity } from '../../services/areaActivities/area-activities.service';
-import { RegistersService } from '../../services/registers/registers.service'; // ✅ CAMBIO
+import { RegistersService, Register } from '../../services/registers/registers.service'; // ✅ IMPORTAR Register
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -65,6 +65,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   showCreateModal = false;
   showEditModal = false;
   selectedActivity: AreaActivity | null = null;
+  areaUsers: Register[] = []; // ✅ Usuarios del área
   
   // 📝 Formularios
   createForm: FormGroup;
@@ -77,7 +78,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
 
   constructor(
     private areaActivitiesService: AreaActivitiesService,
-    private registersService: RegistersService, // ✅ CAMBIO
+    private registersService: RegistersService,
     private messageService: NzMessageService,
     private fb: FormBuilder
   ) {
@@ -86,8 +87,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
       descripcion: ['', Validators.maxLength(500)],
       fechaLimite: [new Date(), Validators.required],
       prioridad: ['media', Validators.required],
-      responsable: ['', Validators.required],
-      responsableNombre: ['', Validators.required],
+      responsable: ['', Validators.required], // ✅ Ahora será un select
       etiquetas: [[]]
     });
 
@@ -105,11 +105,46 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     this.initializeWeek();
     this.loadWeekActivities();
     this.setupActivitySubscription();
+    this.loadAreaUsers(); // ✅ Cargar usuarios del área
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // 👥 Cargar usuarios del área
+  private async loadAreaUsers(): Promise<void> {
+    try {
+      const normalizedArea = this.normalizeAreaName(this.area);
+      this.areaUsers = await this.registersService.getUsersByArea(normalizedArea);
+      console.log('👥 Usuarios del área cargados:', this.areaUsers.length);
+    } catch (error) {
+      console.error('Error cargando usuarios del área:', error);
+      this.areaUsers = [];
+    }
+  }
+
+  // ✅ Normalizar nombre de área
+  private normalizeAreaName(areaId: string): string {
+    const areaMapping: { [key: string]: string } = {
+      'issfa': 'ISSFA',
+      'produbanco': 'Bco. Produbanco',
+      'pichincha': 'Bco. Pichincha',
+      'inmobiliaria': 'Inmobiliaria',
+      'bnf': 'BNF',
+      'david': 'David',
+      'iess': 'IESS'
+    };
+    return areaMapping[areaId.toLowerCase()] || areaId;
+  }
+
+  // ✅ Getter para dropdown de usuarios
+  get availableUsers(): { uid: string; nombre: string }[] {
+    return this.areaUsers.map(user => ({
+      uid: user.uid,
+      nombre: user.displayName || user.nickname || user.email
+    }));
   }
 
   // 📅 Inicializar semana actual
@@ -173,11 +208,12 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   // 📋 Cargar actividades de la semana
   private loadWeekActivities(): void {
     this.isLoading = true;
+    const normalizedArea = this.normalizeAreaName(this.area); // ✅ Normalizar área
     const endOfWeek = new Date(this.currentWeekStart);
     endOfWeek.setDate(this.currentWeekStart.getDate() + 6);
     
     this.areaActivitiesService.getActivitiesByAreaAndDateRange(
-      this.area, 
+      normalizedArea, // ✅ Usar área normalizada
       this.currentWeekStart, 
       endOfWeek
     ).pipe(takeUntil(this.destroy$))
@@ -205,20 +241,25 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
 
     try {
       const formValue = this.createForm.value;
+      
+      // ✅ Buscar el nombre del usuario seleccionado
+      const selectedUser = this.areaUsers.find(u => u.uid === formValue.responsable);
+      const responsableNombre = selectedUser?.displayName || selectedUser?.nickname || selectedUser?.email || 'Sin nombre';
+      
       await this.areaActivitiesService.createActivity({
         titulo: formValue.titulo,
         descripcion: formValue.descripcion,
         fechaLimite: formValue.fechaLimite,
         prioridad: formValue.prioridad,
         responsable: formValue.responsable,
-        responsableNombre: formValue.responsableNombre,
+        responsableNombre: responsableNombre, // ✅ Asignado automáticamente
         estado: 'pendiente',
         etiquetas: formValue.etiquetas || []
       });
 
       this.messageService.success('Actividad creada correctamente');
       this.showCreateModal = false;
-      this.createForm.reset();
+      this.createForm.reset({ prioridad: 'media', fechaLimite: new Date() });
       this.loadWeekActivities();
     } catch (error) {
       console.error('Error creating activity:', error);
@@ -362,7 +403,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   // 🎭 Manejadores de modales
   openCreateModal(): void {
     this.showCreateModal = true;
-    this.createForm.reset();
+    this.createForm.reset({ prioridad: 'media', fechaLimite: new Date() });
   }
 
   closeCreateModal(): void {

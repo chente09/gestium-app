@@ -145,7 +145,7 @@
                         <!-- Información del usuario -->
                         <td>
                             <div class="user-info">
-                                <strong>{{ user.displayName || 'Sin nombre' }}</strong>
+                                <strong>{{ user.displayName || user.nickname || 'Sin nombre' }}</strong>
                                 <div class="user-email">{{ user.email }}</div>
                             </div>
                         </td>
@@ -263,7 +263,7 @@
                     [nzSize]="40">
                 </nz-avatar>
                 <div class="user-details" style="margin-left: 12px;">
-                    <strong>{{ selectedUser.displayName || 'Sin nombre' }}</strong>
+                    <strong>{{ selectedUser.nickname || selectedUser.displayName || 'Sin nombre' }}</strong>
                     <div style="color: #8c8c8c; font-size: 12px;">{{ selectedUser.email }}</div>
                 </div>
             </div>

@@ -114,7 +114,7 @@
           <nz-dropdown-menu #menu="nzDropdownMenu">
             <ul nz-menu>
               <li nz-menu-item>
-                <strong>¡Hola, {{ getCurrentUserName() }}!</strong>
+                <strong>¡Hola, {{ getCurrentUserName() || registersService.currentRegister?.nickname }}!</strong>
               </li>
               <!-- ✅ NUEVO: Mostrar rol del usuario -->
               <li nz-menu-item *ngIf="currentUserRole">

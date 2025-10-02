@@ -287,18 +287,23 @@ export class ItinerarioComponent implements OnInit {
   validarFormulario(): void {
     const user = this.usersService.getCurrentUser();
 
-    console.log('Validando formulario para usuario:', user?.email);
-    console.log('Imagen seleccionada:', this.imagenSeleccionada);
-    console.log('Observación:', this.selectedItem?.obsCompletado);
+    const usuariosRestrictivos = [
+      'mmarcillo.gestium@gmail.com',
+      'msaguano.gestium@gmail.com'
+    ];
 
-    if (user?.email === 'mmarcillo.gestium@gmail.com') {
-      this.formularioValido = !!(this.selectedItem?.obsCompletado?.trim() && this.imagenSeleccionada);
-      console.log('Usuario específico - Formulario válido:', this.formularioValido);
+    if (usuariosRestrictivos.includes(user?.email ?? '')) {
+      // Solo válido si tiene observación + imagen
+      this.formularioValido = !!(
+        this.selectedItem?.obsCompletado?.trim() &&
+        this.imagenSeleccionada
+      );
     } else {
+      // Para cualquier otro usuario siempre es válido
       this.formularioValido = true;
-      console.log('Otro usuario - Formulario válido automáticamente');
     }
   }
+
 
   async guardarEstado(): Promise<void> {
     if (!this.selectedItem) return;

@@ -32,7 +32,7 @@ export class AreaActivitiesService {
     private firestore: Firestore,
     private registersService: RegistersService, // ✅ CAMBIO
     private usersService: UsersService
-  ) {}
+  ) { }
 
   // ➕ Crear nueva actividad
   async createActivity(activityData: Omit<AreaActivity, 'id' | 'fechaCreacion' | 'creadoPor' | 'creadoPorNombre' | 'area'>): Promise<string> {
@@ -42,15 +42,17 @@ export class AreaActivitiesService {
     // ✅ CAMBIO: Obtener área desde RegistersService
     const currentRegister = this.registersService.getCurrentRegister();
     if (!currentRegister) throw new Error('Usuario sin registro');
-    
+
     const userArea = currentRegister.areaAsignada;
     if (!userArea || userArea === 'sin_asignar') {
       throw new Error('Usuario sin área asignada');
     }
 
+    const normalizedArea = this.normalizeAreaToUrlFormat(userArea);
+
     const newActivity: Omit<AreaActivity, 'id'> = {
       ...activityData,
-      area: userArea,
+      area: normalizedArea,
       fechaCreacion: new Date(),
       creadoPor: user.uid,
       creadoPorNombre: currentRegister.displayName || user.email || 'Usuario'
@@ -65,7 +67,7 @@ export class AreaActivitiesService {
   getCurrentUserAreaActivities(): Observable<AreaActivity[]> {
     return new Observable(observer => {
       const currentRegister = this.registersService.getCurrentRegister();
-      
+
       if (!currentRegister || currentRegister.areaAsignada === 'sin_asignar') {
         observer.next([]);
         return;
@@ -101,7 +103,7 @@ export class AreaActivitiesService {
   getCurrentWeekActivities(): Observable<AreaActivity[]> {
     return new Observable(observer => {
       const currentRegister = this.registersService.getCurrentRegister();
-      
+
       if (!currentRegister || currentRegister.areaAsignada === 'sin_asignar') {
         observer.next([]);
         return;
@@ -110,13 +112,13 @@ export class AreaActivitiesService {
       const now = new Date();
       const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
       const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-      
+
       startOfWeek.setHours(0, 0, 0, 0);
       endOfWeek.setHours(23, 59, 59, 999);
 
       const activities$ = this.getActivitiesByAreaAndDateRange(
-        currentRegister.areaAsignada, 
-        startOfWeek, 
+        currentRegister.areaAsignada,
+        startOfWeek,
         endOfWeek
       );
       activities$.subscribe(activities => observer.next(activities));
@@ -126,7 +128,7 @@ export class AreaActivitiesService {
   // ✏️ Actualizar actividad
   async updateActivity(activityId: string, updates: Partial<AreaActivity>): Promise<void> {
     const docRef = doc(this.firestore, `${this.collectionName}/${activityId}`);
-    
+
     if (updates.estado === 'completada' && !updates.fechaCompletada) {
       updates.fechaCompletada = new Date();
     }
@@ -196,7 +198,7 @@ export class AreaActivitiesService {
   getActivitiesByTag(tag: string): Observable<AreaActivity[]> {
     return new Observable(observer => {
       const currentRegister = this.registersService.getCurrentRegister();
-      
+
       if (!currentRegister || currentRegister.areaAsignada === 'sin_asignar') {
         observer.next([]);
         return;
@@ -218,7 +220,7 @@ export class AreaActivitiesService {
   getActivitiesByPriority(priority: 'baja' | 'media' | 'alta'): Observable<AreaActivity[]> {
     return new Observable(observer => {
       const currentRegister = this.registersService.getCurrentRegister();
-      
+
       if (!currentRegister || currentRegister.areaAsignada === 'sin_asignar') {
         observer.next([]);
         return;
@@ -235,5 +237,18 @@ export class AreaActivitiesService {
       const activities$ = collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>;
       activities$.subscribe(activities => observer.next(activities));
     });
+  }
+
+  private normalizeAreaToUrlFormat(area: string): string {
+    const areaMapping: { [key: string]: string } = {
+      'ISSFA': 'issfa',
+      'Bco. Produbanco': 'produbanco',
+      'Bco. Pichincha': 'pichincha',
+      'Inmobiliaria': 'inmobiliaria',
+      'BNF': 'bnf',
+      'David': 'david',
+      'IESS': 'iess'
+    };
+    return areaMapping[area] || area.toLowerCase();
   }
 }

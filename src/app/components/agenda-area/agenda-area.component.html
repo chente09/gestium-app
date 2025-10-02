@@ -180,25 +180,16 @@
                     </nz-col>
                 </nz-row>
 
-                <nz-row [nzGutter]="16">
-                    <nz-col [nzSpan]="12">
-                        <nz-form-item>
-                            <nz-form-label nzRequired>Responsable (UID)</nz-form-label>
-                            <nz-form-control>
-                                <input nz-input formControlName="responsable" placeholder="UID del responsable" />
-                            </nz-form-control>
-                        </nz-form-item>
-                    </nz-col>
-
-                    <nz-col [nzSpan]="12">
-                        <nz-form-item>
-                            <nz-form-label nzRequired>Nombre del Responsable</nz-form-label>
-                            <nz-form-control>
-                                <input nz-input formControlName="responsableNombre" placeholder="Nombre completo" />
-                            </nz-form-control>
-                        </nz-form-item>
-                    </nz-col>
-                </nz-row>
+                <nz-form-item>
+                    <nz-form-label nzRequired>Responsable</nz-form-label>
+                    <nz-form-control nzErrorTip="Debe seleccionar un responsable">
+                        <nz-select formControlName="responsable" nzPlaceHolder="Seleccionar responsable del área"
+                            nzShowSearch>
+                            <nz-option *ngFor="let user of availableUsers" [nzValue]="user.uid" [nzLabel]="user.nombre">
+                            </nz-option>
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
             </form>
         </ng-container>
 

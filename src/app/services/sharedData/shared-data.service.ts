@@ -150,7 +150,7 @@ export class SharedDataService {
       "Palacios Morillo Vinicio",
       "Romero Ramírez Carmen Virginia",
       "Ron Cadena Lizbeth Marisol",
-      "Simbaña Guishpe Martha Cecilia",
+      "Simbaña Quishpe Martha Cecilia",
       "Tafur Salazar Jenny Margoth",
       "Vaca Duque Lucía Alejandra",
       "Zambrano Ortiz Wilmer Ismael",

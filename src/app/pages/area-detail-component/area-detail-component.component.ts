@@ -76,7 +76,6 @@ export class AreaDetailComponentComponent implements OnInit {
       if (id) {
         this.areaId = id;
         this.options = this.areasOptions[this.areaId] || [];
-        console.log('🎯 AreaId actual:', this.areaId);
         
         // Recalcular el acceso cuando cambia el área
         await this.checkUserAccess();
@@ -94,7 +93,6 @@ export class AreaDetailComponentComponent implements OnInit {
       
       if (currentRegister) {
         this.currentUserArea = currentRegister.areaAsignada;
-        console.log('👤 Área del usuario:', this.currentUserArea);
         
         // Calcular acceso después de obtener el área
         await this.checkUserAccess();
@@ -102,7 +100,6 @@ export class AreaDetailComponentComponent implements OnInit {
         // Usuario no autenticado o sin registro
         this.currentUserArea = null;
         this.showAgenda = false;
-        console.log('⚠️ Usuario no autenticado');
       }
       
     } catch (error) {
@@ -114,13 +111,8 @@ export class AreaDetailComponentComponent implements OnInit {
 
   // ✅ Verificar acceso y actualizar la propiedad
   private async checkUserAccess(): Promise<void> {
-    
-    console.log('🔍 Verificando acceso...');
-    console.log('  - currentUserArea:', this.currentUserArea);
-    console.log('  - areaId:', this.areaId);
 
     if (!this.currentUserArea || !this.areaId) {
-      console.log('  ❌ Faltan datos básicos');
       this.showAgenda = false;
       return;
     }
@@ -128,9 +120,7 @@ export class AreaDetailComponentComponent implements OnInit {
     // Lógica para determinar si mostrar agenda
     const currentAreaNormalized = this.normalizeAreaName(this.currentUserArea);
     const viewingAreaNormalized = this.normalizeAreaName(this.areaId);
-    
-    console.log('  - currentAreaNormalized:', currentAreaNormalized);
-    console.log('  - viewingAreaNormalized:', viewingAreaNormalized);
+  
 
     // Verificar si es admin usando el servicio
     const isAdmin = this.registersService.isCurrentUserAdmin();
@@ -138,8 +128,6 @@ export class AreaDetailComponentComponent implements OnInit {
     this.showAgenda = currentAreaNormalized === viewingAreaNormalized ||
       isAdmin ||
       this.currentUserArea === 'sin_asignar';
-    
-    console.log('  ✅ ShowAgenda resultado:', this.showAgenda);
   }
 
   // ✅ Normalizar nombres de áreas

@@ -12,8 +12,6 @@ import { ProcesosComponent } from './pages/gestionProcesos/procesos/procesos.com
 import { ConsultasComponent } from './components/consultas/consultas.component';
 import { UserAreaAdminComponent } from './pages/user-admin/user-area-admin/user-area-admin.component'; // ✅ NUEVA IMPORTACIÓN
 import { AdminGuard } from './guards/guards/admin.guard'; // ✅ IMPORTAR GUARD
-import { pipe } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
 

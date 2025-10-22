@@ -1,11 +1,11 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { 
-  CdkDragDrop, 
-  moveItemInArray, 
+import {
+  CdkDragDrop,
+  moveItemInArray,
   transferArrayItem,
-  DragDropModule 
+  DragDropModule
 } from '@angular/cdk/drag-drop';
 
 // NG-Zorro imports
@@ -23,9 +23,10 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { NzBadgeModule } from 'ng-zorro-antd/badge';
 
 import { AreaActivitiesService, AreaActivity } from '../../services/areaActivities/area-activities.service';
-import { RegistersService, Register } from '../../services/registers/registers.service'; // ✅ IMPORTAR Register
+import { RegistersService, Register } from '../../services/registers/registers.service';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -48,32 +49,42 @@ import { Subject, takeUntil } from 'rxjs';
     NzPopconfirmModule,
     NzToolTipModule,
     NzGridModule,
-    NzSpinModule
+    NzSpinModule,
+    NzBadgeModule
   ],
   templateUrl: './agenda-area.component.html',
   styleUrls: ['./agenda-area.component.css']
 })
 export class AgendaAreaComponent implements OnInit, OnDestroy {
   @Input() area!: string;
-  
+
+  // 📅 Tipo de vista
+  viewMode: 'daily' | 'weekly' | 'monthly' = 'weekly';
+  selectedDate: Date = new Date(); // Para vista diaria
+
   // 📅 Datos de la semana
   currentWeek: Date[] = [];
   weekActivities: { [key: string]: AreaActivity[] } = {};
-  
+
+  // 🗓️ Datos del mes (para vista mensual)
+  currentMonth: Date[][] = []; // Matriz de semanas del mes
+  monthActivities: { [key: string]: AreaActivity[] } = {};
+  currentMonthDate: Date = new Date(); // Fecha del mes que se está mostrando
+
   // 🎯 Estado del componente
   isLoading = false;
   showCreateModal = false;
   showEditModal = false;
   selectedActivity: AreaActivity | null = null;
-  areaUsers: Register[] = []; // ✅ Usuarios del área
-  
+  areaUsers: Register[] = [];
+
   // 📝 Formularios
   createForm: FormGroup;
   editForm: FormGroup;
-  
+
   // 🗓️ Navegación de semanas
   currentWeekStart: Date = new Date();
-  
+
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -87,7 +98,6 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
       descripcion: ['', Validators.maxLength(500)],
       fechaLimite: [new Date(), Validators.required],
       prioridad: ['media', Validators.required],
-      responsable: ['', Validators.required], // ✅ Ahora será un select
       etiquetas: [[]]
     });
 
@@ -105,7 +115,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     this.initializeWeek();
     this.loadWeekActivities();
     this.setupActivitySubscription();
-    this.loadAreaUsers(); // ✅ Cargar usuarios del área
+    this.loadAreaUsers();
   }
 
   ngOnDestroy(): void {
@@ -118,9 +128,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     try {
       const normalizedArea = this.normalizeAreaName(this.area);
       this.areaUsers = await this.registersService.getUsersByArea(normalizedArea);
-      console.log('👥 Usuarios del área cargados:', this.areaUsers.length);
     } catch (error) {
-      console.error('Error cargando usuarios del área:', error);
       this.areaUsers = [];
     }
   }
@@ -147,19 +155,24 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     }));
   }
 
-  // 📅 Inicializar semana actual
+  // 📅 Inicializar semana actual (SOLO DÍAS LABORABLES)
   private initializeWeek(): void {
-    const today = new Date();
-    const dayOfWeek = today.getDay();
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - dayOfWeek);
+    // Calcular el lunes de la semana basado en currentWeekStart
+    const monday = new Date(this.currentWeekStart);
+    const dayOfWeek = monday.getDay();
     
-    this.currentWeekStart = startOfWeek;
+    // Ajustar a lunes si no lo es
+    const daysFromMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    monday.setDate(monday.getDate() + daysFromMonday);
+
+    // Actualizar currentWeekStart al lunes calculado
+    this.currentWeekStart = new Date(monday);
     this.currentWeek = [];
-    
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
+
+    // Solo agregar días laborables (Lunes a Viernes)
+    for (let i = 0; i < 5; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
       this.currentWeek.push(date);
     }
   }
@@ -176,25 +189,83 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   // 📊 Organizar actividades por día
   private organizeActivitiesByDay(activities: AreaActivity[]): void {
     this.weekActivities = {};
-    
+
     this.currentWeek.forEach(date => {
       const dateKey = this.getDateKey(date);
       this.weekActivities[dateKey] = activities?.filter(activity => {
-        const activityDate = new Date(activity.fechaLimite);
-        return this.isSameDay(activityDate, date);
+        let activityDate: Date;
+
+        try {
+          if (activity.fechaLimite instanceof Date) {
+            activityDate = activity.fechaLimite;
+          } else if (activity.fechaLimite?.toDate) {
+            activityDate = activity.fechaLimite.toDate();
+          } else if (activity.fechaLimite?.seconds) {
+            activityDate = new Date(activity.fechaLimite.seconds * 1000);
+          } else {
+            activityDate = new Date(activity.fechaLimite);
+          }
+
+          return this.isSameDay(activityDate, date);
+
+        } catch (error) {
+          console.error('Error procesando fecha de actividad:', activity.titulo, error);
+          return false;
+        }
+      }) || [];
+    });
+  }
+
+  // 📊 Organizar actividades para vista mensual (LA FUNCIÓN QUE FALTA)
+  private organizeMonthActivities(activities: AreaActivity[]): void {
+    this.monthActivities = {};
+
+    // Generar todas las fechas del mes (de this.currentMonth)
+    const allDates: Date[] = [];
+    this.currentMonth.forEach(week => {
+      week.forEach(day => allDates.push(day));
+    });
+
+    allDates.forEach(date => {
+      const dateKey = this.getDateKey(date); // Usa la función corregida
+      this.monthActivities[dateKey] = activities?.filter(activity => {
+        let activityDate: Date;
+
+        try {
+          if (activity.fechaLimite instanceof Date) {
+            activityDate = activity.fechaLimite;
+          } else if (activity.fechaLimite?.toDate) {
+            activityDate = activity.fechaLimite.toDate();
+          } else if (activity.fechaLimite?.seconds) {
+            activityDate = new Date(activity.fechaLimite.seconds * 1000);
+          } else {
+            activityDate = new Date(activity.fechaLimite);
+          }
+
+          // Usar la misma lógica de isSameDay que ya tienes
+          return this.isSameDay(activityDate, date);
+
+        } catch (error) {
+          console.error('Error procesando fecha de actividad:', activity.titulo, error);
+          return false;
+        }
       }) || [];
     });
   }
 
   // 🗓️ Navegación de semanas
   goToPreviousWeek(): void {
-    this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
+    const newStart = new Date(this.currentWeekStart);
+    newStart.setDate(newStart.getDate() - 7);
+    this.currentWeekStart = newStart;
     this.initializeWeek();
     this.loadWeekActivities();
   }
 
   goToNextWeek(): void {
-    this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
+    const newStart = new Date(this.currentWeekStart);
+    newStart.setDate(newStart.getDate() + 7);
+    this.currentWeekStart = newStart;
     this.initializeWeek();
     this.loadWeekActivities();
   }
@@ -208,26 +279,29 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   // 📋 Cargar actividades de la semana
   private loadWeekActivities(): void {
     this.isLoading = true;
-    const normalizedArea = this.normalizeAreaName(this.area); // ✅ Normalizar área
+    const areaSlug = this.area;
+
+    // Fin de semana = Viernes (índice 4)
     const endOfWeek = new Date(this.currentWeekStart);
-    endOfWeek.setDate(this.currentWeekStart.getDate() + 6);
-    
+    endOfWeek.setDate(this.currentWeekStart.getDate() + 4);
+    endOfWeek.setHours(23, 59, 59, 999);
+
     this.areaActivitiesService.getActivitiesByAreaAndDateRange(
-      normalizedArea, // ✅ Usar área normalizada
-      this.currentWeekStart, 
+      areaSlug,
+      this.currentWeekStart,
       endOfWeek
     ).pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (activities) => {
-        this.organizeActivitiesByDay(activities);
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading activities:', error);
-        this.messageService.error('Error al cargar las actividades');
-        this.isLoading = false;
-      }
-    });
+      .subscribe({
+        next: (activities) => {
+          this.organizeActivitiesByDay(activities);
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading activities:', error);
+          this.messageService.error('Error al cargar las actividades');
+          this.isLoading = false;
+        }
+      });
   }
 
   // ➕ Crear nueva actividad
@@ -241,18 +315,23 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
 
     try {
       const formValue = this.createForm.value;
-      
-      // ✅ Buscar el nombre del usuario seleccionado
-      const selectedUser = this.areaUsers.find(u => u.uid === formValue.responsable);
-      const responsableNombre = selectedUser?.displayName || selectedUser?.nickname || selectedUser?.email || 'Sin nombre';
-      
+
+      // ✅ Obtener el usuario actual logueado
+      const currentRegister = this.registersService.getCurrentRegister();
+      if (!currentRegister) {
+        this.messageService.error('No se pudo obtener el usuario actual');
+        return;
+      }
+
+      const responsableNombre = currentRegister.displayName || currentRegister.nickname || currentRegister.email;
+
       await this.areaActivitiesService.createActivity({
         titulo: formValue.titulo,
         descripcion: formValue.descripcion,
         fechaLimite: formValue.fechaLimite,
         prioridad: formValue.prioridad,
-        responsable: formValue.responsable,
-        responsableNombre: responsableNombre, // ✅ Asignado automáticamente
+        responsable: currentRegister.uid, // ✅ UID del usuario logueado
+        responsableNombre: responsableNombre, // ✅ Nombre del usuario logueado
         estado: 'pendiente',
         etiquetas: formValue.etiquetas || []
       });
@@ -270,10 +349,21 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   // ✏️ Editar actividad
   editActivity(activity: AreaActivity): void {
     this.selectedActivity = activity;
+
+    // Convertir Timestamp a Date si es necesario
+    let fechaLimite: Date;
+    if (activity.fechaLimite?.toDate) {
+      fechaLimite = activity.fechaLimite.toDate();
+    } else if (activity.fechaLimite?.seconds) {
+      fechaLimite = new Date(activity.fechaLimite.seconds * 1000);
+    } else {
+      fechaLimite = new Date(activity.fechaLimite);
+    }
+
     this.editForm.patchValue({
       titulo: activity.titulo,
       descripcion: activity.descripcion,
-      fechaLimite: new Date(activity.fechaLimite),
+      fechaLimite: fechaLimite,
       prioridad: activity.prioridad,
       estado: activity.estado,
       notas: activity.notas || ''
@@ -333,38 +423,63 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   // 🎯 Drag & Drop
   onDrop(event: CdkDragDrop<AreaActivity[]>, targetDate: Date): void {
     if (event.previousContainer === event.container) {
+      // Reorganizar dentro del mismo día
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
+      // Mover a otro día
       const activity = event.previousContainer.data[event.previousIndex];
-      
-      this.areaActivitiesService.postponeActivity(activity.id!, targetDate)
+
+      // Ajustar la fecha al final del día
+      const newDate = new Date(targetDate);
+      newDate.setHours(23, 59, 59, 999);
+
+      this.areaActivitiesService.postponeActivity(activity.id!, newDate)
         .then(() => {
           this.messageService.success('Actividad movida correctamente');
+
+          // Actualizar la UI inmediatamente
           transferArrayItem(
             event.previousContainer.data,
             event.container.data,
             event.previousIndex,
             event.currentIndex
           );
+
+          // Recargar para sincronizar con Firestore
+          setTimeout(() => this.loadWeekActivities(), 500);
         })
         .catch(error => {
-          console.error('Error moving activity:', error);
+          console.error('Error moviendo actividad:', error);
           this.messageService.error('Error al mover la actividad');
         });
     }
   }
 
+  // 🔗 Obtener lista de IDs conectados para Drag & Drop
+  getConnectedLists(): string[] {
+    return this.currentWeek.map(date => 'drop-' + this.getDateKey(date));
+  }
+
   // 🛠️ Métodos de utilidad
   getDateKey(date: Date): string {
-    return date.toISOString().split('T')[0];
+    // Usar fecha local en lugar de ISO para evitar problemas de zona horaria
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   trackByActivityId(index: number, activity: AreaActivity): string {
     return activity.id || index.toString();
   }
 
-  trackByDate(index: number, date: Date): string {
-    return date.toISOString().split('T')[0];
+  public trackByDate = (index: number, date: Date): string => {
+    return this.getDateKey(date);
+  }
+
+  public trackByWeek = (index: number, week: Date[]): string => {
+    // Usar la primera fecha de la semana como identificador
+    return week.length > 0 ? this.getDateKey(week[0]) : index.toString();
   }
 
   private isSameDay(date1: Date, date2: Date): boolean {
@@ -415,5 +530,187 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     this.showEditModal = false;
     this.selectedActivity = null;
     this.editForm.reset();
+  }
+
+  // 🔄 MÉTODOS DE CAMBIO DE VISTA
+  setViewMode(mode: 'daily' | 'weekly' | 'monthly'): void {
+    this.viewMode = mode;
+
+    if (mode === 'daily') {
+      this.selectedDate = new Date();
+      this.loadDayActivities(this.selectedDate);
+    } else if (mode === 'weekly') {
+      this.initializeWeek();
+      this.loadWeekActivities();
+    } else if (mode === 'monthly') {
+      this.initializeMonth();
+      this.loadMonthActivities();
+    }
+  }
+
+  // 📅 Inicializar mes
+  private initializeMonth(): void {
+    const year = this.currentMonthDate.getFullYear();
+    const month = this.currentMonthDate.getMonth();
+
+    // Primer día del mes
+    const firstDay = new Date(year, month, 1);
+    // Último día del mes
+    const lastDay = new Date(year, month + 1, 0);
+
+    // Calcular el lunes de la primera semana
+    const startDayOfWeek = firstDay.getDay();
+    const daysFromMonday = startDayOfWeek === 0 ? -6 : 1 - startDayOfWeek;
+    const startDate = new Date(firstDay);
+    startDate.setDate(firstDay.getDate() + daysFromMonday);
+
+    this.currentMonth = [];
+    let currentDate = new Date(startDate);
+
+    // Generar semanas hasta cubrir todo el mes
+    while (currentDate <= lastDay || currentDate.getMonth() === month) {
+      const week: Date[] = [];
+
+      // Solo días laborables (Lunes a Viernes)
+      for (let i = 0; i < 5; i++) {
+        week.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      this.currentMonth.push(week);
+
+      // Saltar el fin de semana
+      currentDate.setDate(currentDate.getDate() + 2);
+
+      // Salir si ya pasamos el mes
+      if (currentDate.getMonth() !== month && week[week.length - 1].getMonth() !== month) {
+        break;
+      }
+    }
+  }
+
+  // 📋 Cargar actividades del mes
+  private loadMonthActivities(): void {
+    this.isLoading = true;
+    const areaSlug = this.area;
+
+    if (this.currentMonth.length === 0) return;
+
+    const startDate = this.currentMonth[0][0]; // Primera fecha del mes
+    const lastWeek = this.currentMonth[this.currentMonth.length - 1];
+    const endDate = lastWeek[lastWeek.length - 1]; // Última fecha del mes
+
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    this.areaActivitiesService.getActivitiesByAreaAndDateRange(
+      areaSlug,
+      startDate,
+      end
+    ).pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (activities) => {
+          this.organizeMonthActivities(activities); // ✅ CAMBIADO
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading month activities:', error);
+          this.messageService.error('Error al cargar las actividades del mes');
+          this.isLoading = false;
+        }
+      });
+  }
+
+  // 📅 Cargar actividades de un día específico
+  private loadDayActivities(date: Date): void {
+    this.isLoading = true;
+    const areaSlug = this.area;
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    this.areaActivitiesService.getActivitiesByAreaAndDateRange(
+      areaSlug,
+      startOfDay,
+      endOfDay
+    ).pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (activities) => {
+          this.weekActivities = {};
+          const dateKey = this.getDateKey(date);
+          this.weekActivities[dateKey] = activities;
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading day activities:', error);
+          this.messageService.error('Error al cargar las actividades del día');
+          this.isLoading = false;
+        }
+      });
+  }
+
+  // 🗓️ Navegación de días (para vista diaria)
+  goToPreviousDay(): void {
+    const newDate = new Date(this.selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    this.selectedDate = newDate;
+    this.loadDayActivities(this.selectedDate);
+  }
+
+  goToNextDay(): void {
+    const newDate = new Date(this.selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    this.selectedDate = newDate;
+    this.loadDayActivities(this.selectedDate);
+  }
+
+  goToToday(): void {
+    this.selectedDate = new Date();
+    this.loadDayActivities(this.selectedDate);
+  }
+
+  // 🗓️ Navegación de meses (para vista mensual)
+  goToPreviousMonth(): void {
+    const newDate = new Date(this.currentMonthDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    this.currentMonthDate = newDate;
+    this.initializeMonth();
+    this.loadMonthActivities();
+  }
+
+  goToNextMonth(): void {
+    const newDate = new Date(this.currentMonthDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    this.currentMonthDate = newDate;
+    this.initializeMonth();
+    this.loadMonthActivities();
+  }
+
+  goToCurrentMonth(): void {
+    this.currentMonthDate = new Date();
+    this.initializeMonth();
+    this.loadMonthActivities();
+  }
+
+  // 🛠️ Obtener número de actividades para una fecha (para vista mensual)
+  getActivityCount(date: Date): number {
+    const dateKey = this.getDateKey(date);
+    return this.monthActivities[dateKey]?.length || 0;
+  }
+
+  // 🛠️ Verificar si una fecha es del mes actual (para vista mensual)
+  isCurrentMonth(date: Date): boolean {
+    return date.getMonth() === this.currentMonthDate.getMonth() &&
+      date.getFullYear() === this.currentMonthDate.getFullYear();
+  }
+
+  // 🛠️ Seleccionar un día en vista mensual para ver sus actividades
+  selectDayInMonth(date: Date): void {
+    this.selectedDate = new Date(date);
+    this.viewMode = 'daily';
+    this.loadDayActivities(date);
   }
 }

@@ -1,33 +1,91 @@
+<!-- 📅 CONTENEDOR PRINCIPAL -->
 <div class="agenda-area-container">
-    <!-- 📅 Header con navegación de semanas -->
+
+    <!-- 🗓️ HEADER CON NAVEGACIÓN DE SEMANAS -->
     <nz-card class="week-navigation-card">
         <div class="week-header">
+            <!-- Navegación según el tipo de vista -->
             <div class="week-navigation">
-                <button nz-button nzType="default" nzShape="circle" (click)="goToPreviousWeek()"
-                    nzTooltipTitle="Semana anterior" nz-tooltip>
-                    <i nz-icon nzType="left"></i>
-                </button>
+                <!-- VISTA DIARIA -->
+                <ng-container *ngIf="viewMode === 'daily'">
+                    <button nz-button nzType="default" (click)="goToPreviousDay()">
+                        <i nz-icon nzType="left"></i>
+                        Anterior
+                    </button>
+                    <button nz-button nzType="default" (click)="goToToday()">
+                        <i nz-icon nzType="calendar"></i>
+                        Hoy
+                    </button>
+                    <button nz-button nzType="default" (click)="goToNextDay()">
+                        Siguiente
+                        <i nz-icon nzType="right"></i>
+                    </button>
+                </ng-container>
 
-                <div class="week-title">
-                    <h3>{{ currentWeekStart | date:'dd/MM/yyyy' }} - {{ currentWeek[6] | date:'dd/MM/yyyy' }}</h3>
-                    <span class="week-subtitle">Agenda de {{ area | titlecase }}</span>
-                </div>
+                <!-- VISTA SEMANAL -->
+                <ng-container *ngIf="viewMode === 'weekly'">
+                    <button nz-button nzType="default" (click)="goToPreviousWeek()">
+                        <i nz-icon nzType="left"></i>
+                        Anterior
+                    </button>
+                    <button nz-button nzType="default" (click)="goToCurrentWeek()">
+                        <i nz-icon nzType="calendar"></i>
+                        Hoy
+                    </button>
+                    <button nz-button nzType="default" (click)="goToNextWeek()">
+                        Siguiente
+                        <i nz-icon nzType="right"></i>
+                    </button>
+                </ng-container>
 
-                <button nz-button nzType="default" nzShape="circle" (click)="goToNextWeek()"
-                    nzTooltipTitle="Semana siguiente" nz-tooltip>
-                    <i nz-icon nzType="right"></i>
-                </button>
+                <!-- VISTA MENSUAL -->
+                <ng-container *ngIf="viewMode === 'monthly'">
+                    <button nz-button nzType="default" (click)="goToPreviousMonth()">
+                        <i nz-icon nzType="left"></i>
+                        Mes Anterior
+                    </button>
+                    <button nz-button nzType="default" (click)="goToCurrentMonth()">
+                        <i nz-icon nzType="calendar"></i>
+                        Este Mes
+                    </button>
+                    <button nz-button nzType="default" (click)="goToNextMonth()">
+                        Mes Siguiente
+                        <i nz-icon nzType="right"></i>
+                    </button>
+                </ng-container>
             </div>
 
-            <div class="week-actions">
-                <button nz-button nzType="default" (click)="goToCurrentWeek()" nzTooltipTitle="Ir a semana actual"
-                    nz-tooltip>
-                    <i nz-icon nzType="calendar"></i>
-                    Hoy
-                </button>
+            <!-- Título según el tipo de vista -->
+            <div class="week-title">
+                <h3 *ngIf="viewMode === 'daily'">{{ selectedDate | date:'dd/MM/yyyy' }}</h3>
+                <h3 *ngIf="viewMode === 'weekly'">{{ currentWeekStart | date:'dd/MM/yyyy' }} - {{ currentWeek[4] |
+                    date:'dd/MM/yyyy' }}</h3>
+                <h3 *ngIf="viewMode === 'monthly'">{{ currentMonthDate | date:'MMMM yyyy' }}</h3>
+                <span class="week-subtitle">Agenda de {{ area | uppercase }}</span>
+            </div>
 
-                <button nz-button nzType="primary" (click)="openCreateModal()" nzTooltipTitle="Crear nueva actividad"
-                    nz-tooltip>
+            <!-- Botones de cambio de vista y crear actividad -->
+            <div class="week-actions">
+                <!-- Grupo de botones de vista -->
+                <nz-button-group>
+                    <button nz-button [nzType]="viewMode === 'daily' ? 'primary' : 'default'" nz-tooltip
+                        nzTooltipTitle="Vista Diaria" (click)="setViewMode('daily')">
+                        <i nz-icon nzType="calendar" nzTheme="outline"></i>
+                        Día
+                    </button>
+                    <button nz-button [nzType]="viewMode === 'weekly' ? 'primary' : 'default'" nz-tooltip
+                        nzTooltipTitle="Vista Semanal" (click)="setViewMode('weekly')">
+                        <i nz-icon nzType="calendar" nzTheme="outline"></i>
+                        Semana
+                    </button>
+                    <button nz-button [nzType]="viewMode === 'monthly' ? 'primary' : 'default'" nz-tooltip
+                        nzTooltipTitle="Vista Mensual" (click)="setViewMode('monthly')">
+                        <i nz-icon nzType="calendar" nzTheme="outline"></i>
+                        Mes
+                    </button>
+                </nz-button-group>
+
+                <button nz-button nzType="primary" (click)="openCreateModal()">
                     <i nz-icon nzType="plus"></i>
                     Nueva Actividad
                 </button>
@@ -35,245 +93,395 @@
         </div>
     </nz-card>
 
-    <!-- 🗓️ Calendario semanal con drag & drop -->
-    <nz-spin [nzSpinning]="isLoading">
+    <!-- 🗓️ CALENDARIO SEMANAL/MENSUAL/DIARIO -->
+    <nz-spin [nzSpinning]="isLoading" nzTip="Cargando actividades...">
         <div class="calendar-container">
-            <nz-row [nzGutter]="8" class="calendar-week">
-                <nz-col [nzSpan]="24/7" *ngFor="let day of currentWeek; trackBy: trackByDate" class="calendar-day-col">
-                    <nz-card class="day-card" [ngClass]="{'today-card': isToday(day)}"
-                        [nzBodyStyle]="{ padding: '12px' }">
-                        <!-- 📅 Header del día -->
-                        <div class="day-header">
-                            <div class="day-name">{{ getDayName(day) }}</div>
-                            <div class="day-number" [ngClass]="{'today-number': isToday(day)}">
-                                {{ day | date:'dd' }}
-                            </div>
-                            <div class="day-count">
-                                <nz-tag
-                                    [nzColor]="(weekActivities[getDateKey(day)] && weekActivities[getDateKey(day)].length > 0) ? 'blue' : 'default'">
-                                    {{ weekActivities[getDateKey(day)] ? weekActivities[getDateKey(day)].length : 0 }}
-                                </nz-tag>
-                            </div>
-                        </div>
 
-                        <!-- 🎯 Drop zone para actividades -->
-                        <div class="activities-container" cdkDropList
-                            [cdkDropListData]="weekActivities[getDateKey(day)] || []"
-                            (cdkDropListDropped)="onDrop($event, day)" [id]="'day-' + getDateKey(day)">
-                            <!-- 📋 Lista de actividades del día -->
-                            <div *ngFor="let activity of weekActivities[getDateKey(day)] || []; trackBy: trackByActivityId"
-                                class="activity-item" cdkDrag [cdkDragData]="activity">
-                                <nz-card class="activity-card" [nzSize]="'small'"
-                                    [ngClass]="'activity-' + activity.estado" [nzBodyStyle]="{ padding: '8px' }">
-                                    <!-- 🏷️ Header de actividad -->
-                                    <div class="activity-header">
-                                        <nz-tag [nzColor]="getPriorityColor(activity.prioridad)" nzSize="small">
-                                            {{ activity.prioridad | titlecase }}
-                                        </nz-tag>
-                                        <nz-tag [nzColor]="getActivityStatusColor(activity.estado)" nzSize="small">
-                                            {{ activity.estado | titlecase }}
-                                        </nz-tag>
+            <!-- ========== VISTA DIARIA ========== -->
+            <div *ngIf="viewMode === 'daily'" class="daily-view">
+                <nz-row [nzGutter]="16">
+                    <nz-col [nzSpan]="24">
+                        <nz-card class="day-card today-card" [nzBodyStyle]="{ padding: '12px' }">
+
+                            <div class="day-header">
+                                <div>
+                                    <div class="day-name">{{ getDayName(selectedDate) }}</div>
+                                    <div class="day-number today-number">
+                                        {{ selectedDate | date:'d' }}
                                     </div>
-
-                                    <!-- 📝 Contenido de actividad -->
-                                    <div class="activity-content">
-                                        <div class="activity-title" nzTooltipTitle="{{ activity.titulo }}" nz-tooltip>
-                                            {{ activity.titulo }}
-                                        </div>
-
-                                        <div class="activity-description" *ngIf="activity.descripcion">
-                                            {{ activity.descripcion }}
-                                        </div>
-
-                                        <div class="activity-responsible" *ngIf="activity.responsableNombre">
-                                            <i nz-icon nzType="user"></i>
-                                            {{ activity.responsableNombre }}
-                                        </div>
-                                    </div>
-
-                                    <!-- ⚡ Acciones rápidas -->
-                                    <div class="activity-actions">
-                                        <button nz-button nzType="text" nzSize="small"
-                                            (click)="completeActivity(activity)"
-                                            *ngIf="activity.estado !== 'completada'"
-                                            nzTooltipTitle="Marcar como completada" nz-tooltip>
-                                            <i nz-icon nzType="check" nzTheme="outline"></i>
-                                        </button>
-
-                                        <button nz-button nzType="text" nzSize="small" (click)="editActivity(activity)"
-                                            nzTooltipTitle="Editar actividad" nz-tooltip>
-                                            <i nz-icon nzType="edit" nzTheme="outline"></i>
-                                        </button>
-
-                                        <button nz-button nzType="text" nzSize="small" nzDanger nz-popconfirm
-                                            nzPopconfirmTitle="¿Eliminar esta actividad?"
-                                            (nzOnConfirm)="deleteActivity(activity)" nzTooltipTitle="Eliminar actividad"
-                                            nz-tooltip>
-                                            <i nz-icon nzType="delete" nzTheme="outline"></i>
-                                        </button>
-                                    </div>
-
-                                    <!-- 🎯 Drag handle -->
-                                    <div class="drag-handle" cdkDragHandle>
-                                        <i nz-icon nzType="drag" nzTheme="outline"></i>
-                                    </div>
-                                </nz-card>
-                            </div>
-
-                            <!-- 📭 Placeholder cuando no hay actividades -->
-                            <div class="empty-day"
-                                *ngIf="!weekActivities[getDateKey(day)] || weekActivities[getDateKey(day)]?.length === 0">
-                                <div class="empty-message">
-                                    <i nz-icon nzType="plus-circle" nzTheme="outline"></i>
-                                    <span>Arrastra actividades aquí</span>
+                                </div>
+                                <div class="day-count">
+                                    <nz-badge [nzCount]="weekActivities[getDateKey(selectedDate)]?.length || 0"
+                                        [nzShowZero]="true">
+                                    </nz-badge>
                                 </div>
                             </div>
+
+                            <!-- Contenedor de actividades -->
+                            <div cdkDropList [id]="'drop-' + getDateKey(selectedDate)"
+                                [cdkDropListData]="weekActivities[getDateKey(selectedDate)] || []"
+                                (cdkDropListDropped)="onDrop($event, selectedDate)"
+                                class="activities-container activities-container-large">
+
+                                <div *ngIf="!weekActivities[getDateKey(selectedDate)]?.length" class="empty-day">
+                                    <div class="empty-message">
+                                        <i nz-icon nzType="inbox" nzTheme="outline"></i>
+                                        <span>No hay actividades para este día</span>
+                                    </div>
+                                </div>
+
+                                <!-- Lista de actividades (mismo código que la vista semanal) -->
+                                <div *ngFor="let activity of weekActivities[getDateKey(selectedDate)]; trackBy: trackByActivityId"
+                                    cdkDrag class="activity-item"
+                                    [class.activity-pendiente]="activity.estado === 'pendiente'"
+                                    [class.activity-en_progreso]="activity.estado === 'en_progreso'"
+                                    [class.activity-completada]="activity.estado === 'completada'"
+                                    [class.activity-pospuesta]="activity.estado === 'pospuesta'">
+
+                                    <nz-card [nzBodyStyle]="{ padding: '8px' }" class="activity-card">
+
+                                        <div class="drag-handle" cdkDragHandle>
+                                            <i nz-icon nzType="drag" nzTheme="outline"></i>
+                                        </div>
+
+                                        <div class="activity-header">
+                                            <nz-tag [nzColor]="getPriorityColor(activity.prioridad)" style="margin: 0;">
+                                                {{ activity.prioridad | uppercase }}
+                                            </nz-tag>
+                                            <nz-tag [nzColor]="getActivityStatusColor(activity.estado)"
+                                                style="margin: 0;">
+                                                {{ activity.estado }}
+                                            </nz-tag>
+                                        </div>
+
+                                        <div class="activity-content">
+                                            <div class="activity-title">{{ activity.titulo }}</div>
+                                            <div class="activity-description" *ngIf="activity.descripcion">
+                                                {{ activity.descripcion }}
+                                            </div>
+                                            <div class="activity-responsible">
+                                                <i nz-icon nzType="user" nzTheme="outline"></i>
+                                                {{ activity.responsableNombre }}
+                                            </div>
+                                        </div>
+
+                                        <div class="activity-actions">
+                                            <button nz-button nzType="text" nzSize="small" nz-tooltip
+                                                nzTooltipTitle="Editar" (click)="editActivity(activity)">
+                                                <i nz-icon nzType="edit" nzTheme="outline"></i>
+                                            </button>
+
+                                            <button nz-button nzType="text" nzSize="small" nz-tooltip
+                                                nzTooltipTitle="Completar" *ngIf="activity.estado !== 'completada'"
+                                                (click)="completeActivity(activity)">
+                                                <i nz-icon nzType="check-circle" nzTheme="outline"></i>
+                                            </button>
+
+                                            <button nz-button nzType="text" nzSize="small" nzDanger nz-tooltip
+                                                nzTooltipTitle="Eliminar" nz-popconfirm
+                                                nzPopconfirmTitle="¿Eliminar esta actividad?" nzOkText="Sí"
+                                                nzCancelText="No" (nzOnConfirm)="deleteActivity(activity)">
+                                                <i nz-icon nzType="delete" nzTheme="outline"></i>
+                                            </button>
+                                        </div>
+                                    </nz-card>
+
+                                    <div *cdkDragPlaceholder class="cdk-drag-placeholder">
+                                        Soltando aquí...
+                                    </div>
+                                </div>
+                            </div>
+                        </nz-card>
+                    </nz-col>
+                </nz-row>
+            </div>
+
+            <!-- ========== VISTA SEMANAL (ACTUAL) ========== -->
+            <div *ngIf="viewMode === 'weekly'">
+                <nz-row [nzGutter]="16" class="calendar-week">
+
+                    <!-- 📅 COLUMNA POR CADA DÍA -->
+                    <nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="12" [nzXl]="{ span: 24 / 7 }"
+                        *ngFor="let date of currentWeek; trackBy: trackByDate" class="calendar-day-col">
+
+                        <nz-card class="day-card" [nzBodyStyle]="{ padding: '12px' }"
+                            [class.today-card]="isToday(date)">
+
+                            <!-- 📅 HEADER DEL DÍA -->
+                            <div class="day-header">
+                                <div>
+                                    <div class="day-name">{{ getDayName(date) }}</div>
+                                    <div class="day-number" [class.today-number]="isToday(date)">
+                                        {{ date | date:'d' }}
+                                    </div>
+                                </div>
+                                <div class="day-count">
+                                    <nz-badge [nzCount]="weekActivities[getDateKey(date)]?.length || 0"
+                                        [nzShowZero]="true">
+                                    </nz-badge>
+                                </div>
+                            </div>
+
+                            <!-- 🎯 CONTENEDOR DE ACTIVIDADES CON DRAG & DROP -->
+                            <div cdkDropList [id]="'drop-' + getDateKey(date)"
+                                [cdkDropListData]="weekActivities[getDateKey(date)] || []"
+                                [cdkDropListConnectedTo]="getConnectedLists()"
+                                (cdkDropListDropped)="onDrop($event, date)" class="activities-container">
+
+                                <!-- 📭 ESTADO VACÍO -->
+                                <div *ngIf="!weekActivities[getDateKey(date)]?.length" class="empty-day">
+                                    <div class="empty-message">
+                                        <i nz-icon nzType="inbox" nzTheme="outline"></i>
+                                        <span>Arrastra actividades aquí</span>
+                                    </div>
+                                </div>
+
+                                <!-- 🎴 LISTA DE ACTIVIDADES -->
+                                <div *ngFor="let activity of weekActivities[getDateKey(date)]; trackBy: trackByActivityId"
+                                    cdkDrag class="activity-item"
+                                    [class.activity-pendiente]="activity.estado === 'pendiente'"
+                                    [class.activity-en_progreso]="activity.estado === 'en_progreso'"
+                                    [class.activity-completada]="activity.estado === 'completada'"
+                                    [class.activity-pospuesta]="activity.estado === 'pospuesta'">
+
+                                    <nz-card [nzBodyStyle]="{ padding: '8px' }" class="activity-card">
+
+                                        <!-- 🎯 DRAG HANDLE -->
+                                        <div class="drag-handle" cdkDragHandle>
+                                            <i nz-icon nzType="drag" nzTheme="outline"></i>
+                                        </div>
+
+                                        <!-- 🏷️ HEADER -->
+                                        <div class="activity-header">
+                                            <nz-tag [nzColor]="getPriorityColor(activity.prioridad)" style="margin: 0;">
+                                                {{ activity.prioridad | uppercase }}
+                                            </nz-tag>
+                                            <nz-tag [nzColor]="getActivityStatusColor(activity.estado)"
+                                                style="margin: 0;">
+                                                {{ activity.estado }}
+                                            </nz-tag>
+                                        </div>
+
+                                        <!-- 📝 CONTENIDO -->
+                                        <div class="activity-content">
+                                            <div class="activity-title">{{ activity.titulo }}</div>
+                                            <div class="activity-description" *ngIf="activity.descripcion">
+                                                {{ activity.descripcion }}
+                                            </div>
+                                            <div class="activity-responsible">
+                                                <i nz-icon nzType="user" nzTheme="outline"></i>
+                                                {{ activity.responsableNombre }}
+                                            </div>
+                                        </div>
+
+                                        <!-- ⚡ ACCIONES -->
+                                        <div class="activity-actions">
+                                            <button nz-button nzType="text" nzSize="small" nz-tooltip
+                                                nzTooltipTitle="Editar" (click)="editActivity(activity)">
+                                                <i nz-icon nzType="edit" nzTheme="outline"></i>
+                                            </button>
+
+                                            <button nz-button nzType="text" nzSize="small" nz-tooltip
+                                                nzTooltipTitle="Completar" *ngIf="activity.estado !== 'completada'"
+                                                (click)="completeActivity(activity)">
+                                                <i nz-icon nzType="check-circle" nzTheme="outline"></i>
+                                            </button>
+
+                                            <button nz-button nzType="text" nzSize="small" nzDanger nz-tooltip
+                                                nzTooltipTitle="Eliminar" nz-popconfirm
+                                                nzPopconfirmTitle="¿Eliminar esta actividad?" nzOkText="Sí"
+                                                nzCancelText="No" (nzOnConfirm)="deleteActivity(activity)">
+                                                <i nz-icon nzType="delete" nzTheme="outline"></i>
+                                            </button>
+                                        </div>
+                                    </nz-card>
+
+                                    <!-- 🎯 PLACEHOLDER PARA DRAG -->
+                                    <div *cdkDragPlaceholder class="cdk-drag-placeholder">
+                                        Soltando aquí...
+                                    </div>
+                                </div>
+                            </div>
+                        </nz-card>
+                    </nz-col>
+                </nz-row>
+            </div>
+
+            <!-- ========== VISTA MENSUAL ========== -->
+            <div *ngIf="viewMode === 'monthly'" class="monthly-view">
+                <div class="month-calendar">
+                    <!-- Header de días de la semana -->
+                    <div class="month-header">
+                        <div class="month-day-header">LUN</div>
+                        <div class="month-day-header">MAR</div>
+                        <div class="month-day-header">MIÉ</div>
+                        <div class="month-day-header">JUE</div>
+                        <div class="month-day-header">VIE</div>
+                    </div>
+
+                    <!-- Semanas del mes -->
+                    <div class="month-week" *ngFor="let week of currentMonth; trackBy: trackByWeek">
+                        <div class="month-day-cell" *ngFor="let day of week; trackBy: trackByDate"
+                            [class.today]="isToday(day)" [class.other-month]="!isCurrentMonth(day)"
+                            (click)="selectDayInMonth(day)">
+
+                            <div class="month-day-number">{{ day | date:'d' }}</div>
+
+                            <!-- Indicador de actividades -->
+                            <div class="month-day-activities" *ngIf="getActivityCount(day) > 0">
+                                <nz-badge [nzCount]="getActivityCount(day)" [nzStyle]="{ backgroundColor: '#1890ff' }">
+                                </nz-badge>
+                            </div>
+
+                            <!-- Mini preview de actividades -->
+                            <div class="month-activities-preview">
+                                <div class="month-activity-dot"
+                                    *ngFor="let activity of (monthActivities[getDateKey(day)] || []).slice(0, 3)"
+                                    [class.dot-pendiente]="activity.estado === 'pendiente'"
+                                    [class.dot-en_progreso]="activity.estado === 'en_progreso'"
+                                    [class.dot-completada]="activity.estado === 'completada'"
+                                    [class.dot-pospuesta]="activity.estado === 'pospuesta'"
+                                    [nz-tooltip]="activity.titulo">
+                                </div>
+                                <span class="month-more-activities" *ngIf="getActivityCount(day) > 3">
+                                    +{{ getActivityCount(day) - 3 }}
+                                </span>
+                            </div>
                         </div>
-                    </nz-card>
-                </nz-col>
-            </nz-row>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </nz-spin>
-
-    <!-- ➕ Modal para crear actividad -->
-    <nz-modal [(nzVisible)]="showCreateModal" nzTitle="Crear Nueva Actividad" [nzFooter]="createModalFooter"
-        (nzOnCancel)="closeCreateModal()" [nzWidth]="600">
-        <ng-container *nzModalContent>
-            <form nz-form [formGroup]="createForm" nzLayout="vertical">
-                <nz-form-item>
-                    <nz-form-label nzRequired>Título</nz-form-label>
-                    <nz-form-control nzErrorTip="El título es obligatorio">
-                        <input nz-input formControlName="titulo" placeholder="Ingrese el título de la actividad" />
-                    </nz-form-control>
-                </nz-form-item>
-
-                <nz-form-item>
-                    <nz-form-label>Descripción</nz-form-label>
-                    <nz-form-control>
-                        <textarea nz-input formControlName="descripcion" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
-                            placeholder="Descripción opcional de la actividad"></textarea>
-                    </nz-form-control>
-                </nz-form-item>
-
-                <nz-row [nzGutter]="16">
-                    <nz-col [nzSpan]="12">
-                        <nz-form-item>
-                            <nz-form-label nzRequired>Fecha Límite</nz-form-label>
-                            <nz-form-control>
-                                <nz-date-picker formControlName="fechaLimite" nzPlaceHolder="Seleccionar fecha"
-                                    style="width: 100%"></nz-date-picker>
-                            </nz-form-control>
-                        </nz-form-item>
-                    </nz-col>
-
-                    <nz-col [nzSpan]="12">
-                        <nz-form-item>
-                            <nz-form-label nzRequired>Prioridad</nz-form-label>
-                            <nz-form-control>
-                                <nz-select formControlName="prioridad" nzPlaceHolder="Seleccionar prioridad">
-                                    <nz-option nzValue="baja" nzLabel="Baja"></nz-option>
-                                    <nz-option nzValue="media" nzLabel="Media"></nz-option>
-                                    <nz-option nzValue="alta" nzLabel="Alta"></nz-option>
-                                </nz-select>
-                            </nz-form-control>
-                        </nz-form-item>
-                    </nz-col>
-                </nz-row>
-
-                <nz-form-item>
-                    <nz-form-label nzRequired>Responsable</nz-form-label>
-                    <nz-form-control nzErrorTip="Debe seleccionar un responsable">
-                        <nz-select formControlName="responsable" nzPlaceHolder="Seleccionar responsable del área"
-                            nzShowSearch>
-                            <nz-option *ngFor="let user of availableUsers" [nzValue]="user.uid" [nzLabel]="user.nombre">
-                            </nz-option>
-                        </nz-select>
-                    </nz-form-control>
-                </nz-form-item>
-            </form>
-        </ng-container>
-
-        <ng-template #createModalFooter>
-            <button nz-button nzType="default" (click)="closeCreateModal()">Cancelar</button>
-            <button nz-button nzType="primary" [nzLoading]="isLoading" (click)="createActivity()">
-                Crear Actividad
-            </button>
-        </ng-template>
-    </nz-modal>
-
-    <!-- ✏️ Modal para editar actividad -->
-    <nz-modal [(nzVisible)]="showEditModal" nzTitle="Editar Actividad" [nzFooter]="editModalFooter"
-        (nzOnCancel)="closeEditModal()" [nzWidth]="600">
-        <ng-container *nzModalContent>
-            <form nz-form [formGroup]="editForm" nzLayout="vertical" *ngIf="selectedActivity">
-                <nz-form-item>
-                    <nz-form-label nzRequired>Título</nz-form-label>
-                    <nz-form-control nzErrorTip="El título es obligatorio">
-                        <input nz-input formControlName="titulo" placeholder="Título de la actividad" />
-                    </nz-form-control>
-                </nz-form-item>
-
-                <nz-form-item>
-                    <nz-form-label>Descripción</nz-form-label>
-                    <nz-form-control>
-                        <textarea nz-input formControlName="descripcion" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
-                            placeholder="Descripción de la actividad"></textarea>
-                    </nz-form-control>
-                </nz-form-item>
-
-                <nz-row [nzGutter]="16">
-                    <nz-col [nzSpan]="8">
-                        <nz-form-item>
-                            <nz-form-label nzRequired>Fecha Límite</nz-form-label>
-                            <nz-form-control>
-                                <nz-date-picker formControlName="fechaLimite" style="width: 100%"></nz-date-picker>
-                            </nz-form-control>
-                        </nz-form-item>
-                    </nz-col>
-
-                    <nz-col [nzSpan]="8">
-                        <nz-form-item>
-                            <nz-form-label>Prioridad</nz-form-label>
-                            <nz-form-control>
-                                <nz-select formControlName="prioridad">
-                                    <nz-option nzValue="baja" nzLabel="Baja"></nz-option>
-                                    <nz-option nzValue="media" nzLabel="Media"></nz-option>
-                                    <nz-option nzValue="alta" nzLabel="Alta"></nz-option>
-                                </nz-select>
-                            </nz-form-control>
-                        </nz-form-item>
-                    </nz-col>
-
-                    <nz-col [nzSpan]="8">
-                        <nz-form-item>
-                            <nz-form-label>Estado</nz-form-label>
-                            <nz-form-control>
-                                <nz-select formControlName="estado">
-                                    <nz-option nzValue="pendiente" nzLabel="Pendiente"></nz-option>
-                                    <nz-option nzValue="en_progreso" nzLabel="En Progreso"></nz-option>
-                                    <nz-option nzValue="completada" nzLabel="Completada"></nz-option>
-                                    <nz-option nzValue="pospuesta" nzLabel="Pospuesta"></nz-option>
-                                </nz-select>
-                            </nz-form-control>
-                        </nz-form-item>
-                    </nz-col>
-                </nz-row>
-
-                <nz-form-item>
-                    <nz-form-label>Notas</nz-form-label>
-                    <nz-form-control>
-                        <textarea nz-input formControlName="notas" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
-                            placeholder="Notas adicionales"></textarea>
-                    </nz-form-control>
-                </nz-form-item>
-            </form>
-        </ng-container>
-
-        <ng-template #editModalFooter>
-            <button nz-button nzType="default" (click)="closeEditModal()">Cancelar</button>
-            <button nz-button nzType="primary" [nzLoading]="isLoading" (click)="saveEditActivity()">
-                Guardar Cambios
-            </button>
-        </ng-template>
-    </nz-modal>
 </div>
+
+<!-- 🎭 MODAL CREAR ACTIVIDAD -->
+<nz-modal [(nzVisible)]="showCreateModal" nzTitle="Nueva Actividad" nzWidth="600px" (nzOnCancel)="closeCreateModal()"
+    (nzOnOk)="createActivity()">
+
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="createForm" nzLayout="vertical">
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Título</nz-form-label>
+                <nz-form-control nzErrorTip="Por favor ingresa un título">
+                    <input nz-input formControlName="titulo" placeholder="Título de la actividad" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label>Descripción</nz-form-label>
+                <nz-form-control>
+                    <textarea nz-input formControlName="descripcion" placeholder="Descripción detallada"
+                        [nzAutosize]="{ minRows: 3, maxRows: 6 }">
+          </textarea>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>
+                    Fecha límite
+                    <nz-tooltip
+                        nzTooltipTitle="La actividad aparecerá en esta fecha del calendario y debe completarse ese día">
+                        <i nz-icon nzType="question-circle" nzTheme="outline"
+                            style="margin-left: 4px; color: #8c8c8c;"></i>
+                    </nz-tooltip>
+                </nz-form-label>
+                <nz-form-control nzExtra="La tarea aparecerá en esta fecha del calendario">
+                    <nz-date-picker formControlName="fechaLimite" nzFormat="dd/MM/yyyy"
+                        nzPlaceHolder="Selecciona la fecha de vencimiento" style="width: 100%;">
+                    </nz-date-picker>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Prioridad</nz-form-label>
+                <nz-form-control>
+                    <nz-select formControlName="prioridad">
+                        <nz-option nzValue="baja" nzLabel="Baja"></nz-option>
+                        <nz-option nzValue="media" nzLabel="Media"></nz-option>
+                        <nz-option nzValue="alta" nzLabel="Alta"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+
+    <div *nzModalFooter>
+        <button nz-button nzType="default" (click)="closeCreateModal()">Cancelar</button>
+        <button nz-button nzType="primary" (click)="createActivity()" [nzLoading]="isLoading">
+            Crear
+        </button>
+    </div>
+</nz-modal>
+
+<!-- 🎭 MODAL EDITAR ACTIVIDAD -->
+<nz-modal [(nzVisible)]="showEditModal" nzTitle="Editar Actividad" nzWidth="600px" (nzOnCancel)="closeEditModal()"
+    (nzOnOk)="saveEditActivity()">
+
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="editForm" nzLayout="vertical">
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Título</nz-form-label>
+                <nz-form-control nzErrorTip="Por favor ingresa un título">
+                    <input nz-input formControlName="titulo" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label>Descripción</nz-form-label>
+                <nz-form-control>
+                    <textarea nz-input formControlName="descripcion" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Fecha límite</nz-form-label>
+                <nz-form-control>
+                    <nz-date-picker formControlName="fechaLimite" nzFormat="dd/MM/yyyy" style="width: 100%;">
+                    </nz-date-picker>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Estado</nz-form-label>
+                <nz-form-control>
+                    <nz-select formControlName="estado">
+                        <nz-option nzValue="pendiente" nzLabel="Pendiente"></nz-option>
+                        <nz-option nzValue="en_progreso" nzLabel="En Progreso"></nz-option>
+                        <nz-option nzValue="completada" nzLabel="Completada"></nz-option>
+                        <nz-option nzValue="pospuesta" nzLabel="Pospuesta"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Prioridad</nz-form-label>
+                <nz-form-control>
+                    <nz-select formControlName="prioridad">
+                        <nz-option nzValue="baja" nzLabel="Baja"></nz-option>
+                        <nz-option nzValue="media" nzLabel="Media"></nz-option>
+                        <nz-option nzValue="alta" nzLabel="Alta"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label>Notas</nz-form-label>
+                <nz-form-control>
+                    <textarea nz-input formControlName="notas" placeholder="Notas adicionales"
+                        [nzAutosize]="{ minRows: 2, maxRows: 4 }"></textarea>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+
+    <div *nzModalFooter>
+        <button nz-button nzType="default" (click)="closeEditModal()">Cancelar</button>
+        <button nz-button nzType="primary" (click)="saveEditActivity()" [nzLoading]="isLoading">
+            Guardar
+        </button>
+    </div>
+</nz-modal>

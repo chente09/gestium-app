@@ -1,209 +1,258 @@
-/* 🎨 ESTILOS DEL COMPONENTE AGENDA POR ÁREA */
+/* 🎨 ESTILOS COMPACTOS OPTIMIZADOS PARA AGENDA POR ÁREA */
 
 .agenda-area-container {
     width: 100%;
-    min-height: 600px;
+    min-height: 500px;
     background: #f8f9fa;
     border-radius: 8px;
-    padding: 16px;
+    padding: 12px;
 }
 
-/* 📅 Header de navegación de semanas */
+/* 📅 Header de navegación de semanas - COMPACTO */
 .week-navigation-card {
-    margin-bottom: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .week-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0;
+    padding: 6px 0;
+    gap: 12px;
 }
 
 .week-navigation {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 8px;
+}
+
+.week-navigation button {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
 }
 
 .week-title {
     text-align: center;
+    flex: 1;
 }
 
 .week-title h3 {
     margin: 0;
     color: #001529;
     font-weight: 600;
+    font-size: 15px;
 }
 
 .week-subtitle {
     color: #8c8c8c;
-    font-size: 14px;
+    font-size: 12px;
+    margin-top: 2px;
 }
 
 .week-actions {
     display: flex;
     gap: 8px;
+    align-items: center;
 }
 
-/* 🗓️ Contenedor del calendario */
+.week-actions button {
+    height: 32px;
+    font-size: 13px;
+}
+
+.week-actions nz-button-group {
+    margin-right: 8px;
+}
+
+.week-actions nz-button-group button {
+    font-size: 12px;
+    padding: 0 8px;
+}
+
+/* 🗓️ Contenedor del calendario - OPTIMIZADO */
 .calendar-container {
     background: white;
     border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    min-height: 500px;
+    padding: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    min-height: 450px;
 }
 
 .calendar-week {
     height: 100%;
+    margin: 0 -6px;
 }
 
 .calendar-day-col {
     height: 100%;
+    padding: 0 6px !important;
 }
 
-/* 📅 Tarjetas de días */
+/* 📅 Tarjetas de días - ALTURA REDUCIDA */
 .day-card {
-    height: 500px;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
+    height: 420px;
+    transition: all 0.2s ease;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
     position: relative;
 }
 
 .day-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: #d9d9d9;
 }
 
 .today-card {
     border-color: #1890ff;
-    background: linear-gradient(135deg, #e6f7ff 0%, #fff 100%);
+    background: linear-gradient(180deg, #e6f7ff 0%, #fff 15%);
+    border-width: 2px;
 }
 
-/* 📅 Header del día */
+/* 📅 Header del día - MÁS COMPACTO */
 .day-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
     border-bottom: 1px solid #f0f0f0;
 }
 
 .day-name {
     font-weight: 600;
-    font-size: 12px;
+    font-size: 11px;
     color: #666;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .day-number {
     font-weight: bold;
-    font-size: 18px;
+    font-size: 16px;
     color: #333;
+    margin-top: 2px;
 }
 
 .today-number {
     color: #1890ff;
     background: #e6f7ff;
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 14px;
 }
 
 .day-count {
-    font-size: 12px;
+    font-size: 11px;
 }
 
-/* 🎯 Contenedor de actividades con drag & drop */
+/* 🎯 Contenedor de actividades - ALTURA OPTIMIZADA */
 .activities-container {
-    min-height: 400px;
-    max-height: 400px;
+    min-height: 350px;
+    max-height: 350px;
     overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
-    border: 2px dashed transparent;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    padding: 4px;
+    border: 1px dashed transparent;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    padding: 2px;
 }
 
 .activities-container:hover {
     border-color: #d9d9d9;
+    background: #fafafa;
 }
 
 .activities-container.cdk-drop-list-dragging {
     border-color: #1890ff;
     background: #f6ffed;
+    border-style: solid;
 }
 
-/* 📋 Items de actividades */
+/* 📋 Items de actividades - ESPACIADO REDUCIDO */
 .activity-item {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     position: relative;
     cursor: move;
 }
 
 .activity-item.cdk-drag-dragging {
-    opacity: 0.8;
-    transform: rotate(5deg);
+    opacity: 0.7;
+    cursor: grabbing !important;
     z-index: 1000;
 }
 
 .activity-card {
-    transition: all 0.3s ease;
-    border-left: 4px solid #d9d9d9;
+    transition: all 0.2s ease;
+    border-left: 3px solid #d9d9d9;
     position: relative;
+    cursor: grab;
+}
+
+.activity-card:active {
+    cursor: grabbing;
 }
 
 .activity-card:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
 }
 
-/* 🎨 Estados de actividades */
+/* 🎨 Estados de actividades - COLORES MÁS SUTILES */
 .activity-pendiente .activity-card {
     border-left-color: #fa8c16;
-    background: #fff7e6;
+    background: linear-gradient(90deg, #fff7e6 0%, #fff 8%);
 }
 
 .activity-en_progreso .activity-card {
     border-left-color: #1890ff;
-    background: #e6f7ff;
+    background: linear-gradient(90deg, #e6f7ff 0%, #fff 8%);
 }
 
 .activity-completada .activity-card {
     border-left-color: #52c41a;
-    background: #f6ffed;
+    background: linear-gradient(90deg, #f6ffed 0%, #fff 8%);
+    opacity: 0.85;
 }
 
 .activity-pospuesta .activity-card {
     border-left-color: #ff4d4f;
-    background: #fff1f0;
+    background: linear-gradient(90deg, #fff1f0 0%, #fff 8%);
 }
 
-/* 🏷️ Header de actividad */
+/* 🏷️ Header de actividad - COMPACTO */
 .activity-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     gap: 4px;
 }
 
-/* 📝 Contenido de actividad */
+.activity-header nz-tag {
+    font-size: 10px;
+    padding: 0 4px;
+    height: 18px;
+    line-height: 18px;
+}
+
+/* 📝 Contenido de actividad - TAMAÑOS REDUCIDOS */
 .activity-content {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .activity-title {
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     color: #333;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -216,13 +265,13 @@
 .activity-description {
     font-size: 11px;
     color: #666;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
 }
 
@@ -231,16 +280,23 @@
     color: #999;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
 }
 
-/* ⚡ Acciones de actividad */
+.activity-responsible i {
+    font-size: 10px;
+}
+
+/* ⚡ Acciones de actividad - MÁS COMPACTAS */
 .activity-actions {
     display: flex;
     justify-content: flex-end;
     gap: 2px;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid #f0f0f0;
 }
 
 .activity-item:hover .activity-actions {
@@ -248,25 +304,38 @@
 }
 
 .activity-actions button {
-    padding: 2px 4px;
-    height: auto;
+    padding: 0 4px;
+    height: 22px;
+    font-size: 12px;
+    min-width: auto;
+}
+
+.activity-actions button i {
     font-size: 12px;
 }
 
-/* 🎯 Handle de drag */
+/* 🎯 Handle de drag - MÁS VISIBLE */
 .drag-handle {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    color: #d9d9d9;
+    top: 6px;
+    right: 6px;
+    color: #bfbfbf;
     cursor: grab;
     padding: 2px;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: all 0.2s ease;
+    z-index: 10;
+    background: white;
+    border-radius: 3px;
 }
 
 .activity-item:hover .drag-handle {
     opacity: 1;
+    color: #8c8c8c;
+}
+
+.drag-handle:hover {
+    color: #1890ff;
 }
 
 .drag-handle:active {
@@ -281,10 +350,10 @@
     justify-content: center;
     color: #bfbfbf;
     text-align: center;
-    border: 2px dashed #e8e8e8;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    min-height: 100px;
+    border: 1px dashed #e8e8e8;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    min-height: 80px;
 }
 
 .empty-day:hover {
@@ -296,77 +365,87 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .empty-message i {
-    font-size: 24px;
+    font-size: 20px;
 }
 
 .empty-message span {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
 }
 
 /* 🎯 Efectos de drag & drop */
 .cdk-drag-preview {
     box-sizing: border-box;
-    border-radius: 6px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     background: white;
-    max-width: 200px;
+    max-width: 180px;
+    opacity: 0.9;
 }
 
 .cdk-drag-placeholder {
-    opacity: 0.5;
+    opacity: 0.4;
     background: #f0f0f0;
     border: 2px dashed #d9d9d9;
-    border-radius: 6px;
-    height: 60px;
+    border-radius: 4px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #999;
-    font-size: 12px;
+    font-size: 11px;
 }
 
 .cdk-drop-list-dragging .cdk-drag {
-    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 .cdk-drag-animating {
-    transition: transform 300ms cubic-bezier(0, 0, 0.2, 1);
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-/* 📱 Responsive Design */
-@media (max-width: 1200px) {
+/* 📱 Responsive Design - OPTIMIZADO PARA 5 DÍAS LABORABLES */
+@media (min-width: 1200px) {
+
+    /* Pantallas medianas/grandes: 5 días laborables visibles (20% cada uno) */
     .calendar-day-col {
-        margin-bottom: 16px;
+        flex: 0 0 20%;
+        max-width: 20%;
+    }
+}
+
+@media (max-width: 1199px) {
+    .calendar-day-col {
+        margin-bottom: 12px;
     }
 
     .day-card {
         height: auto;
-        min-height: 300px;
+        min-height: 250px;
     }
 
     .activities-container {
-        max-height: 250px;
+        max-height: 200px;
+        min-height: 200px;
     }
 }
 
 @media (max-width: 768px) {
     .week-header {
         flex-direction: column;
-        gap: 16px;
-    }
-
-    .week-navigation {
-        flex-direction: column;
         gap: 8px;
     }
 
+    .week-navigation {
+        width: 100%;
+        justify-content: center;
+    }
+
     .week-actions {
-        flex-direction: column;
         width: 100%;
     }
 
@@ -389,14 +468,15 @@
 
     .activities-container {
         max-height: 150px;
+        min-height: 150px;
     }
 }
 
-/* 🎨 Mejoras de animaciones */
+/* 🎨 Animaciones sutiles */
 @keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-5px);
     }
 
     to {
@@ -406,7 +486,7 @@
 }
 
 .activity-item {
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn 0.2s ease-out;
 }
 
 /* 🔍 Scrollbar personalizado */
@@ -415,21 +495,217 @@
 }
 
 .activities-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #f5f5f5;
     border-radius: 2px;
 }
 
 .activities-container::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: #d9d9d9;
     border-radius: 2px;
 }
 
 .activities-container::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: #bfbfbf;
 }
 
 /* 🎯 Estados de carga */
-.calendar-container[nz-spinning="true"] {
-    opacity: 0.7;
-    pointer-events: none;
+nz-spin {
+    width: 100%;
+}
+
+/* ========== VISTA DIARIA ========== */
+.daily-view {
+    width: 100%;
+}
+
+.daily-view .day-card {
+    height: auto;
+    min-height: 600px;
+}
+
+.activities-container-large {
+    min-height: 550px;
+    max-height: 550px;
+}
+
+/* ========== VISTA MENSUAL ========== */
+.monthly-view {
+    width: 100%;
+}
+
+.month-calendar {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e8e8e8;
+}
+
+.month-header {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    background: #fafafa;
+    border-bottom: 2px solid #e8e8e8;
+}
+
+.month-day-header {
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.month-week {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.month-week:last-child {
+    border-bottom: none;
+}
+
+.month-day-cell {
+    min-height: 120px;
+    padding: 8px;
+    border-right: 1px solid #e8e8e8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    background: white;
+}
+
+.month-day-cell:last-child {
+    border-right: none;
+}
+
+.month-day-cell:hover {
+    background: #f5f5f5;
+    transform: scale(1.02);
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.month-day-cell.today {
+    background: #e6f7ff;
+    border: 2px solid #1890ff;
+}
+
+.month-day-cell.today:hover {
+    background: #d6f0ff;
+}
+
+.month-day-cell.other-month {
+    background: #fafafa;
+    opacity: 0.5;
+}
+
+.month-day-cell.other-month .month-day-number {
+    color: #bfbfbf;
+}
+
+.month-day-number {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.month-day-activities {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.month-activities-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.month-activity-dot {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.month-activity-dot:hover {
+    height: 8px;
+}
+
+.dot-pendiente {
+    background: #fa8c16;
+}
+
+.dot-en_progreso {
+    background: #1890ff;
+}
+
+.dot-completada {
+    background: #52c41a;
+}
+
+.dot-pospuesta {
+    background: #ff4d4f;
+}
+
+.month-more-activities {
+    font-size: 10px;
+    color: #8c8c8c;
+    text-align: center;
+    margin-top: 2px;
+}
+
+/* 📱 Responsive para vista mensual */
+@media (max-width: 1199px) {
+    .month-day-cell {
+        min-height: 100px;
+        padding: 6px;
+    }
+
+    .month-day-number {
+        font-size: 14px;
+    }
+
+    .month-activity-dot {
+        height: 4px;
+    }
+}
+
+@media (max-width: 768px) {
+    .month-day-cell {
+        min-height: 80px;
+        padding: 4px;
+    }
+
+    .month-day-number {
+        font-size: 12px;
+    }
+
+    .month-day-header {
+        padding: 8px 4px;
+        font-size: 10px;
+    }
+
+    .week-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .week-actions nz-button-group {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 8px;
+    }
+
+    .week-actions nz-button-group button {
+        flex: 1;
+    }
 }

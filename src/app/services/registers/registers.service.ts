@@ -35,6 +35,7 @@ export interface Register {
 export interface AreaOficina {
   id?: string;
   nombre: string;
+  slug: string;
   descripcion?: string;
   fechaCreacion: Date;
   activo: boolean;
@@ -375,8 +376,11 @@ export class RegistersService {
         throw new Error('Ya existe un área con este nombre');
       }
 
+      const slug = this.generateSlug(nombre);
+
       const newArea: Omit<AreaOficina, 'id'> = {
         nombre: nombre.trim(),
+        slug: slug,
         descripcion: descripcion?.trim() || '',
         fechaCreacion: new Date(),
         activo: true
@@ -385,13 +389,25 @@ export class RegistersService {
       const areasRef = collection(this.firestore, 'areasOficina');
       const docRef = await addDoc(areasRef, newArea);
 
-      console.log('✅ Área creada:', nombre);
+      console.log('✅ Área creada:', nombre, 'con slug:', slug);
       return docRef.id;
 
     } catch (error) {
       console.error('❌ Error creando área:', error);
       throw error;
     }
+  }
+
+  // ✅ NUEVO: Método para generar slug
+  private generateSlug(nombre: string): string {
+    return nombre
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')           // Reemplazar espacios con guiones
+      .replace(/[^\w\-]+/g, '')       // Eliminar caracteres especiales
+      .replace(/\-\-+/g, '-')         // Reemplazar múltiples guiones con uno solo
+      .replace(/^-+/, '')             // Eliminar guiones al inicio
+      .replace(/-+$/, '');            // Eliminar guiones al final
   }
 
   // ✏️ Actualizar área

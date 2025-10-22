@@ -43,9 +43,8 @@ export class AppComponent implements OnInit {
     { title: 'ISSFA', route: '/area/issfa' },
     { title: 'Bco. Pichincha', route: '/area/pichincha' },
     { title: 'Bco. Produbanco', route: '/area/produbanco' },
-    { title: 'BNF', route: '/area/bnf' },
     { title: 'Inmobiliaria', route: '/area/inmobiliaria' },
-    { title: 'David', route: '/area/david' }
+    { title: 'IESS', route: '/area/iess' }
   ];
 
   constructor(

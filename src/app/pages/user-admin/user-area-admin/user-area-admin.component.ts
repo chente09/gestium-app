@@ -385,7 +385,7 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   getAreaColor(area: string): string {
     const colors: { [key: string]: string } = {
       'ISSFA': 'blue',
-      'Pichincha': 'green',
+      ' Pichincha': 'green',
       'Bco. Produbanco': 'orange',
       'BNF': 'purple',
       'Inmobiliaria': 'cyan',

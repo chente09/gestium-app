@@ -134,8 +134,8 @@ export class AreaDetailComponentComponent implements OnInit {
   private normalizeAreaName(area: string): string {
     const areaMapping: { [key: string]: string } = {
       'issfa': 'ISSFA',
-      'produbanco': 'Bco. Produbanco', 
-      'pichincha': 'Bco. Pichincha',
+      'produbanco': 'Produbanco', 
+      'pichincha': 'Pichincha',
       'inmobiliaria': 'INMOBILIARIA',
       'iess': 'IESS',
       'tramites': 'TRAMITES',

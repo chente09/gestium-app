@@ -151,8 +151,8 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   private normalizeAreaName(areaId: string): string {
     const areaMapping: { [key: string]: string } = {
       'issfa': 'ISSFA',
-      'produbanco': 'Bco. Produbanco',
-      'pichincha': 'Bco. Pichincha',
+      'produbanco': 'Produbanco',
+      'pichincha': 'Pichincha',
       'inmobiliaria': 'Inmobiliaria',
       'bnf': 'BNF',
       'david': 'David',

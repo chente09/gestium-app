@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Firestore, addDoc, collection, collectionData, doc, updateDoc, deleteDoc, query, where, orderBy } from '@angular/fire/firestore';
-import { Observable, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { from, Observable, of, throwError } from 'rxjs';
+import { map, catchError, switchMap } from 'rxjs/operators';
 import { RegistersService } from '../registers/registers.service';
 import { UsersService } from '../users/users.service';
 
@@ -42,7 +42,7 @@ export class AreaActivitiesService {
   /**
    * 🔐 Valida que el usuario tenga permiso para acceder al área solicitada
    */
-  private validateAreaAccess(areaSlug: string): void {
+  private async validateAreaAccess(areaSlug: string): Promise<boolean> {
     const currentRegister = this.registersService.getCurrentRegister();
     
     if (!currentRegister) {
@@ -55,7 +55,7 @@ export class AreaActivitiesService {
 
     // ✅ Los admins pueden acceder a cualquier área
     if (currentRegister.role === 'admin') {
-      return; // Permitir
+      return true; // Permitir
     }
 
     // ✅ Verificar que el usuario tenga área asignada
@@ -63,8 +63,8 @@ export class AreaActivitiesService {
       throw new Error('⛔ No tiene un área asignada. Contacte al administrador.');
     }
 
-    // ✅ Obtener el slug del área del usuario
-    const userAreaSlug = this.convertToSlug(currentRegister.areaAsignada);
+    // ✅ CAMBIO 2: Usar la función asíncrona que consulta la BD
+    const userAreaSlug = await this.getAreaSlugByName(currentRegister.areaAsignada);
 
     // ✅ VALIDACIÓN CRÍTICA: Verificar que coincidan
     if (userAreaSlug !== areaSlug) {
@@ -75,24 +75,11 @@ export class AreaActivitiesService {
       
       throw new Error('🚫 ACCESO DENEGADO: No tiene permisos para ver actividades de esta área.');
     }
+
+    return true; // ✅ Acceso permitido
   }
 
-  /**
-   * 🔧 Convierte nombre de área a slug (helper local)
-   */
-  private convertToSlug(nombre: string): string {
-    const mapping: { [key: string]: string } = {
-      'ISSFA': 'issfa',
-      'Bco. Produbanco': 'produbanco',
-      'Bco. Pichincha': 'pichincha',
-      'Inmobiliaria': 'inmobiliaria',
-      'BNF': 'bnf',
-      'David': 'david',
-      'IESS': 'iess'
-    };
-    
-    return mapping[nombre] || nombre.toLowerCase().replace(/\s+/g, '-').replace(/\./g, '');
-  }
+
 
   /**
    * 🔐 Valida que el usuario pueda modificar una actividad
@@ -179,32 +166,37 @@ export class AreaActivitiesService {
    * ⚠️ INCLUYE VALIDACIÓN DE PERMISOS
    */
   getActivitiesByAreaAndDateRange(area: string, startDate: Date, endDate: Date): Observable<AreaActivity[]> {
-    try {
-      // 🔒 VALIDACIÓN: El usuario puede acceder a este área?
-      this.validateAreaAccess(area);
-      
-      const activitiesRef = collection(this.firestore, this.collectionName);
-      const q = query(
-        activitiesRef,
-        where('area', '==', area),
-        where('fechaLimite', '>=', startDate),
-        where('fechaLimite', '<=', endDate),
-        orderBy('fechaLimite', 'asc')
-      );
+    
+    // ✅ REFACTORIZACIÓN:
+    // 1. Convertimos la promesa de validación (que ahora es async) en un Observable
+    return from(this.validateAreaAccess(area)).pipe(
+      switchMap(hasAccess => {
+        // 2. Si la validación (promesa) se resuelve, 'hasAccess' será true
+        if (hasAccess) {
+          // 3. Ejecutamos la consulta a Firestore (esto es tu código original)
+          const activitiesRef = collection(this.firestore, this.collectionName);
+          const q = query(
+            activitiesRef,
+            where('area', '==', area),
+            where('fechaLimite', '>=', startDate),
+            where('fechaLimite', '<=', endDate),
+            orderBy('fechaLimite', 'asc')
+          );
 
-      return collectionData(q, { idField: 'id' }).pipe(
-        map(activities => activities as AreaActivity[]),
-        catchError(error => {
-          console.error('❌ Error obteniendo actividades:', error);
-          return throwError(() => new Error('Error al cargar las actividades'));
-        })
-      );
-      
-    } catch (error: any) {
-      // Si la validación falla, retornar Observable vacío con error
-      console.error('🚫 Acceso denegado:', error.message);
-      return throwError(() => error);
-    }
+          return collectionData(q, { idField: 'id' }).pipe(
+            map(activities => activities as AreaActivity[]),
+          );
+        }
+        // Si no tiene acceso (aunque la validación lanzará error antes)
+        return of([]); 
+      }),
+      catchError(error => {
+        // 4. Si 'validateAreaAccess' lanza un error (ej. ACCESO DENEGADO),
+        // este 'catchError' lo capturará y lo enviará al componente.
+        console.error('🚫 Acceso denegado o error:', error.message);
+        return throwError(() => error);
+      })
+    );
   }
 
   /**

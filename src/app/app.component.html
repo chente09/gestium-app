@@ -32,17 +32,6 @@
           </li>
         </ul>
       </li>
-      <!-- ✅ NUEVO: Menú de Administración (solo para admins) -->
-      <li nz-submenu nzOpen nzTitle="Administración" nzIcon="setting" *ngIf="isAdmin()">
-        <ul>
-          <li nz-menu-item>
-            <a routerLink="/admin/users">
-              <nz-icon nzType="team"></nz-icon>
-              <span>Gestión de Usuarios</span>
-            </a>
-          </li>
-        </ul>
-      </li>
     </ul>
   </nz-sider>
 

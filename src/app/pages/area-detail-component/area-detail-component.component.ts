@@ -136,9 +136,10 @@ export class AreaDetailComponentComponent implements OnInit {
       'issfa': 'ISSFA',
       'produbanco': 'Bco. Produbanco', 
       'pichincha': 'Bco. Pichincha',
-      'inmobiliaria': 'Inmobiliaria',
-      'bnf': 'BNF',
-      'david': 'David'
+      'inmobiliaria': 'INMOBILIARIA',
+      'iess': 'IESS',
+      'tramites': 'TRAMITES',
+      'cooprogreso': 'COOPROGRESO'
     };
 
     return areaMapping[area.toLowerCase()] || area;

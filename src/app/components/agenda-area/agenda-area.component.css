@@ -709,3 +709,486 @@ nz-spin {
         flex: 1;
     }
 }
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ========================================
+   🔍 ESTILOS PARA BARRA DE BÚSQUEDA
+   ======================================== */
+
+.search-container {
+    flex: 1;
+    max-width: 400px;
+    margin: 0 16px;
+}
+
+.search-container nz-input-group {
+    width: 100%;
+}
+
+.search-suffix {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-count {
+    font-size: 11px;
+    color: #1890ff;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.search-clear-icon {
+    cursor: pointer;
+    color: #bfbfbf;
+    transition: color 0.3s ease;
+    font-size: 14px;
+}
+
+.search-clear-icon:hover {
+    color: #ff4d4f;
+}
+
+/* Animación para resultados de búsqueda */
+.search-highlight {
+    animation: highlightPulse 0.6s ease-in-out;
+}
+
+@keyframes highlightPulse {
+
+    0%,
+    100% {
+        background-color: transparent;
+    }
+
+    50% {
+        background-color: #fff7e6;
+    }
+}
+
+/* Responsive para búsqueda */
+@media (max-width: 768px) {
+    .search-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 8px 0;
+        order: 3;
+    }
+
+    .week-header {
+        flex-wrap: wrap;
+    }
+}
+
+/* ========================================
+   👁️ ESTILOS PARA MODAL DE VISTA PREVIA
+   ======================================== */
+
+.view-modal-content {
+    padding: 8px 0;
+}
+
+.view-header {
+    margin-bottom: 16px;
+}
+
+.view-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #001529;
+    margin: 0 0 12px 0;
+    line-height: 1.3;
+}
+
+.view-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.view-badge {
+    font-size: 13px;
+    padding: 4px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.view-badge i {
+    font-size: 14px;
+}
+
+/* Grid de información */
+.view-info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.view-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.view-info-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8c8c8c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.view-info-label i {
+    font-size: 14px;
+    color: #1890ff;
+}
+
+.view-info-value {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+    padding-left: 20px;
+    word-wrap: break-word;
+}
+
+/* Footer del modal */
+.view-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 12px;
+}
+
+.view-modal-actions-left {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.view-modal-actions-right {
+    display: flex;
+    gap: 8px;
+}
+
+/* Responsive para modal */
+@media (max-width: 768px) {
+    .view-title {
+        font-size: 20px;
+    }
+
+    .view-modal-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .view-modal-actions-left,
+    .view-modal-actions-right {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .view-modal-actions-left button,
+    .view-modal-actions-right button {
+        flex: 1;
+    }
+
+    .view-info-value {
+        padding-left: 0;
+    }
+}
+
+/* ========================================
+   ✨ MEJORAS A TARJETAS PARA CLICK
+   ======================================== */
+
+/* Hacer toda la tarjeta clickeable para ver detalles */
+.activity-card {
+    cursor: pointer;
+    position: relative;
+}
+
+/* Evitar que los botones de acción activen el click de la tarjeta */
+.activity-actions {
+    position: relative;
+    z-index: 10;
+}
+
+.activity-actions button {
+    pointer-events: all;
+}
+
+/* Efecto hover mejorado para indicar que es clickeable */
+.activity-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+/* Indicador visual de que la tarjeta es clickeable */
+.activity-card::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: rgba(24, 144, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.activity-card:hover::after {
+    opacity: 1;
+}
+
+/* Estado de "sin resultados" para búsqueda */
+.no-search-results {
+    padding: 40px 20px;
+    text-align: center;
+    color: #8c8c8c;
+}
+
+.no-search-results i {
+    font-size: 48px;
+    color: #d9d9d9;
+    margin-bottom: 16px;
+}
+
+.no-search-results h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #595959;
+    margin: 0 0 8px 0;
+}
+
+.no-search-results p {
+    font-size: 14px;
+    color: #8c8c8c;
+    margin: 0;
+}
+
+/* ========================================
+   🎨 ANIMACIONES ADICIONALES
+   ======================================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.view-modal-content {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Transición suave para badges */
+.view-badge {
+    transition: all 0.2s ease;
+}
+
+.view-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   AGREGAR AL CSS (agenda-area.component.css)
+   ============================================ */
+
+/* Barra de búsqueda separada */
+.search-bar-section {
+    margin-bottom: 16px;
+}
+
+.search-input-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.search-input-wrapper nz-input-group {
+    flex: 1;
+}
+
+.search-button {
+    min-width: 120px;
+    height: 40px;
+    font-weight: 600;
+}
+
+.search-bar-section .ant-input-affix-wrapper {
+    border-radius: 8px;
+}
+
+.search-bar-section input {
+    font-size: 14px;
+}
+
+/* Responsive para barra de búsqueda */
+@media (max-width: 768px) {
+    .search-input-wrapper {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .search-button {
+        width: 100%;
+    }
+}
+
+/* Modal de resultados de búsqueda */
+.search-results-content {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.search-results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.search-query {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #595959;
+}
+
+.search-query i {
+    font-size: 16px;
+    color: #1890ff;
+}
+
+.search-stats {
+    display: flex;
+    align-items: center;
+}
+
+.search-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+
+.search-result-item:hover {
+    border-color: #1890ff;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.result-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.result-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+}
+
+.result-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.result-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #262626;
+    line-height: 1.4;
+}
+
+.result-description {
+    font-size: 13px;
+    color: #595959;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.result-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.result-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.result-meta-item i {
+    font-size: 14px;
+}
+
+.result-actions {
+    display: flex;
+    gap: 4px;
+    align-items: flex-start;
+}
+
+/* Responsive para modal de búsqueda */
+@media (max-width: 768px) {
+    .search-results-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .search-result-item {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .result-badges {
+        flex-direction: row;
+    }
+
+    .result-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

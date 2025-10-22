@@ -116,8 +116,6 @@ export class EtapasComponent implements OnInit, OnDestroy {
     // Obtener las etapas correspondientes al tipo de proceso
     this.etapasPredefinidas = this.sharedDataService.getEtapasPorTipoProceso(this.tipoProceso);
     
-    console.log(`📋 Configurando etapas para tipo: "${this.tipoProceso}"`);
-    console.log(`🔧 Etapas disponibles:`, this.etapasPredefinidas);
   }
 
   private initForm(): void {

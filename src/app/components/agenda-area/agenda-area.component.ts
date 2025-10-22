@@ -28,6 +28,7 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { AreaActivitiesService, AreaActivity } from '../../services/areaActivities/area-activities.service';
 import { RegistersService, Register } from '../../services/registers/registers.service';
 import { Subject, takeUntil } from 'rxjs';
+import { NzDividerModule } from 'ng-zorro-antd/divider';
 
 @Component({
   selector: 'app-agenda-area',
@@ -50,7 +51,8 @@ import { Subject, takeUntil } from 'rxjs';
     NzToolTipModule,
     NzGridModule,
     NzSpinModule,
-    NzBadgeModule
+    NzBadgeModule,
+    NzDividerModule
   ],
   templateUrl: './agenda-area.component.html',
   styleUrls: ['./agenda-area.component.css']
@@ -77,6 +79,18 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   showEditModal = false;
   selectedActivity: AreaActivity | null = null;
   areaUsers: Register[] = [];
+  showViewModal = false; // ✨ Modal de vista previa
+
+  // 🔍 Búsqueda
+  searchTerm = '';
+  filteredWeekActivities: { [key: string]: AreaActivity[] } = {};
+  filteredMonthActivities: { [key: string]: AreaActivity[] } = {};
+  searchResultCount = 0;
+  showSearchResultsModal = false;
+  searchResults: AreaActivity[] = [];
+  isSearching = false;
+
+
 
   // 📝 Formularios
   createForm: FormGroup;
@@ -160,7 +174,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     // Calcular el lunes de la semana basado en currentWeekStart
     const monday = new Date(this.currentWeekStart);
     const dayOfWeek = monday.getDay();
-    
+
     // Ajustar a lunes si no lo es
     const daysFromMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     monday.setDate(monday.getDate() + daysFromMonday);
@@ -281,6 +295,10 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     const areaSlug = this.area;
 
+    // ✅ Establecer el inicio de la semana con hora 00:00:00
+    const startOfWeek = new Date(this.currentWeekStart);
+    startOfWeek.setHours(0, 0, 0, 0);
+
     // Fin de semana = Viernes (índice 4)
     const endOfWeek = new Date(this.currentWeekStart);
     endOfWeek.setDate(this.currentWeekStart.getDate() + 4);
@@ -288,7 +306,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
 
     this.areaActivitiesService.getActivitiesByAreaAndDateRange(
       areaSlug,
-      this.currentWeekStart,
+      startOfWeek, // ✅ Usar la fecha con horas correctas
       endOfWeek
     ).pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -712,5 +730,250 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     this.selectedDate = new Date(date);
     this.viewMode = 'daily';
     this.loadDayActivities(date);
+  }
+
+  // ========================
+  // 🔍 MÉTODOS DE BÚSQUEDA
+  // ========================
+
+  // 🔍 Filtrar actividades por término de búsqueda
+  onSearchChange(term: string): void {
+    this.searchTerm = term.trim().toLowerCase();
+    this.isSearching = false;
+  }
+
+  // 🔍 Aplicar filtro de búsqueda
+  private applySearchFilter(): void {
+    if (!this.searchTerm) {
+      // Sin búsqueda, mostrar todas las actividades
+      if (this.viewMode === 'weekly' || this.viewMode === 'daily') {
+        this.filteredWeekActivities = { ...this.weekActivities };
+      } else if (this.viewMode === 'monthly') {
+        this.filteredMonthActivities = { ...this.monthActivities };
+      }
+      this.searchResultCount = 0;
+      this.searchResults = [];
+      this.showSearchResultsModal = false;
+      return;
+    }
+
+    this.isSearching = true;
+
+    // Recolectar todos los resultados
+    this.searchResults = [];
+
+    // Aplicar filtro según la vista
+    if (this.viewMode === 'weekly' || this.viewMode === 'daily') {
+      this.filteredWeekActivities = {};
+      let count = 0;
+
+      Object.keys(this.weekActivities).forEach(dateKey => {
+        const filtered = this.weekActivities[dateKey].filter(activity =>
+          this.matchesSearchTerm(activity)
+        );
+        this.filteredWeekActivities[dateKey] = filtered;
+        this.searchResults.push(...filtered);
+        count += filtered.length;
+      });
+
+      this.searchResultCount = count;
+    } else if (this.viewMode === 'monthly') {
+      this.filteredMonthActivities = {};
+      let count = 0;
+
+      Object.keys(this.monthActivities).forEach(dateKey => {
+        const filtered = this.monthActivities[dateKey].filter(activity =>
+          this.matchesSearchTerm(activity)
+        );
+        this.filteredMonthActivities[dateKey] = filtered;
+        this.searchResults.push(...filtered);
+        count += filtered.length;
+      });
+
+      this.searchResultCount = count;
+    }
+
+    // Abrir modal solo cuando se ejecuta la búsqueda
+    this.showSearchResultsModal = true;
+    this.isSearching = false;
+  }
+
+  // Ejecutar búsqueda (con Enter o botón)
+  executeSearch(): void {
+  if (this.searchTerm && this.searchTerm.trim().length > 0) {
+    this.applySearchFilter();
+  }
+}
+
+  // 🔍 Verificar si una actividad coincide con el término de búsqueda
+  private matchesSearchTerm(activity: AreaActivity): boolean {
+    const searchLower = this.searchTerm.toLowerCase();
+
+    // Buscar en título
+    if (activity.titulo?.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+
+    // Buscar en descripción
+    if (activity.descripcion?.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+
+    // Buscar en nombre del responsable
+    if (activity.responsableNombre?.toLowerCase().includes(searchLower)) {
+      return true;
+    }
+
+    // Buscar en etiquetas
+    if (activity.etiquetas && Array.isArray(activity.etiquetas)) {
+      return activity.etiquetas.some(tag =>
+        tag.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return false;
+  }
+
+  // 🔍 Limpiar búsqueda
+  clearSearch(): void {
+  this.searchTerm = '';
+  this.searchResults = [];
+  this.searchResultCount = 0;
+  this.showSearchResultsModal = false;
+  this.isSearching = false;
+  // Restaurar todas las actividades
+  if (this.viewMode === 'weekly' || this.viewMode === 'daily') {
+    this.filteredWeekActivities = { ...this.weekActivities };
+  } else if (this.viewMode === 'monthly') {
+    this.filteredMonthActivities = { ...this.monthActivities };
+  }
+}
+
+  // 🔍 Obtener actividades para mostrar (con o sin filtro)
+  getDisplayActivities(dateKey: string): AreaActivity[] {
+    if (this.viewMode === 'weekly' || this.viewMode === 'daily') {
+      return this.searchTerm
+        ? this.filteredWeekActivities[dateKey] || []
+        : this.weekActivities[dateKey] || [];
+    } else if (this.viewMode === 'monthly') {
+      return this.searchTerm
+        ? this.filteredMonthActivities[dateKey] || []
+        : this.monthActivities[dateKey] || [];
+    }
+    return [];
+  }
+
+  // ========================
+  // 👁️ MÉTODOS DE VISTA PREVIA
+  // ========================
+
+  // 👁️ Abrir modal de vista previa
+  viewActivityDetails(activity: AreaActivity): void {
+    this.selectedActivity = activity;
+    this.showViewModal = true;
+  }
+
+  // 👁️ Cerrar modal de vista previa
+  closeViewModal(): void {
+    this.showViewModal = false;
+    // No limpiar selectedActivity inmediatamente para permitir animación
+    setTimeout(() => {
+      this.selectedActivity = null;
+    }, 300);
+  }
+
+  // 👁️ Editar desde vista previa
+  editFromView(): void {
+    if (this.selectedActivity) {
+      this.showViewModal = false;
+      setTimeout(() => {
+        this.editActivity(this.selectedActivity!);
+      }, 300);
+    }
+  }
+
+  // 👁️ Completar desde vista previa
+  async completeFromView(): Promise<void> {
+    if (this.selectedActivity) {
+      await this.completeActivity(this.selectedActivity);
+      this.closeViewModal();
+    }
+  }
+
+  // 👁️ Eliminar desde vista previa
+  async deleteFromView(): Promise<void> {
+    if (this.selectedActivity) {
+      await this.deleteActivity(this.selectedActivity);
+      this.closeViewModal();
+    }
+  }
+
+  // 📅 Formatear fecha para mostrar
+  formatDate(date: any): string {
+    try {
+      let dateObj: Date;
+
+      if (date instanceof Date) {
+        dateObj = date;
+      } else if (date?.toDate) {
+        dateObj = date.toDate();
+      } else if (date?.seconds) {
+        dateObj = new Date(date.seconds * 1000);
+      } else {
+        dateObj = new Date(date);
+      }
+
+      return dateObj.toLocaleDateString('es-EC', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Fecha no disponible';
+    }
+  }
+
+  // 📝 Obtener texto de estado
+  getEstadoText(estado: AreaActivity['estado']): string {
+    const estados = {
+      'pendiente': 'Pendiente',
+      'en_progreso': 'En Progreso',
+      'completada': 'Completada',
+      'pospuesta': 'Pospuesta'
+    };
+    return estados[estado] || estado;
+  }
+
+  // 📝 Obtener texto de prioridad
+  getPrioridadText(prioridad: AreaActivity['prioridad']): string {
+    const prioridades = {
+      'baja': 'Baja',
+      'media': 'Media',
+      'alta': 'Alta'
+    };
+    return prioridades[prioridad] || prioridad;
+  }
+
+  // Cerrar modal de resultados
+  closeSearchResultsModal(): void {
+    this.showSearchResultsModal = false;
+  }
+
+  // Ver actividad desde resultados de búsqueda
+  viewActivityFromSearch(activity: AreaActivity): void {
+    this.showSearchResultsModal = false;
+    setTimeout(() => {
+      this.viewActivityDetails(activity);
+    }, 300);
+  }
+
+  // Editar actividad desde resultados de búsqueda
+  editActivityFromSearch(activity: AreaActivity): void {
+    this.showSearchResultsModal = false;
+    setTimeout(() => {
+      this.editActivity(activity);
+    }, 300);
   }
 }

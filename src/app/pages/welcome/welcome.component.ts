@@ -26,11 +26,11 @@ export class WelcomeComponent {
   constructor() {}
 
   sections = [
+    { title: 'IESS', description: 'Agenda conjunta y redacción de Providencias', icon: 'file-text', route: '/area/iess' },
     { title: 'ISSFA', description: 'Registro de documentación para procesos', icon: 'file-text', route: '/area/issfa' },
     { title: 'Inmobiliaria', description: 'Registro de documentación inmobiliaria', icon: 'home', route: '/area/inmobiliaria' },
     { title: 'Banco Produbanco', description: 'Registro y elaboración de demandas', icon: 'bank', route: '/area/produbanco' },
     { title: 'Banco Pichincha', description: 'Gestion de demandas', icon: 'bank', route: '/area/pichincha' },
-    { title: 'IESS', description: 'Registro de documentación para procesos', icon: 'file-text', route: '/area/iess' },
     { title: 'TRAMITES', description: 'Registro de trámites', icon: 'file-text', route: '/itinerario-form' },
     { title: 'COOPROGRESO', description: 'Registro de documentación para procesos', icon: 'file-text', route: '/area/cooprogreso' },
   ];

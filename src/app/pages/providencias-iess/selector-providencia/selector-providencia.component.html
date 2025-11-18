@@ -1,0 +1,44 @@
+<nz-breadcrumb>
+    <nz-breadcrumb-item>
+        <a routerLink="/welcome">
+            <nz-icon nzType="home" />
+        </a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>
+        <a routerLink="/area/iess">IESS</a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>Seleccionar tipo de providencia</nz-breadcrumb-item>
+</nz-breadcrumb>
+<hr class="divider">
+
+<div class="selector-container">
+    <nz-card [nzBordered]="true">
+        <div class="header-section">
+            <h1 class="main-title">
+                <i nz-icon nzType="file-text" nzTheme="outline"></i>
+                Redacción de Providencias IESS
+            </h1>
+            <p class="subtitle">Selecciona el tipo de providencia que deseas generar</p>
+        </div>
+
+        <hr class="divider">
+
+        <nz-row [nzGutter]="[16, 16]" justify="center">
+            <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="12" [nzLg]="12" *ngFor="let option of providenciasOptions">
+                <a [routerLink]="option.route" class="option-link">
+                    <nz-card class="option-card" [nzBordered]="false" [nzHoverable]="true">
+                        <div class="card-content">
+                            <div class="icon-container">
+                                <i nz-icon [nzType]="option.icon" nzTheme="outline" class="option-icon"></i>
+                            </div>
+                            <div class="text-container">
+                                <h3 class="option-title">{{ option.title }}</h3>
+                                <p class="option-description">{{ option.description }}</p>
+                            </div>
+                        </div>
+                    </nz-card>
+                </a>
+            </nz-col>
+        </nz-row>
+    </nz-card>
+</div>

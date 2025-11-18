@@ -1,0 +1,274 @@
+.divider {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px solid #e8e8e8;
+}
+
+.form-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.providencia-form {
+    background-color: #ffffff;
+    padding: 32px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ENCABEZADO */
+.form-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #1890ff;
+}
+
+.form-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #001529;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.form-title i {
+    color: #1890ff;
+    font-size: 32px;
+}
+
+.form-subtitle {
+    font-size: 16px;
+    color: #595959;
+    margin-bottom: 0;
+}
+
+/* SECCIONES */
+.form-section {
+    margin-bottom: 32px;
+    padding: 24px;
+    background-color: #fafafa;
+    border-radius: 8px;
+    border-left: 4px solid #1890ff;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #001529;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title i {
+    color: #1890ff;
+    font-size: 22px;
+}
+
+/* FORMULARIOS */
+nz-form-item {
+    margin-bottom: 16px;
+}
+
+nz-form-label {
+    font-weight: 500;
+    color: #262626;
+}
+
+input[nz-input],
+nz-select,
+nz-date-picker,
+nz-time-picker {
+    width: 100%;
+}
+
+.numero-en-letras {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #1890ff;
+    font-style: italic;
+    font-weight: 500;
+}
+
+/* BOTONES DE ACCIÓN */
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.action-buttons button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* TABLA */
+nz-table {
+    margin-top: 16px;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.total-row {
+    background-color: #f0f0f0;
+    font-weight: 600;
+}
+
+.total-row td {
+    border-top: 2px solid #d9d9d9 !important;
+}
+
+/* BOTONES FINALES */
+.form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e8e8e8;
+}
+
+.form-actions button {
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+    .form-container {
+        padding: 16px;
+    }
+
+    .providencia-form {
+        padding: 24px;
+    }
+
+    .form-title {
+        font-size: 24px;
+    }
+
+    .form-title i {
+        font-size: 28px;
+    }
+
+    .section-title {
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-container {
+        padding: 12px;
+    }
+
+    .providencia-form {
+        padding: 16px;
+    }
+
+    .form-header {
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+    }
+
+    .form-title {
+        font-size: 20px;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-title i {
+        font-size: 24px;
+    }
+
+    .form-subtitle {
+        font-size: 14px;
+    }
+
+    .form-section {
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        flex-wrap: wrap;
+    }
+
+    .section-title i {
+        font-size: 18px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions button {
+        width: 100%;
+    }
+
+    /* Tabla responsive */
+    nz-table {
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-title {
+        font-size: 18px;
+    }
+
+    .form-subtitle {
+        font-size: 12px;
+    }
+
+    .section-title {
+        font-size: 14px;
+    }
+
+    .numero-en-letras {
+        font-size: 11px;
+    }
+}
+
+/* ANIMACIONES */
+.form-section {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

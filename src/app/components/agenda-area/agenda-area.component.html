@@ -143,7 +143,7 @@
                                     </div>
                                 </div>
                                 <div class="day-count">
-                                    <nz-badge [nzCount]="getDisplayActivities(getDateKey(selectedDate))?.length || 0"
+                                    <nz-badge [nzCount]="getDisplayActivities(getDateKey(selectedDate)).length || 0"
                                         [nzShowZero]="true">
                                     </nz-badge>
                                 </div>
@@ -155,7 +155,7 @@
                                 (cdkDropListDropped)="onDrop($event, selectedDate)"
                                 class="activities-container activities-container-large">
 
-                                <div *ngIf="!getDisplayActivities(getDateKey(selectedDate))?.length" class="empty-day">
+                                <div *ngIf="!getDisplayActivities(getDateKey(selectedDate)).length" class="empty-day">
                                     <div class="empty-message">
                                         <i nz-icon nzType="inbox" nzTheme="outline"></i>
                                         <span>No hay actividades para este día</span>
@@ -251,7 +251,7 @@
                                     </div>
                                 </div>
                                 <div class="day-count">
-                                    <nz-badge [nzCount]="getDisplayActivities(getDateKey(date))?.length || 0"
+                                    <nz-badge [nzCount]="getDisplayActivities(getDateKey(date)).length || 0"
                                         [nzShowZero]="true">
                                     </nz-badge>
                                 </div>
@@ -264,7 +264,7 @@
                                 (cdkDropListDropped)="onDrop($event, date)" class="activities-container">
 
                                 <!-- 📭 ESTADO VACÍO -->
-                                <div *ngIf="!getDisplayActivities(getDateKey(date))?.length" class="empty-day">
+                                <div *ngIf="!getDisplayActivities(getDateKey(date)).length" class="empty-day">
                                     <div class="empty-message">
                                         <i nz-icon nzType="inbox" nzTheme="outline"></i>
                                         <span>Arrastra actividades aquí</span>

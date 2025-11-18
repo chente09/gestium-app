@@ -1,0 +1,166 @@
+.selector-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.divider {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px solid #e8e8e8;
+}
+
+.header-section {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.main-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #001529;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.main-title i {
+    color: #1890ff;
+    font-size: 32px;
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #595959;
+    margin-bottom: 0;
+}
+
+.option-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    height: 100%;
+}
+
+.option-card {
+    height: 100%;
+    background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+    border: 1px solid #e8e8e8;
+    transition: all 0.3s ease;
+}
+
+.option-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    border-color: #1890ff;
+}
+
+.card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px 16px;
+    min-height: 200px;
+    justify-content: center;
+}
+
+.icon-container {
+    margin-bottom: 16px;
+}
+
+.option-icon {
+    font-size: 48px;
+    color: #1890ff;
+    transition: all 0.3s ease;
+}
+
+.option-card:hover .option-icon {
+    transform: scale(1.1);
+    color: #40a9ff;
+}
+
+.text-container {
+    width: 100%;
+}
+
+.option-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #001529;
+    margin-bottom: 8px;
+}
+
+.option-description {
+    font-size: 14px;
+    color: #8c8c8c;
+    margin-bottom: 0;
+    line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 22px;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .main-title i {
+        font-size: 28px;
+    }
+
+    .subtitle {
+        font-size: 14px;
+    }
+
+    .card-content {
+        padding: 16px 12px;
+        min-height: 160px;
+    }
+
+    .option-icon {
+        font-size: 36px;
+    }
+
+    .option-title {
+        font-size: 16px;
+    }
+
+    .option-description {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .selector-container {
+        padding: 12px;
+    }
+
+    .main-title {
+        font-size: 18px;
+    }
+
+    .main-title i {
+        font-size: 24px;
+    }
+
+    .card-content {
+        padding: 12px 8px;
+        min-height: 140px;
+    }
+
+    .option-icon {
+        font-size: 32px;
+    }
+
+    .option-title {
+        font-size: 14px;
+    }
+
+    .option-description {
+        font-size: 11px;
+    }
+}

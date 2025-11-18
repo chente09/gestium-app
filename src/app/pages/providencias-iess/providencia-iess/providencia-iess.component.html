@@ -1,0 +1,428 @@
+<nz-breadcrumb>
+    <nz-breadcrumb-item>
+        <a routerLink="/welcome">
+            <nz-icon nzType="home" />
+        </a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>
+        <a routerLink="/area/iess">IESS</a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>
+        <a routerLink="/selector-providencia">Seleccionar providencia</a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item>
+        {{ tipoProvidencia === 'individual' ? 'Individual' : 'Agrupados' }} -
+        {{ tipoPersona === 'natural' ? 'Persona Natural' : 'Persona Jurídica' }}
+    </nz-breadcrumb-item>
+</nz-breadcrumb>
+<hr class="divider">
+
+<div class="form-container">
+    <form nz-form [formGroup]="providenciaForm" (ngSubmit)="onSubmit()" class="providencia-form">
+
+        <!-- ENCABEZADO -->
+        <div class="form-header">
+            <h1 class="form-title">
+                <i nz-icon nzType="file-text" nzTheme="outline"></i>
+                Providencia de Inicio y Cancelación
+            </h1>
+            <p class="form-subtitle">
+                {{ tipoProvidencia === 'individual' ? 'Individual' : 'Agrupados' }} -
+                {{ tipoPersona === 'natural' ? 'Persona Natural' : 'Persona Jurídica' }}
+            </p>
+        </div>
+
+        <!-- SECCIÓN: DATOS GENERALES -->
+        <div class="form-section">
+            <h2 class="section-title">
+                <i nz-icon nzType="info-circle" nzTheme="outline"></i>
+                Datos Generales de la Providencia
+            </h2>
+
+            <nz-row [nzGutter]="16">
+                <!-- Fecha de Providencia -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                    <nz-form-item>
+                        <nz-form-label nzFor="fechaProvidencia" nzRequired>Fecha de Providencia</nz-form-label>
+                        <nz-form-control nzErrorTip="La fecha es requerida">
+                            <nz-date-picker id="fechaProvidencia" formControlName="fechaProvidencia"
+                                nzFormat="dd/MM/yyyy" nzPlaceHolder="Seleccione fecha" style="width: 100%;">
+                            </nz-date-picker>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Hora de Providencia -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                    <nz-form-item>
+                        <nz-form-label nzFor="horaProvidencia" nzRequired>Hora de Providencia</nz-form-label>
+                        <nz-form-control nzErrorTip="La hora es requerida">
+                            <nz-time-picker id="horaProvidencia" formControlName="horaProvidencia" nzFormat="HH:mm"
+                                nzPlaceHolder="Seleccione hora" style="width: 100%;">
+                            </nz-time-picker>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Abogado Secretario -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                    <nz-form-item>
+                        <nz-form-label nzFor="abogadoSeleccionado" nzRequired>Secretario Abogado</nz-form-label>
+                        <nz-form-control nzErrorTip="Debe seleccionar un abogado">
+                            <nz-select id="abogadoSeleccionado" formControlName="abogadoSeleccionado"
+                                nzPlaceHolder="Seleccione abogado" nzShowSearch>
+                                <nz-option *ngFor="let abogado of abogados" [nzValue]="abogado.nombre"
+                                    [nzLabel]="abogado.nombre">
+                                </nz-option>
+                            </nz-select>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+        </div>
+
+        <!-- SECCIÓN: DATOS DEL COACTIVADO -->
+        <div class="form-section">
+            <h2 class="section-title">
+                <i nz-icon nzType="user" nzTheme="outline"></i>
+                Datos del Coactivado
+            </h2>
+
+            <nz-row [nzGutter]="16">
+                <!-- Razón Social / Nombre -->
+                <nz-col [nzXs]="24" [nzSm]="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="razonSocial" nzRequired>
+                            {{ tipoPersona === 'juridica' ? 'Razón Social' : 'Nombre Completo' }}
+                        </nz-form-label>
+                        <nz-form-control
+                            [nzErrorTip]="tipoPersona === 'juridica' ? 'La razón social es requerida' : 'El nombre es requerido'">
+                            <input nz-input id="razonSocial" formControlName="razonSocial"
+                                [placeholder]="tipoPersona === 'juridica' ? 'Ej: ESTUDIO JURIDICO BACA ABOGADOS' : 'Ej: FALCONI ALVAREZ PATRICIA NOEMI'" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- RUC -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                    <nz-form-item>
+                        <nz-form-label nzFor="ruc" nzRequired>RUC</nz-form-label>
+                        <nz-form-control nzErrorTip="El RUC es requerido">
+                            <input nz-input id="ruc" formControlName="ruc" placeholder="Ej: 1708486319001" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Representante Legal (Solo Persona Jurídica) -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" *ngIf="esPersonaJuridica">
+                    <nz-form-item>
+                        <nz-form-label nzFor="representanteLegal" nzRequired>Representante Legal</nz-form-label>
+                        <nz-form-control nzErrorTip="El representante legal es requerido">
+                            <input nz-input id="representanteLegal" formControlName="representanteLegal"
+                                placeholder="Ej: BACA MANCHENO PABLO ALBERTO" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Cédula -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                    <nz-form-item>
+                        <nz-form-label nzFor="cedula" nzRequired>
+                            {{ esPersonaJuridica ? 'Cédula del Representante' : 'Cédula' }}
+                        </nz-form-label>
+                        <nz-form-control nzErrorTip="La cédula es requerida">
+                            <input nz-input id="cedula" formControlName="cedula" placeholder="Ej: 1708486319" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+        </div>
+
+        <!-- SECCIÓN: TÍTULO DE CRÉDITO (SOLO INDIVIDUAL) -->
+        <div class="form-section" *ngIf="!esAgrupados">
+            <h2 class="section-title">
+                <i nz-icon nzType="file-done" nzTheme="outline"></i>
+                Título de Crédito
+            </h2>
+
+            <nz-row [nzGutter]="16">
+                <!-- Número de TC / Procedimiento Coactivo -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                    <nz-form-item>
+                        <nz-form-label nzFor="numeroTC" nzRequired>
+                            Nro. Título de Crédito / Proc. Coactivo
+                        </nz-form-label>
+                        <nz-form-control nzErrorTip="El número de TC es requerido">
+                            <input nz-input id="numeroTC" formControlName="numeroTC" placeholder="Ej: 511425132" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Capital Adeudado -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+                    <nz-form-item>
+                        <nz-form-label nzFor="capital" nzRequired>Capital Adeudado (USD)</nz-form-label>
+                        <nz-form-control nzErrorTip="El capital es requerido">
+                            <input nz-input id="capital" formControlName="capital" (keyup)="onValueChange('capital')"
+                                placeholder="Ej: 105" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Fracción Capital -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="4">
+                    <nz-form-item>
+                        <nz-form-label nzFor="fraccionCapital">Centavos</nz-form-label>
+                        <nz-form-control nzErrorTip="Ingrese centavos (00-99)">
+                            <input nz-input id="fraccionCapital" formControlName="fraccionCapital"
+                                (keyup)="onValueChange('capital')" placeholder="42" maxlength="2" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Mostrar valor en letras completo -->
+                <nz-col [nzXs]="24" *ngIf="valoresEnLetras['capital']">
+                    <p class="numero-en-letras">
+                        En letras: {{ valoresEnLetras['capital'] }} (USD {{ providenciaForm.get('capital')?.value }},{{
+                        providenciaForm.get('fraccionCapital')?.value || '00' }})
+                    </p>
+                </nz-col>
+
+                <!-- Comprobante de Pago -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                    <nz-form-item>
+                        <nz-form-label nzFor="comprobante" nzRequired>Comprobante de Pago No.</nz-form-label>
+                        <nz-form-control nzErrorTip="El comprobante es requerido">
+                            <input nz-input id="comprobante" formControlName="comprobante" placeholder="Ej: 5595963" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Fecha de Cancelación -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                    <nz-form-item>
+                        <nz-form-label nzFor="fechaCancelacion" nzRequired>Fecha de Cancelación</nz-form-label>
+                        <nz-form-control nzErrorTip="La fecha es requerida">
+                            <nz-date-picker id="fechaCancelacion" formControlName="fechaCancelacion"
+                                nzFormat="dd 'de' MMMM 'de' yyyy" nzPlaceHolder="Seleccione fecha" style="width: 100%;">
+                            </nz-date-picker>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Valor Cancelado -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+                    <nz-form-item>
+                        <nz-form-label nzFor="cancelacion" nzRequired>Valor Cancelado (USD)</nz-form-label>
+                        <nz-form-control nzErrorTip="El valor es requerido">
+                            <input nz-input id="cancelacion" formControlName="cancelacion"
+                                (keyup)="onValueChange('cancelacion')" placeholder="Ej: 199" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Fracción Cancelación -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="4">
+                    <nz-form-item>
+                        <nz-form-label nzFor="fraccionCancelacion">Centavos</nz-form-label>
+                        <nz-form-control nzErrorTip="Ingrese centavos (00-99)">
+                            <input nz-input id="fraccionCancelacion" formControlName="fraccionCancelacion"
+                                (keyup)="onValueChange('cancelacion')" placeholder="24" maxlength="2" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <!-- Mostrar valor cancelado en letras -->
+                <nz-col [nzXs]="24" *ngIf="valoresEnLetras['cancelacion']">
+                    <p class="numero-en-letras">
+                        En letras: {{ valoresEnLetras['cancelacion'] }} (USD$ {{
+                        providenciaForm.get('cancelacion')?.value }},{{
+                        providenciaForm.get('fraccionCancelacion')?.value || '00' }})
+                    </p>
+                </nz-col>
+            </nz-row>
+        </div>
+
+        <!-- SECCIÓN: TÍTULOS DE CRÉDITO (SOLO AGRUPADOS) -->
+        <div class="form-section" *ngIf="esAgrupados">
+            <h2 class="section-title">
+                <i nz-icon nzType="table" nzTheme="outline"></i>
+                Títulos de Crédito
+            </h2>
+
+            <!-- Botones de acción -->
+            <div class="action-buttons">
+                <button nz-button nzType="primary" type="button" (click)="mostrarModalTitulo()">
+                    <i nz-icon nzType="plus" nzTheme="outline"></i>
+                    Agregar Título Manualmente
+                </button>
+
+                <nz-upload [nzBeforeUpload]="beforeUpload" [nzShowUploadList]="false" nzAccept=".xlsx,.xls">
+                    <button nz-button nzType="default" type="button">
+                        <i nz-icon nzType="upload" nzTheme="outline"></i>
+                        Importar desde Excel
+                    </button>
+                </nz-upload>
+            </div>
+
+            <!-- Tabla de títulos -->
+            <nz-table #titulosTable [nzData]="titulos.controls" nzBordered nzSize="middle" [nzShowPagination]="false"
+                [nzScroll]="{ x: '1200px' }">
+                <thead>
+                    <tr>
+                        <th nzWidth="60px">Orden</th>
+                        <th nzWidth="120px">Número TC</th>
+                        <th>Concepto</th>
+                        <th nzWidth="120px">Capital (USD)</th>
+                        <th nzWidth="120px">Comprobante</th>
+                        <th nzWidth="140px">Fecha Cancel.</th>
+                        <th nzWidth="120px">Cancelado (USD)</th>
+                        <th nzWidth="100px">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let titulo of titulos.controls; let i = index">
+                        <td>{{ titulo.value.orden }}</td>
+                        <td>{{ titulo.value.numeroTC }}</td>
+                        <td>{{ titulo.value.concepto }}</td>
+                        <td class="text-right">{{ titulo.value.valorCapital }}</td>
+                        <td>{{ titulo.value.comprobante }}</td>
+                        <td>{{ titulo.value.fechaCancelacion }}</td>
+                        <td class="text-right">{{ titulo.value.valorCancelado }}</td>
+                        <td>
+                            <button nz-button nzType="link" nzSize="small" (click)="editarTitulo(i)" type="button">
+                                <i nz-icon nzType="edit" nzTheme="outline"></i>
+                            </button>
+                            <button nz-button nzType="link" nzDanger nzSize="small" (click)="eliminarTitulo(i)"
+                                type="button">
+                                <i nz-icon nzType="delete" nzTheme="outline"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="titulos.length === 0">
+                        <td colspan="8" class="text-center">
+                            No hay títulos agregados. Use los botones de arriba para agregar títulos.
+                        </td>
+                    </tr>
+                    <tr *ngIf="titulos.length > 0" class="total-row">
+                        <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
+                        <td class="text-right"><strong>{{ calcularTotal() }}</strong></td>
+                        <td colspan="4"></td>
+                    </tr>
+                </tbody>
+            </nz-table>
+        </div>
+
+        <!-- BOTONES DE ACCIONES -->
+        <div class="form-actions">
+            <button nz-button nzType="default" nzSize="large" type="button" (click)="acumularProvidencia()"
+                [disabled]="!providenciaForm.valid">
+                <i nz-icon nzType="plus-circle" nzTheme="outline"></i>
+                Agregar Providencia ({{ providenciasAcumuladas.length }})
+            </button>
+
+            <button nz-button nzType="link" nzSize="large" type="button" (click)="verProvidenciasAcumuladas()"
+                *ngIf="providenciasAcumuladas.length > 0">
+                <i nz-icon nzType="eye" nzTheme="outline"></i>
+                Ver Acumuladas
+            </button>
+
+            <button nz-button nzType="primary" nzSize="large" type="submit"
+                [disabled]="providenciasAcumuladas.length === 0 && !providenciaForm.valid">
+                <i nz-icon nzType="file-word" nzTheme="outline"></i>
+                Generar {{ providenciasAcumuladas.length || 1 }} Documento(s)
+            </button>
+
+            <button nz-button nzType="default" nzSize="large" type="button" (click)="limpiarProvidenciasAcumuladas()"
+                nzDanger *ngIf="providenciasAcumuladas.length > 0">
+                <i nz-icon nzType="delete" nzTheme="outline"></i>
+                Limpiar
+            </button>
+
+            <button nz-button nzType="default" nzSize="large" type="button" routerLink="/selector-providencia">
+                <i nz-icon nzType="arrow-left" nzTheme="outline"></i>
+                Volver
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- MODAL PARA AGREGAR TÍTULO -->
+<nz-modal [(nzVisible)]="isModalVisible" [nzTitle]="editingIndex !== null ? 'Editar Título' : 'Agregar Título'"
+    (nzOnCancel)="handleCancelModal()" (nzOnOk)="handleOkModal()"
+    [nzOkText]="editingIndex !== null ? 'Actualizar' : 'Agregar'" nzCancelText="Cancelar" nzWidth="700px">
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="tituloForm">
+            <nz-row [nzGutter]="16">
+                <nz-col [nzSpan]="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="orden" nzRequired>Orden</nz-form-label>
+                        <nz-form-control nzErrorTip="El orden es requerido">
+                            <input nz-input id="orden" formControlName="orden" placeholder="Ej: 1" type="number" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <nz-col [nzSpan]="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="numeroTC" nzRequired>Número TC</nz-form-label>
+                        <nz-form-control nzErrorTip="El número de TC es requerido">
+                            <input nz-input id="numeroTC" formControlName="numeroTC" placeholder="Ej: 42493242" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+
+            <nz-form-item>
+                <nz-form-label nzFor="concepto" nzRequired>Concepto</nz-form-label>
+                <nz-form-control nzErrorTip="El concepto es requerido">
+                    <nz-select id="concepto" formControlName="concepto" 
+                        nzPlaceHolder="Seleccione uno o más conceptos" nzShowSearch>
+                        <nz-option *ngFor="let concepto of conceptosDisponibles" [nzValue]="concepto"
+                            [nzLabel]="concepto">
+                        </nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzFor="valorCapital" nzRequired>Valor Capital (USD)</nz-form-label>
+                <nz-form-control nzErrorTip="El valor es requerido">
+                    <input nz-input id="valorCapital" formControlName="valorCapital" placeholder="Ej: 128.84" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <hr style="margin: 16px 0; border-top: 1px solid #e8e8e8;">
+            <h4 style="margin-bottom: 12px; color: #595959;">Datos de Cancelación</h4>
+
+            <nz-row [nzGutter]="16">
+                <nz-col [nzSpan]="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="comprobante" nzRequired>Comprobante No.</nz-form-label>
+                        <nz-form-control nzErrorTip="El comprobante es requerido">
+                            <input nz-input id="comprobante" formControlName="comprobante" placeholder="Ej: 5595963" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+
+                <nz-col [nzSpan]="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="fechaCancelacion" nzRequired>Fecha de Cancelación</nz-form-label>
+                        <nz-form-control nzErrorTip="La fecha es requerida">
+                            <nz-date-picker id="fechaCancelacion" formControlName="fechaCancelacion"
+                                nzFormat="dd 'de' MMMM 'de' yyyy" nzPlaceHolder="Seleccione fecha" style="width: 100%;">
+                            </nz-date-picker>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+
+            <nz-form-item>
+                <nz-form-label nzFor="valorCancelado" nzRequired>Valor Cancelado (USD)</nz-form-label>
+                <nz-form-control nzErrorTip="El valor es requerido">
+                    <input nz-input id="valorCancelado" formControlName="valorCancelado" placeholder="Ej: 323.14" />
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+</nz-modal>

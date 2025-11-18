@@ -48,20 +48,14 @@ export class AreaDetailComponentComponent implements OnInit {
     pichincha: [
       {
         title: 'Elaboración de demandas',
-        route: '/dmd-proc-ordinario', 
+        route: '/dmd-proc-ordinario',
         icon: 'edit',
-        externalLinks: [
-          { name: 'Emerix', url: 'https://solucionespagueya.com:1023/Emerix/login/login.aspx', img: 'https://i.postimg.cc/9fnrydbv/descarga-1.jpg' },
-          { name: 'Solverix', url: 'https://solucionespagueya.com:1050/SolverixSeguridad/', img: 'https://i.postimg.cc/t4RcxWYd/Imagen-de-Whats-App-2025-03-13-a-las-11-29-46-8933b036.jpg' },
-        ]
       },
     ],
-    bnf: [
-      { title: 'Registro de casos', route: '/procesos', icon: 'form' }
+    // ✅ AGREGAR ESTA SECCIÓN PARA IESS
+    iess: [
+      { title: 'Redacción de Providencias', route: '/selector-providencia', icon: 'form' },
     ],
-    david: [
-      { title: 'Registro de casos', route: '/procesos', icon: 'form' }
-    ]
   };
 
   constructor(
@@ -76,7 +70,7 @@ export class AreaDetailComponentComponent implements OnInit {
       if (id) {
         this.areaId = id;
         this.options = this.areasOptions[this.areaId] || [];
-        
+
         // Recalcular el acceso cuando cambia el área
         await this.checkUserAccess();
       }
@@ -90,10 +84,10 @@ export class AreaDetailComponentComponent implements OnInit {
   private async loadUserArea(): Promise<void> {
     try {
       const currentRegister = this.registersService.getCurrentRegister();
-      
+
       if (currentRegister) {
         this.currentUserArea = currentRegister.areaAsignada;
-        
+
         // Calcular acceso después de obtener el área
         await this.checkUserAccess();
       } else {
@@ -101,7 +95,7 @@ export class AreaDetailComponentComponent implements OnInit {
         this.currentUserArea = null;
         this.showAgenda = false;
       }
-      
+
     } catch (error) {
       console.error('Error al obtener área del usuario:', error);
       this.currentUserArea = null;
@@ -120,11 +114,11 @@ export class AreaDetailComponentComponent implements OnInit {
     // Lógica para determinar si mostrar agenda
     const currentAreaNormalized = this.normalizeAreaName(this.currentUserArea);
     const viewingAreaNormalized = this.normalizeAreaName(this.areaId);
-  
+
 
     // Verificar si es admin usando el servicio
     const isAdmin = this.registersService.isCurrentUserAdmin();
-    
+
     this.showAgenda = currentAreaNormalized === viewingAreaNormalized ||
       isAdmin ||
       this.currentUserArea === 'sin_asignar';
@@ -134,7 +128,7 @@ export class AreaDetailComponentComponent implements OnInit {
   private normalizeAreaName(area: string): string {
     const areaMapping: { [key: string]: string } = {
       'issfa': 'ISSFA',
-      'produbanco': 'Produbanco', 
+      'produbanco': 'Produbanco',
       'pichincha': 'Pichincha',
       'inmobiliaria': 'INMOBILIARIA',
       'iess': 'IESS',

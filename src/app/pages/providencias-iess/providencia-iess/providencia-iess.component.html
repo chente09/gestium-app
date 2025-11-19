@@ -107,7 +107,7 @@
                 <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
                     <nz-form-item>
                         <nz-form-label nzFor="ruc" nzRequired>RUC</nz-form-label>
-                        <nz-form-control nzErrorTip="El RUC es requerido">
+                        <nz-form-control nzErrorTip="El RUC es requerido y debe tener 13 dígitos numéricos">
                             <input nz-input id="ruc" formControlName="ruc" placeholder="Ej: 1708486319001" />
                         </nz-form-control>
                     </nz-form-item>
@@ -130,7 +130,7 @@
                         <nz-form-label nzFor="cedula" nzRequired>
                             {{ esPersonaJuridica ? 'Cédula del Representante' : 'Cédula' }}
                         </nz-form-label>
-                        <nz-form-control nzErrorTip="La cédula es requerida">
+                        <nz-form-control nzErrorTip="La cédula es requerida y debe tener 10 dígitos numéricos">
                             <input nz-input id="cedula" formControlName="cedula" placeholder="Ej: 1708486319" />
                         </nz-form-control>
                     </nz-form-item>
@@ -152,7 +152,7 @@
                         <nz-form-label nzFor="numeroTC" nzRequired>
                             Nro. Título de Crédito / Proc. Coactivo
                         </nz-form-label>
-                        <nz-form-control nzErrorTip="El número de TC es requerido">
+                        <nz-form-control nzErrorTip="El número de TC es requerido y debe ser numérico">
                             <input nz-input id="numeroTC" formControlName="numeroTC" placeholder="Ej: 511425132" />
                         </nz-form-control>
                     </nz-form-item>
@@ -192,7 +192,7 @@
                 <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
                     <nz-form-item>
                         <nz-form-label nzFor="comprobante" nzRequired>Comprobante de Pago No.</nz-form-label>
-                        <nz-form-control nzErrorTip="El comprobante es requerido">
+                        <nz-form-control nzErrorTip="El comprobante es requerido y debe ser numérico">
                             <input nz-input id="comprobante" formControlName="comprobante" placeholder="Ej: 5595963" />
                         </nz-form-control>
                     </nz-form-item>
@@ -270,13 +270,13 @@
                 [nzScroll]="{ x: '1200px' }">
                 <thead>
                     <tr>
-                        <th nzWidth="60px">Orden</th>
-                        <th nzWidth="120px">Número TC</th>
-                        <th>Concepto</th>
-                        <th nzWidth="120px">Capital (USD)</th>
-                        <th nzWidth="120px">Comprobante</th>
-                        <th nzWidth="140px">Fecha Cancel.</th>
-                        <th nzWidth="120px">Cancelado (USD)</th>
+                        <th nzWidth="40px">Orden</th>
+                        <th nzWidth="70px">Número TC</th>
+                        <th nzWidth="120px">Concepto</th>
+                        <th nzWidth="90px">Capital (USD)</th>
+                        <th nzWidth="90px">Comprobante</th>
+                        <th nzWidth="90px">Fecha Cancel.</th>
+                        <th nzWidth="90px">Cancelado (USD)</th>
                         <th nzWidth="100px">Acciones</th>
                     </tr>
                 </thead>
@@ -317,8 +317,9 @@
         <div class="form-actions">
             <button nz-button nzType="default" nzSize="large" type="button" (click)="acumularProvidencia()"
                 [disabled]="!providenciaForm.valid">
-                <i nz-icon nzType="plus-circle" nzTheme="outline"></i>
-                Agregar Providencia ({{ providenciasAcumuladas.length }})
+                <i nz-icon [nzType]="editingProvidenciaIndex !== null ? 'save' : 'plus-circle'" nzTheme="outline"></i>
+                {{ editingProvidenciaIndex !== null ? 'Guardar Cambios' : 'Agregar Providencia' }} ({{
+                providenciasAcumuladas.length }})
             </button>
 
             <button nz-button nzType="link" nzSize="large" type="button" (click)="verProvidenciasAcumuladas()"
@@ -352,13 +353,17 @@
     (nzOnCancel)="handleCancelModal()" (nzOnOk)="handleOkModal()"
     [nzOkText]="editingIndex !== null ? 'Actualizar' : 'Agregar'" nzCancelText="Cancelar" nzWidth="700px">
     <ng-container *nzModalContent>
+        <nz-alert *ngIf="editingIndex === null" nzType="info" nzMessage="El número de orden se asigna automáticamente"
+            nzShowIcon style="margin-bottom: 16px;">
+        </nz-alert>
         <form nz-form [formGroup]="tituloForm">
             <nz-row [nzGutter]="16">
                 <nz-col [nzSpan]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="orden" nzRequired>Orden</nz-form-label>
                         <nz-form-control nzErrorTip="El orden es requerido">
-                            <input nz-input id="orden" formControlName="orden" placeholder="Ej: 1" type="number" />
+                            <input nz-input id="orden" formControlName="orden" placeholder="Auto" type="number"
+                                [readonly]="editingIndex === null" />
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
@@ -366,7 +371,7 @@
                 <nz-col [nzSpan]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="numeroTC" nzRequired>Número TC</nz-form-label>
-                        <nz-form-control nzErrorTip="El número de TC es requerido">
+                        <nz-form-control nzErrorTip="El número de TC es requerido y debe ser numérico">
                             <input nz-input id="numeroTC" formControlName="numeroTC" placeholder="Ej: 42493242" />
                         </nz-form-control>
                     </nz-form-item>
@@ -376,8 +381,8 @@
             <nz-form-item>
                 <nz-form-label nzFor="concepto" nzRequired>Concepto</nz-form-label>
                 <nz-form-control nzErrorTip="El concepto es requerido">
-                    <nz-select id="concepto" formControlName="concepto" 
-                        nzPlaceHolder="Seleccione uno o más conceptos" nzShowSearch>
+                    <nz-select id="concepto" formControlName="concepto" nzPlaceHolder="Seleccione un concepto"
+                        nzShowSearch>
                         <nz-option *ngFor="let concepto of conceptosDisponibles" [nzValue]="concepto"
                             [nzLabel]="concepto">
                         </nz-option>
@@ -399,7 +404,7 @@
                 <nz-col [nzSpan]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="comprobante" nzRequired>Comprobante No.</nz-form-label>
-                        <nz-form-control nzErrorTip="El comprobante es requerido">
+                        <nz-form-control nzErrorTip="El comprobante es requerido y debe ser numérico">
                             <input nz-input id="comprobante" formControlName="comprobante" placeholder="Ej: 5595963" />
                         </nz-form-control>
                     </nz-form-item>
@@ -424,5 +429,57 @@
                 </nz-form-control>
             </nz-form-item>
         </form>
+    </ng-container>
+</nz-modal>
+
+<!-- MODAL PARA VER PROVIDENCIAS ACUMULADAS -->
+<nz-modal [(nzVisible)]="isModalProvidenciasVisible"
+    nzTitle="Providencias Acumuladas ({{ providenciasAcumuladas.length }})" (nzOnCancel)="cerrarModalProvidencias()"
+    nzWidth="900px" [nzFooter]="null">
+    <ng-container *nzModalContent>
+        <div style="max-height: 500px; overflow-y: auto;">
+            <nz-table [nzData]="providenciasAcumuladas" [nzShowPagination]="false" nzSize="middle" nzBordered>
+                <thead>
+                    <tr>
+                        <th nzWidth="60px">#</th>
+                        <th>Nombre/Razón Social</th>
+                        <th nzWidth="120px">RUC</th>
+                        <th nzWidth="100px">Hora</th>
+                        <th nzWidth="160px" nzAlign="center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let providencia of providenciasAcumuladas; let i = index">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ providencia.datos.razonSocial }}</td>
+                        <td>{{ providencia.datos.ruc }}</td>
+                        <td>{{ providencia.datos.horaProvidencia }}</td>
+                        <td nzAlign="center">
+                            <button nz-button nzType="primary" nzSize="small" (click)="editarProvidenciaDesdeModal(i)"
+                                style="margin-right: 8px;">
+                                <i nz-icon nzType="edit" nzTheme="outline"></i>
+                                Editar
+                            </button>
+                            <button nz-button nzType="primary" nzDanger nzSize="small"
+                                (click)="eliminarProvidenciaDesdeModal(i)">
+                                <i nz-icon nzType="delete" nzTheme="outline"></i>
+                                Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="providenciasAcumuladas.length === 0">
+                        <td colspan="5" style="text-align: center; padding: 24px; color: #8c8c8c;">
+                            No hay providencias acumuladas
+                        </td>
+                    </tr>
+                </tbody>
+            </nz-table>
+        </div>
+
+        <div style="margin-top: 16px; text-align: right;">
+            <button nz-button nzType="default" (click)="cerrarModalProvidencias()">
+                Cerrar
+            </button>
+        </div>
     </ng-container>
 </nz-modal>

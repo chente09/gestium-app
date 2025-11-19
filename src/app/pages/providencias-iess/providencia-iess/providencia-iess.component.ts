@@ -15,7 +15,8 @@ import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzUploadModule, NzUploadFile } from 'ng-zorro-antd/upload';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { DocumentoService } from '../../../services/document/documento.service';
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 
 interface Abogado {
   nombre: string;
@@ -40,7 +41,8 @@ interface Abogado {
     NzBreadCrumbModule,
     NzTableModule,
     NzModalModule,
-    NzUploadModule
+    NzUploadModule,
+    NzAlertModule
   ],
   templateUrl: './providencia-iess.component.html',
   styleUrl: './providencia-iess.component.css'
@@ -53,6 +55,7 @@ export class ProvidenciaIessComponent implements OnInit {
   providenciasAcumuladas: any[] = []; // Array para acumular providencias
   horaBase: Date | null = null; // Hora base para incrementar
   contadorMinutos: number = 0; // Contador de minutos
+  editingProvidenciaIndex: number | null = null; // Índice de providencia en edición
 
   // Lista de abogados
   abogados: Abogado[] = [
@@ -74,6 +77,7 @@ export class ProvidenciaIessComponent implements OnInit {
   isModalVisible = false;
   tituloForm!: FormGroup;
   editingIndex: number | null = null;
+  isModalProvidenciasVisible = false;
 
   // Conversión de números a letras
   valoresEnLetras: { [key: string]: string } = {};
@@ -115,8 +119,8 @@ export class ProvidenciaIessComponent implements OnInit {
       fechaProvidencia: [null, Validators.required],
       horaProvidencia: [null, Validators.required],
       razonSocial: ['', Validators.required],
-      ruc: ['', Validators.required],
-      cedula: ['', Validators.required],
+      ruc: ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]],
+      cedula: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
       abogadoSeleccionado: [null, Validators.required]
     };
 
@@ -130,10 +134,10 @@ export class ProvidenciaIessComponent implements OnInit {
     // Para casos INDIVIDUALES
     if (this.tipoProvidencia === 'individual') {
       Object.assign(baseForm, {
-        numeroTC: ['', Validators.required], // Este es el mismo que nroProcedimientoCoactivo
+        numeroTC: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]], // Este es el mismo que nroProcedimientoCoactivo
         capital: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
         fraccionCapital: ['', [Validators.pattern('^[0-9]{1,2}$')]],
-        comprobante: ['', Validators.required],
+        comprobante: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
         fechaCancelacion: [null, Validators.required],
         cancelacion: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
         fraccionCancelacion: ['', [Validators.pattern('^[0-9]{1,2}$')]]
@@ -153,10 +157,10 @@ export class ProvidenciaIessComponent implements OnInit {
     // Inicializar form para agregar títulos manualmente
     this.tituloForm = this.fb.group({
       orden: ['', Validators.required],
-      numeroTC: ['', Validators.required],
+      numeroTC: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
       concepto: ['', Validators.required],
       valorCapital: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
-      comprobante: ['', Validators.required],
+      comprobante: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
       fechaCancelacion: ['', Validators.required],
       valorCancelado: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]]
     });
@@ -184,6 +188,10 @@ export class ProvidenciaIessComponent implements OnInit {
   mostrarModalTitulo(): void {
     this.editingIndex = null;
     this.tituloForm.reset();
+    const siguienteOrden = this.titulos.length + 1;
+    this.tituloForm.patchValue({
+      orden: siguienteOrden
+    });
     this.isModalVisible = true;
   }
 
@@ -221,7 +229,15 @@ export class ProvidenciaIessComponent implements OnInit {
   editarTitulo(index: number): void {
     this.editingIndex = index;
     const titulo = this.titulos.at(index).value;
-    this.tituloForm.patchValue(titulo);
+    this.tituloForm.patchValue({
+      orden: titulo.orden,
+      numeroTC: titulo.numeroTC,
+      concepto: titulo.concepto,
+      valorCapital: titulo.valorCapital,
+      comprobante: titulo.comprobante,
+      fechaCancelacion: titulo.fechaCancelacion,
+      valorCancelado: titulo.valorCancelado
+    });
     this.isModalVisible = true;
   }
 
@@ -260,15 +276,48 @@ export class ProvidenciaIessComponent implements OnInit {
   };
 
 
-  importarDesdeExcel(file: File): void {
+  async importarDesdeExcel(file: File): Promise<void> {
     const reader = new FileReader();
 
-    reader.onload = (e: any) => {
+    reader.onload = async (e: any) => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData: any[] = XLSX.utils.sheet_to_json(firstSheet);
+        const buffer = e.target.result;
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+
+        const worksheet = workbook.worksheets[0];
+
+        if (!worksheet) {
+          this.message.error('El archivo Excel no contiene hojas');
+          return;
+        }
+
+        const jsonData: any[] = [];
+        let headers: string[] = [];
+
+        // Leer encabezados (primera fila)
+        const headerRow = worksheet.getRow(1);
+        headerRow.eachCell((cell, colNumber) => {
+          headers[colNumber] = String(cell.value).toUpperCase();
+        });
+
+        // Leer datos (desde la segunda fila)
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber > 1) { // Saltar encabezados
+            const rowData: any = {};
+            row.eachCell((cell, colNumber) => {
+              const header = headers[colNumber];
+              if (header) {
+                rowData[header] = cell.value;
+              }
+            });
+
+            // Solo agregar si tiene datos
+            if (Object.keys(rowData).length > 0) {
+              jsonData.push(rowData);
+            }
+          }
+        });
 
         if (jsonData.length === 0) {
           this.message.error('El archivo Excel está vacío');
@@ -286,7 +335,10 @@ export class ProvidenciaIessComponent implements OnInit {
             orden: [row['ORDEN'] || (index + 1), Validators.required],
             numeroTC: [row['NUMERO_TC'] || row['TC'] || '', Validators.required],
             concepto: [row['CONCEPTO'] || '', Validators.required],
-            valorCapital: [row['VALOR_CAPITAL'] || row['CAPITAL'] || '', [Validators.required, Validators.pattern('^[0-9,.]*$')]]
+            valorCapital: [row['VALOR_CAPITAL'] || row['CAPITAL'] || '', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
+            comprobante: [row['COMPROBANTE'] || '', Validators.required],
+            fechaCancelacion: [row['FECHA_CANCELACION'] || row['FECHA'] || '', Validators.required],
+            valorCancelado: [row['VALOR_CANCELADO'] || row['CANCELADO'] || '', [Validators.required, Validators.pattern('^[0-9,.]*$')]]
           }));
         });
 
@@ -299,9 +351,6 @@ export class ProvidenciaIessComponent implements OnInit {
 
     reader.readAsArrayBuffer(file);
   }
-
-  // ========== CONTINÚA EN PARTE 2 ==========
-  // ========== CONTINUACIÓN DESDE PARTE 1 ==========
 
   // ========== GESTIÓN DE CANCELACIONES (AGRUPADOS) ==========
 
@@ -459,7 +508,7 @@ export class ProvidenciaIessComponent implements OnInit {
       this.horaBase = new Date(formValues.horaProvidencia.getTime() + this.contadorMinutos * 60000);
     }
 
-    // Preparar datos (copiar lógica de onSubmit pero sin generar documento)
+    // Preparar datos
     const datos: any = {
       fechaProvidencia: this.formatearFecha(formValues.fechaProvidencia),
       horaProvidencia: this.horaBase ? this.formatearHora(this.horaBase) : this.formatearHora(formValues.horaProvidencia),
@@ -526,14 +575,34 @@ export class ProvidenciaIessComponent implements OnInit {
       }));
     }
 
-    // Agregar a array acumulado
-    this.providenciasAcumuladas.push({
-      tipo: this.tipoProvidencia,
-      personaTipo: this.tipoPersona,
-      datos: datos
-    });
+    // ✅ AQUÍ ES DONDE SE DECIDE SI AGREGAR O ACTUALIZAR
+    // Verificar si estamos editando una providencia existente
+    if (this.editingProvidenciaIndex !== null) {
+      // Actualizar la providencia existente
+      this.providenciasAcumuladas[this.editingProvidenciaIndex] = {
+        tipo: this.tipoProvidencia,
+        personaTipo: this.tipoPersona,
+        datos: datos,
+        fechaOriginal: formValues.fechaProvidencia,
+        horaOriginal: this.horaBase || formValues.horaProvidencia,
+        formValuesOriginal: JSON.parse(JSON.stringify(formValues))
+      };
 
-    this.message.success(`Providencia ${this.providenciasAcumuladas.length} agregada. Hora: ${datos.horaProvidencia}`);
+      this.message.success(`Providencia ${this.editingProvidenciaIndex + 1} actualizada. Hora: ${datos.horaProvidencia}`);
+      this.editingProvidenciaIndex = null; // Limpiar el índice de edición
+    } else {
+      // Agregar nueva providencia
+      this.providenciasAcumuladas.push({
+        tipo: this.tipoProvidencia,
+        personaTipo: this.tipoPersona,
+        datos: datos,
+        fechaOriginal: formValues.fechaProvidencia,
+        horaOriginal: this.horaBase || formValues.horaProvidencia,
+        formValuesOriginal: JSON.parse(JSON.stringify(formValues))
+      });
+
+      this.message.success(`Providencia ${this.providenciasAcumuladas.length} agregada. Hora: ${datos.horaProvidencia}`);
+    }
 
     // Limpiar formulario para siguiente providencia
     this.resetFormularioParaSiguiente();
@@ -572,15 +641,35 @@ export class ProvidenciaIessComponent implements OnInit {
       return;
     }
 
-    const mensaje = this.providenciasAcumuladas.map((p, i) =>
-      `${i + 1}. ${p.datos.razonSocial} - ${p.datos.horaProvidencia}`
-    ).join('\n');
+    this.isModalProvidenciasVisible = true;
+  }
 
-    this.modal.info({
-      nzTitle: `Providencias Acumuladas (${this.providenciasAcumuladas.length})`,
-      nzContent: `<pre>${mensaje}</pre>`,
-      nzWidth: '600px'
+  cerrarModalProvidencias(): void {
+    this.isModalProvidenciasVisible = false;
+  }
+
+  eliminarProvidenciaDesdeModal(index: number): void {
+    this.modal.confirm({
+      nzTitle: '¿Eliminar esta providencia?',
+      nzContent: `¿Está seguro de eliminar la providencia de ${this.providenciasAcumuladas[index].datos.razonSocial}?`,
+      nzOkText: 'Eliminar',
+      nzOkDanger: true,
+      nzOnOk: () => {
+        this.providenciasAcumuladas.splice(index, 1);
+        this.message.success('Providencia eliminada');
+
+        // Cerrar modal si ya no hay providencias
+        if (this.providenciasAcumuladas.length === 0) {
+          this.cerrarModalProvidencias();
+        }
+      },
+      nzCancelText: 'Cancelar'
     });
+  }
+
+  editarProvidenciaDesdeModal(index: number): void {
+    this.cerrarModalProvidencias();
+    this.editarProvidencia(index);
   }
 
   limpiarProvidenciasAcumuladas(): void {
@@ -593,34 +682,104 @@ export class ProvidenciaIessComponent implements OnInit {
         this.providenciasAcumuladas = [];
         this.horaBase = null;
         this.contadorMinutos = 0;
+        this.editingProvidenciaIndex = null;
         this.message.success('Providencias acumuladas eliminadas');
       },
       nzCancelText: 'Cancelar'
     });
   }
 
+  editarProvidencia(index: number): void {
+    const providencia = this.providenciasAcumuladas[index];
+
+    if (!providencia.formValuesOriginal) {
+      this.message.error('No se pueden cargar los datos originales');
+      return;
+    }
+
+    // Guardar el índice que estamos editando
+    this.editingProvidenciaIndex = index;
+
+    // ✅ Convertir fechas a objetos Date
+    const valoresRestaurados = { ...providencia.formValuesOriginal };
+
+    if (valoresRestaurados.fechaProvidencia && !(valoresRestaurados.fechaProvidencia instanceof Date)) {
+      valoresRestaurados.fechaProvidencia = new Date(valoresRestaurados.fechaProvidencia);
+    }
+
+    if (valoresRestaurados.horaProvidencia && !(valoresRestaurados.horaProvidencia instanceof Date)) {
+      valoresRestaurados.horaProvidencia = new Date(valoresRestaurados.horaProvidencia);
+    }
+
+    if (valoresRestaurados.fechaCancelacion && !(valoresRestaurados.fechaCancelacion instanceof Date)) {
+      valoresRestaurados.fechaCancelacion = new Date(valoresRestaurados.fechaCancelacion);
+    }
+
+    // Restaurar valores del formulario
+    this.providenciaForm.patchValue(valoresRestaurados);
+
+    // Para agrupados, recargar títulos
+    if (providencia.tipo === 'agrupados') {
+      // Limpiar títulos existentes
+      while (this.titulos.length) {
+        this.titulos.removeAt(0);
+      }
+
+      // Recargar desde formValuesOriginal si existe el array
+      if (valoresRestaurados.titulos) {
+        valoresRestaurados.titulos.forEach((titulo: any) => {
+          this.titulos.push(this.fb.group({
+            orden: titulo.orden,
+            numeroTC: titulo.numeroTC,
+            concepto: titulo.concepto,
+            valorCapital: titulo.valorCapital,
+            comprobante: titulo.comprobante || '',
+            fechaCancelacion: titulo.fechaCancelacion || '',
+            valorCancelado: titulo.valorCancelado || titulo.valorCapital
+          }));
+        });
+      }
+    }
+
+    // ✅ Restaurar horaBase para que las horas continúen correctamente
+    if (providencia.horaOriginal) {
+      this.horaBase = new Date(providencia.horaOriginal);
+      this.contadorMinutos = 0; // Reiniciar contador
+    }
+
+    this.message.info('Providencia cargada para edición. Haga los cambios y presione "Guardar Cambios"');
+  }
+
   async onSubmit(): Promise<void> {
+    // ✅ Si está editando, primero guardar los cambios
+    if (this.editingProvidenciaIndex !== null) {
+      this.acumularProvidencia();
+      // Esperar un momento para que se procese
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
     // Si no hay providencias acumuladas, generar solo la actual
     if (this.providenciasAcumuladas.length === 0) {
-      // Agregar providencia actual primero
+      this.editingProvidenciaIndex = null; // Asegurarse de limpiar
       this.acumularProvidencia();
     }
 
     if (this.providenciasAcumuladas.length === 0) {
-      return; // No hay nada que generar
+      return;
     }
 
-    // Generar todas las providencias en UN SOLO documento
     this.message.info(`Generando documento con ${this.providenciasAcumuladas.length} providencia(s)...`);
 
     try {
-      await this.documentoService.generarProvidenciasMultiples(this.providenciasAcumuladas);
+      const fechaProvidencia = this.providenciasAcumuladas[0].fechaOriginal;
+      await this.documentoService.generarProvidenciasMultiples(this.providenciasAcumuladas, fechaProvidencia);
       this.message.success('Documento generado correctamente');
 
       // Limpiar
       this.providenciasAcumuladas = [];
       this.horaBase = null;
       this.contadorMinutos = 0;
+      this.editingProvidenciaIndex = null;
     } catch (error) {
       this.message.error('Error al generar el documento');
       console.error('Error:', error);

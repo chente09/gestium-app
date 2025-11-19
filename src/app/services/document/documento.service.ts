@@ -146,7 +146,7 @@ export class DocumentoService {
   /**
    * Genera múltiples providencias en un solo documento
    */
-  async generarProvidenciasMultiples(providencias: any[]) {
+  async generarProvidenciasMultiples(providencias: any[], fechaProvidencia: Date) {
     if (providencias.length === 0) {
       console.error('No hay providencias para generar');
       return;

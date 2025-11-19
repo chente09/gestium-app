@@ -159,23 +159,12 @@
                 </nz-col>
 
                 <!-- Capital Adeudado -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
                     <nz-form-item>
                         <nz-form-label nzFor="capital" nzRequired>Capital Adeudado (USD)</nz-form-label>
-                        <nz-form-control nzErrorTip="El capital es requerido">
+                        <nz-form-control nzErrorTip="Ingrese un valor válido">
                             <input nz-input id="capital" formControlName="capital" (keyup)="onValueChange('capital')"
-                                placeholder="Ej: 105" />
-                        </nz-form-control>
-                    </nz-form-item>
-                </nz-col>
-
-                <!-- Fracción Capital -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="4">
-                    <nz-form-item>
-                        <nz-form-label nzFor="fraccionCapital">Centavos</nz-form-label>
-                        <nz-form-control nzErrorTip="Ingrese centavos (00-99)">
-                            <input nz-input id="fraccionCapital" formControlName="fraccionCapital"
-                                (keyup)="onValueChange('capital')" placeholder="42" maxlength="2" />
+                                placeholder="Ej: 140.21 o 140,21" />
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
@@ -183,8 +172,7 @@
                 <!-- Mostrar valor en letras completo -->
                 <nz-col [nzXs]="24" *ngIf="valoresEnLetras['capital']">
                     <p class="numero-en-letras">
-                        En letras: {{ valoresEnLetras['capital'] }} (USD {{ providenciaForm.get('capital')?.value }},{{
-                        providenciaForm.get('fraccionCapital')?.value || '00' }})
+                        {{ valoresEnLetras['capital'] }}
                     </p>
                 </nz-col>
 
@@ -211,23 +199,12 @@
                 </nz-col>
 
                 <!-- Valor Cancelado -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6">
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
                     <nz-form-item>
                         <nz-form-label nzFor="cancelacion" nzRequired>Valor Cancelado (USD)</nz-form-label>
-                        <nz-form-control nzErrorTip="El valor es requerido">
+                        <nz-form-control nzErrorTip="Ingrese un valor válido">
                             <input nz-input id="cancelacion" formControlName="cancelacion"
-                                (keyup)="onValueChange('cancelacion')" placeholder="Ej: 199" />
-                        </nz-form-control>
-                    </nz-form-item>
-                </nz-col>
-
-                <!-- Fracción Cancelación -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="4">
-                    <nz-form-item>
-                        <nz-form-label nzFor="fraccionCancelacion">Centavos</nz-form-label>
-                        <nz-form-control nzErrorTip="Ingrese centavos (00-99)">
-                            <input nz-input id="fraccionCancelacion" formControlName="fraccionCancelacion"
-                                (keyup)="onValueChange('cancelacion')" placeholder="24" maxlength="2" />
+                                (keyup)="onValueChange('cancelacion')" placeholder="Ej: 199.24 o 199,24" />
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
@@ -235,9 +212,7 @@
                 <!-- Mostrar valor cancelado en letras -->
                 <nz-col [nzXs]="24" *ngIf="valoresEnLetras['cancelacion']">
                     <p class="numero-en-letras">
-                        En letras: {{ valoresEnLetras['cancelacion'] }} (USD$ {{
-                        providenciaForm.get('cancelacion')?.value }},{{
-                        providenciaForm.get('fraccionCancelacion')?.value || '00' }})
+                        {{ valoresEnLetras['cancelacion'] }}
                     </p>
                 </nz-col>
             </nz-row>
@@ -270,13 +245,13 @@
                 [nzScroll]="{ x: '1200px' }">
                 <thead>
                     <tr>
-                        <th nzWidth="40px">Orden</th>
-                        <th nzWidth="70px">Número TC</th>
-                        <th nzWidth="120px">Concepto</th>
-                        <th nzWidth="90px">Capital (USD)</th>
-                        <th nzWidth="90px">Comprobante</th>
-                        <th nzWidth="90px">Fecha Cancel.</th>
-                        <th nzWidth="90px">Cancelado (USD)</th>
+                        <th nzWidth="60px">Orden</th>
+                        <th nzWidth="120px">Número TC</th>
+                        <th>Concepto</th>
+                        <th nzWidth="120px">Capital (USD)</th>
+                        <th nzWidth="120px">Comprobante</th>
+                        <th nzWidth="140px">Fecha Cancel.</th>
+                        <th nzWidth="120px">Cancelado (USD)</th>
                         <th nzWidth="100px">Acciones</th>
                     </tr>
                 </thead>
@@ -285,10 +260,10 @@
                         <td>{{ titulo.value.orden }}</td>
                         <td>{{ titulo.value.numeroTC }}</td>
                         <td>{{ titulo.value.concepto }}</td>
-                        <td class="text-right">{{ titulo.value.valorCapital }}</td>
+                        <td class="text-right">{{ formatearValorTabla(titulo.value.valorCapital) }}</td>
                         <td>{{ titulo.value.comprobante }}</td>
                         <td>{{ titulo.value.fechaCancelacion }}</td>
-                        <td class="text-right">{{ titulo.value.valorCancelado }}</td>
+                        <td class="text-right">{{ formatearValorTabla(titulo.value.valorCancelado) }}</td>
                         <td>
                             <button nz-button nzType="link" nzSize="small" (click)="editarTitulo(i)" type="button">
                                 <i nz-icon nzType="edit" nzTheme="outline"></i>

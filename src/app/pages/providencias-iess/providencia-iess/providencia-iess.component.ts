@@ -137,13 +137,11 @@ export class ProvidenciaIessComponent implements OnInit {
     // Para casos INDIVIDUALES
     if (this.tipoProvidencia === 'individual') {
       Object.assign(baseForm, {
-        numeroTC: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]], // Este es el mismo que nroProcedimientoCoactivo
-        capital: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
-        fraccionCapital: ['', [Validators.pattern('^[0-9]{1,2}$')]],
-        comprobante: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
+        numeroTC: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
+        capital: ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]],
+        comprobante: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
         fechaCancelacion: [null, Validators.required],
-        cancelacion: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
-        fraccionCancelacion: ['', [Validators.pattern('^[0-9]{1,2}$')]]
+        cancelacion: ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]]
       });
     }
 
@@ -160,10 +158,10 @@ export class ProvidenciaIessComponent implements OnInit {
     // Inicializar form para agregar títulos manualmente
     this.tituloForm = this.fb.group({
       orden: ['', Validators.required],
-      numeroTC: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
+      numeroTC: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
       concepto: ['', Validators.required],
       valorCapital: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
-      comprobante: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
+      comprobante: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
       fechaCancelacion: ['', Validators.required],
       valorCancelado: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]]
     });
@@ -367,41 +365,58 @@ export class ProvidenciaIessComponent implements OnInit {
 
   onValueChange(campo: string): void {
     const valor = this.providenciaForm.get(campo)?.value;
-    const fraccionCampo = campo.includes('capital') ?
-      (campo === 'capital' ? 'fraccionCapital' : campo.replace('capital', 'Capital')) :
-      (campo === 'cancelacion' ? 'fraccionCancelacion' : '');
 
     if (!valor) {
       this.valoresEnLetras[campo] = '';
       return;
     }
 
-    const valorSinComas = String(valor).replace(/,/g, '');
-    const valorFormateado = this.formatearNumeroConMiles(valorSinComas);
+    try {
+      // Normalizar valor (esto ya garantiza 2 decimales: 14522.20)
+      const valorNormalizado = this.normalizarValorConDecimales(valor);
 
-    // Actualizar el control con el valor formateado
-    this.providenciaForm.get(campo)?.setValue(valorFormateado, { emitEvent: false });
+      // Separar entero y decimal
+      const { entero, fraccion } = this.separarEnteroYDecimal(valorNormalizado);
 
-    // Convertir a letras con formato completo
-    const parteEntera = Number(valorSinComas);
-    const fraccion = this.providenciaForm.get(fraccionCampo)?.value || '00';
-    const fraccionFormateada = String(fraccion).padStart(2, '0');
+      // Convertir a letras
+      const valorEnLetras = this.convertirNumeroALetras(entero).toUpperCase();
 
-    this.valoresEnLetras[campo] = parteEntera ?
-      `${this.convertirNumeroALetras(parteEntera).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccionFormateada}/100` : '';
-  }
-
-  formatearNumeroConMiles(valor: string): string {
-    const valorSinMiles = valor.replace(/,/g, '');
-    const numero = Number(valorSinMiles);
-
-    if (!isNaN(numero)) {
-      return numero.toLocaleString('en-US');
+      // ✅ Formatear resultado completo - UN SOLO FORMATO
+      this.valoresEnLetras[campo] = `${valorEnLetras} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccion}/100 (USD$ ${this.formatearNumeroConMiles(valorNormalizado)})`;
+    } catch (error) {
+      console.error('Error al convertir valor:', error);
+      this.valoresEnLetras[campo] = '';
     }
-
-    return valorSinMiles;
   }
 
+  formatearNumeroConMiles(valor: string | number): string {
+    if (!valor && valor !== 0) return '0.00';
+
+    // Normalizar primero para garantizar 2 decimales
+    const valorNormalizado = this.normalizarValorConDecimales(valor);
+
+    // Separar parte entera y decimal
+    const partes = valorNormalizado.split('.');
+    const entero = partes[0];
+    const decimal = partes[1] || '00';
+
+    // Formatear parte entera con comas cada 3 dígitos
+    const enteroFormateado = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Retornar con punto decimal y siempre 2 decimales
+    return `${enteroFormateado}.${decimal}`;
+  }
+
+  /**
+ * Formatea valores para mostrar en la tabla con 2 decimales
+ */
+  formatearValorTabla(valor: any): string {
+    if (!valor) return '0.00';
+
+    // Normalizar y formatear
+    const valorNormalizado = this.normalizarValorConDecimales(valor);
+    return this.formatearNumeroConMiles(valorNormalizado);
+  }
   convertirNumeroALetras(num: number): string {
     const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
     const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
@@ -534,10 +549,12 @@ export class ProvidenciaIessComponent implements OnInit {
       datos.nroProcedimientoCoactivo = formValues.numeroTC;
       datos.numeroTC = formValues.numeroTC;
 
-      const fraccionCapital = (formValues.fraccionCapital || '00').toString().padStart(2, '0');
-      const capitalConDecimales = `${formValues.capital}.${fraccionCapital}`;
-      datos.capital = this.formatearNumeroConMiles(capitalConDecimales);
-      datos.valorLetrasCapital = `${this.convertirNumeroALetras(Number(formValues.capital.replace(/,/g, ''))).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccionCapital}/100`;
+      // ✅ Normalizar capital con decimales
+      const capitalNormalizado = this.normalizarValorConDecimales(formValues.capital);
+      const { entero: enteroCapital, fraccion: fraccionCapital } = this.separarEnteroYDecimal(capitalNormalizado);
+
+      datos.capital = this.formatearNumeroConMiles(capitalNormalizado);
+      datos.valorLetrasCapital = `${this.convertirNumeroALetras(enteroCapital).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccionCapital}/100`;
 
       datos.comprobante = formValues.comprobante;
 
@@ -546,10 +563,12 @@ export class ProvidenciaIessComponent implements OnInit {
         ? this.formatearFecha(formValues.fechaCancelacion)
         : formValues.fechaCancelacion;
 
-      const fraccionCancelacion = (formValues.fraccionCancelacion || '00').toString().padStart(2, '0');
-      const cancelacionConDecimales = `${formValues.cancelacion}.${fraccionCancelacion}`;
-      datos.cancelacion = this.formatearNumeroConMiles(cancelacionConDecimales);
-      datos.valorLetrasCancelacion = `${this.convertirNumeroALetras(Number(formValues.cancelacion.replace(/,/g, ''))).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccionCancelacion}/100`;
+      // ✅ Normalizar cancelación con decimales
+      const cancelacionNormalizada = this.normalizarValorConDecimales(formValues.cancelacion);
+      const { entero: enteroCancelacion, fraccion: fraccionCancelacion } = this.separarEnteroYDecimal(cancelacionNormalizada);
+
+      datos.cancelacion = this.formatearNumeroConMiles(cancelacionNormalizada);
+      datos.valorLetrasCancelacion = `${this.convertirNumeroALetras(enteroCancelacion).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccionCancelacion}/100`;
     } else {
       // Lógica para agrupados
       if (this.titulos.length === 0) {
@@ -561,7 +580,7 @@ export class ProvidenciaIessComponent implements OnInit {
         orden: titulo.orden,
         numeroTC: titulo.numeroTC,
         concepto: Array.isArray(titulo.concepto) ? titulo.concepto.join(', ') : titulo.concepto,
-        valorCapital: this.formatearNumeroConMiles(titulo.valorCapital)
+        valorCapital: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorCapital)) // ✅ Normalizar
       }));
 
       const totalCalculado = this.calcularTotalConFraccion();
@@ -574,7 +593,7 @@ export class ProvidenciaIessComponent implements OnInit {
         concepto: Array.isArray(titulo.concepto) ? titulo.concepto.join(', ') : titulo.concepto,
         comprobante: titulo.comprobante || '',
         fechaCancelacion: titulo.fechaCancelacion instanceof Date ? this.formatearFechaCorta(titulo.fechaCancelacion) : titulo.fechaCancelacion || '',
-        valorCancelado: this.formatearNumeroConMiles(titulo.valorCancelado || titulo.valorCapital)
+        valorCancelado: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorCancelado || titulo.valorCapital)) // ✅ Normalizar
       }));
     }
 
@@ -799,37 +818,90 @@ export class ProvidenciaIessComponent implements OnInit {
   // ========== CALCULAR TOTAL (AGRUPADOS) ==========
 
   calcularTotal(): string {
-    if (this.tipoProvidencia !== 'agrupados' || this.titulos.length === 0) {
-      return '0.00';
-    }
-
-    const total = this.titulos.value.reduce((sum: number, titulo: any) => {
-      const valor = Number(String(titulo.valorCapital).replace(/,/g, ''));
-      return sum + (isNaN(valor) ? 0 : valor);
-    }, 0);
-
-    return this.formatearNumeroConMiles(total.toFixed(2));
+    const total = this.calcularTotalConFraccion();
+    return total.formateado; // Ya viene formateado con 2 decimales
   }
 
   calcularTotalConFraccion(): { entero: number, fraccion: string, formateado: string } {
-    if (this.tipoProvidencia !== 'agrupados' || this.titulos.length === 0) {
-      return { entero: 0, fraccion: '00', formateado: '0.00' };
-    }
+    let totalDecimal = 0;
 
-    const total = this.titulos.value.reduce((sum: number, titulo: any) => {
-      const valor = Number(String(titulo.valorCapital).replace(/,/g, ''));
-      return sum + (isNaN(valor) ? 0 : valor);
-    }, 0);
+    this.titulos.controls.forEach((titulo: any) => {
+      const valor = titulo.value.valorCapital;
+      if (valor) {
+        // ✅ Normalizar y sumar
+        const valorNormalizado = this.normalizarValorConDecimales(valor);
+        totalDecimal += parseFloat(valorNormalizado);
+      }
+    });
 
-    const parteEntera = Math.floor(total);
-    const parteFraccion = Math.round((total - parteEntera) * 100);
-    const fraccionFormateada = parteFraccion.toString().padStart(2, '0');
+    // ✅ Usar toFixed para asegurar 2 decimales
+    const totalStr = totalDecimal.toFixed(2);
+    const partes = totalStr.split('.');
 
     return {
-      entero: parteEntera,
-      fraccion: fraccionFormateada,
-      formateado: this.formatearNumeroConMiles(total.toFixed(2))
+      entero: parseInt(partes[0]),
+      fraccion: partes[1],
+      formateado: this.formatearNumeroConMiles(totalStr)
     };
   }
 
+  /**
+ * Normaliza un valor numérico para asegurar que tenga 2 decimales
+ * Acepta formatos: 140.21, 140,21, 1.400,21, 1,400.21
+ * Siempre retorna formato: 140.21
+ */
+  private normalizarValorConDecimales(valor: string | number): string {
+    if (!valor) return '0.00';
+
+    // Convertir a string
+    let valorStr = String(valor).trim();
+
+    // Detectar el formato basándose en la última coma o punto
+    const ultimoPunto = valorStr.lastIndexOf('.');
+    const ultimaComa = valorStr.lastIndexOf(',');
+
+    // Si tiene ambos, el último es el separador decimal
+    if (ultimoPunto > -1 && ultimaComa > -1) {
+      if (ultimoPunto > ultimaComa) {
+        // Formato: 1,400.21 (inglés)
+        valorStr = valorStr.replace(/,/g, '');
+      } else {
+        // Formato: 1.400,21 (europeo)
+        valorStr = valorStr.replace(/\./g, '').replace(',', '.');
+      }
+    } else if (ultimaComa > -1) {
+      // Solo tiene coma - verificar si es decimal o miles
+      const partesDespuesComa = valorStr.split(',')[1];
+      if (partesDespuesComa && partesDespuesComa.length <= 2) {
+        // Es decimal: 140,21
+        valorStr = valorStr.replace(',', '.');
+      } else {
+        // Es miles: 1,400
+        valorStr = valorStr.replace(/,/g, '');
+      }
+    }
+    // Si solo tiene punto, ya está en formato correcto
+
+    // Convertir a número
+    const numero = parseFloat(valorStr);
+
+    if (isNaN(numero)) return '0.00';
+
+    // Retornar con 2 decimales fijos
+    return numero.toFixed(2);
+  }
+
+  /**
+   * Separa valor en parte entera y decimal
+   * Ejemplo: "125.42" → { entero: 125, fraccion: "42" }
+   */
+  private separarEnteroYDecimal(valor: string): { entero: number, fraccion: string } {
+    const valorNormalizado = this.normalizarValorConDecimales(valor);
+    const partes = valorNormalizado.split('.');
+
+    return {
+      entero: parseInt(partes[0]),
+      fraccion: partes[1] || '00'
+    };
+  }
 }

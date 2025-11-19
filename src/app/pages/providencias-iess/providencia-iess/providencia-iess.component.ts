@@ -115,9 +115,12 @@ export class ProvidenciaIessComponent implements OnInit {
   }
 
   initForm(): void {
+    const horaDefecto = new Date();
+    horaDefecto.setHours(8, 0, 0, 0);
+
     const baseForm = {
       fechaProvidencia: [null, Validators.required],
-      horaProvidencia: [null, Validators.required],
+      horaProvidencia: [horaDefecto, Validators.required],
       razonSocial: ['', Validators.required],
       ruc: ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]],
       cedula: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],

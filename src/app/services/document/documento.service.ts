@@ -164,14 +164,32 @@ export class DocumentoService {
         documentos.push(buffer);
       }
 
+      // Preparar nombre dinámico del documento
+      const primerProvidencia = providencias[0];
+      const tipo = primerProvidencia.tipo === 'individual' ? 'INDIVIDUAL' : 'AGRUPADOS';
+      const personaTipo = primerProvidencia.personaTipo === 'natural' ? 'PERSONA_NATURAL' : 'PERSONA_JURIDICA';
+      const fecha = this.formatearFechaParaNombre(fechaProvidencia);
+      const nombreBase = `INICIO_CANCELACION_${tipo}_${personaTipo}_${fecha}`;
+
       // Combinar manualmente usando PizZip
-      await this.combinarDocumentos(documentos);
+      await this.combinarDocumentos(documentos, nombreBase);
 
       console.log('Documento combinado generado correctamente');
     } catch (error) {
       console.error('Error al generar providencias múltiples:', error);
       throw error;
     }
+  }
+
+  /**
+   * Formatea fecha para el nombre del archivo
+   */
+  private formatearFechaParaNombre(fecha: Date): string {
+    const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const mes = meses[fecha.getMonth()];
+    const anio = fecha.getFullYear();
+    return `${dia}${mes}${anio}`;
   }
 
   /**
@@ -216,9 +234,9 @@ export class DocumentoService {
   }
 
   /**
-   * Combina múltiples documentos ArrayBuffer en uno solo
-   */
-  private async combinarDocumentos(documentos: ArrayBuffer[]): Promise<void> {
+ * Combina múltiples documentos ArrayBuffer en uno solo
+ */
+  private async combinarDocumentos(documentos: ArrayBuffer[], nombreBase: string): Promise<void> {
     if (documentos.length === 0) return;
 
     try {
@@ -250,13 +268,14 @@ export class DocumentoService {
       // Actualizar el XML en el ZIP base
       zipBase.file('word/document.xml', documentXml);
 
-      // Generar y descargar
+      // Generar y descargar con nombre dinámico
       const blob = zipBase.generate({
         type: 'blob',
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
 
-      const nombreArchivo = `providencias-${new Date().getTime()}.docx`;
+      // ✅ Usar el nombre base recibido
+      const nombreArchivo = `${nombreBase}.docx`;
       saveAs(blob, nombreArchivo);
 
       console.log(`Documento combinado generado: ${nombreArchivo}`);

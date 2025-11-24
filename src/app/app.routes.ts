@@ -51,6 +51,8 @@ const adminRoutes: Routes = [
   { path: 'providencia-iess/individual-juridica', component: ProvidenciaIessComponent },
   { path: 'providencia-iess/agrupados-natural', component: ProvidenciaIessComponent },
   { path: 'providencia-iess/agrupados-juridica', component: ProvidenciaIessComponent },
+  { path: 'rpv-iess/natural', component: ProvidenciaIessComponent },
+  { path: 'rpv-iess/juridica', component: ProvidenciaIessComponent },
 ].map(route => ({
   ...route,
   ...canActivate(redirectUnauthorizedToLogin)

@@ -14,10 +14,12 @@ export class DocumentoService {
   private matrizIssfa = 'assets/matriz.docx';
 
   // Plantillas de providencias IESS
-  private providenciaIndividualNatural = 'assets/inicio-cancelacion-individual-natural.docx';
-  private providenciaIndividualJuridica = 'assets/inicio-cancelacion-individual-juridica.docx';
-  private providenciaAgrupadosNatural = 'assets/inicio-cancelacion-agrupados-natural.docx';
-  private providenciaAgrupadosJuridica = 'assets/inicio-cancelacion-agrupados-juridica.docx';
+  private providenciaIndividualNatural = 'assets/iess/inicio-cancelacion/inicio-cancelacion-individual-natural.docx';
+  private providenciaIndividualJuridica = 'assets/iess/inicio-cancelacion/inicio-cancelacion-individual-juridica.docx';
+  private providenciaAgrupadosNatural = 'assets/iess/inicio-cancelacion/inicio-cancelacion-agrupados-natural.docx';
+  private providenciaAgrupadosJuridica = 'assets/iess/inicio-cancelacion/inicio-cancelacion-agrupados-juridica.docx';
+  private rpvNatural = 'assets/iess/rpv/rpvNaturales.docx';
+  private rpvJuridica = 'assets/iess/rpv/rpvJuridicos.docx';
 
   constructor(private http: HttpClient) { }
 
@@ -107,6 +109,20 @@ export class DocumentoService {
    */
   generarProvidenciaAgrupadosJuridica(datos: any) {
     this.generarProvidencia(this.providenciaAgrupadosJuridica, datos, 'providencia-agrupados-juridica.docx');
+  }
+
+  /**
+ * Genera RPV para Persona Natural
+ */
+  generarRpvNatural(datos: any) {
+    this.generarProvidencia(this.rpvNatural, datos, 'RPV-Persona-Natural.docx');
+  }
+
+  /**
+   * Genera RPV para Persona Jurídica
+   */
+  generarRpvJuridica(datos: any) {
+    this.generarProvidencia(this.rpvJuridica, datos, 'RPV-Persona-Juridica.docx');
   }
 
   /**
@@ -281,6 +297,72 @@ export class DocumentoService {
       console.log(`Documento combinado generado: ${nombreArchivo}`);
     } catch (error) {
       console.error('Error al combinar documentos:', error);
+      throw error;
+    }
+  }
+
+  /**
+ * Genera múltiples RPV en un solo documento
+ */
+  async generarRpvMultiples(rpvs: any[], fechaRpv: Date) {
+    if (rpvs.length === 0) {
+      console.error('No hay RPV para generar');
+      return;
+    }
+
+    try {
+      const documentos: ArrayBuffer[] = [];
+
+      // Generar cada RPV individualmente en memoria
+      for (let i = 0; i < rpvs.length; i++) {
+        const rpv = rpvs[i];
+        console.log(`Generando RPV ${i + 1} de ${rpvs.length}...`);
+
+        const buffer = await this.generarRpvEnMemoria(rpv);
+        documentos.push(buffer);
+      }
+
+      // Preparar nombre dinámico del documento
+      const primerRpv = rpvs[0];
+      const personaTipo = primerRpv.personaTipo === 'natural' ? 'PERSONA_NATURAL' : 'PERSONA_JURIDICA';
+      const fecha = this.formatearFechaParaNombre(fechaRpv);
+      const nombreBase = `RPV_${personaTipo}_${fecha}`;
+
+      // Combinar documentos
+      await this.combinarDocumentos(documentos, nombreBase);
+
+      console.log('RPV múltiples generados correctamente');
+    } catch (error) {
+      console.error('Error al generar RPV múltiples:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Genera un RPV en memoria sin descargarlo
+   */
+  private async generarRpvEnMemoria(rpv: any): Promise<ArrayBuffer> {
+    const templatePath = rpv.personaTipo === 'natural'
+      ? this.rpvNatural
+      : this.rpvJuridica;
+
+    try {
+      const buffer = await firstValueFrom(
+        this.http.get(templatePath, { responseType: 'arraybuffer' })
+      );
+
+      const zip = new PizZip(buffer);
+      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+      doc.setData(rpv.datos);
+      doc.render();
+
+      return doc.getZip().generate({
+        type: 'arraybuffer',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      }) as ArrayBuffer;
+    } catch (error) {
+      console.error('Error al generar RPV en memoria:', error);
       throw error;
     }
   }

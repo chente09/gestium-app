@@ -1,7 +1,6 @@
-.selector-container {
+.area-container {
+    text-align: center;
     padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
 .divider {
@@ -10,157 +9,132 @@
     border-top: 1px solid #e8e8e8;
 }
 
-.header-section {
-    text-align: center;
-    margin-bottom: 24px;
-}
-
-.main-title {
-    font-size: 28px;
+.title {
+    text-align: left;
+    font-size: 22px;
     font-weight: bold;
-    color: #001529;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+    margin-bottom: 10px;
 }
 
-.main-title i {
-    color: #1890ff;
+/* ========== VISTA PRINCIPAL - Documentos Disponibles ========== */
+.doc-card {
+    background-color: #eff2f5;
+    padding: 16px;
+    margin: 10px 0;
+    font-size: 19px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border-radius: 8px;
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.doc-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.doc-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    width: 100%;
+}
+
+.doc-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.doc-icon {
     font-size: 32px;
 }
 
-.subtitle {
-    font-size: 16px;
+.doc-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: black;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* ========== VISTA SECUNDARIA - Opciones (RPV e Inicio-Cancelación) ========== */
+.option-card {
+    background-color: #f8f9fa;
+    padding: 16px;
+    margin: 12px 0;
+    font-size: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border-radius: 8px;
+    transition: transform 0.2s ease-in-out;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.option-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.option-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
     color: #595959;
-    margin-bottom: 0;
 }
 
 .option-link {
     text-decoration: none;
     color: inherit;
     display: block;
-    height: 100%;
-}
-
-.option-card {
-    height: 100%;
-    background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
-    border: 1px solid #e8e8e8;
-    transition: all 0.3s ease;
-}
-
-.option-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    border-color: #1890ff;
-}
-
-.card-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 24px 16px;
-    min-height: 200px;
-    justify-content: center;
-}
-
-.icon-container {
-    margin-bottom: 16px;
-}
-
-.option-icon {
-    font-size: 48px;
-    color: #1890ff;
-    transition: all 0.3s ease;
-}
-
-.option-card:hover .option-icon {
-    transform: scale(1.1);
-    color: #40a9ff;
-}
-
-.text-container {
     width: 100%;
 }
 
-.option-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #001529;
-    margin-bottom: 8px;
-}
-
-.option-description {
-    font-size: 14px;
-    color: #8c8c8c;
-    margin-bottom: 0;
-    line-height: 1.5;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .main-title {
-        font-size: 22px;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .main-title i {
-        font-size: 28px;
-    }
-
-    .subtitle {
-        font-size: 14px;
-    }
-
-    .card-content {
-        padding: 16px 12px;
-        min-height: 160px;
-    }
-
-    .option-icon {
-        font-size: 36px;
-    }
-
-    .option-title {
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1024px) {
+    .doc-card, .option-card {
         font-size: 16px;
     }
+}
 
-    .option-description {
-        font-size: 12px;
+@media (max-width: 768px) {
+    .doc-card, .option-card {
+        width: 100%;
+        font-size: 14px;
+        padding: 12px;
+    }
+
+    .doc-icon, .option-icon {
+        font-size: 28px;
     }
 }
 
 @media (max-width: 480px) {
-    .selector-container {
-        padding: 12px;
+    .doc-card, .option-card {
+        font-size: 12px;
+        padding: 8px;
     }
 
-    .main-title {
-        font-size: 18px;
-    }
-
-    .main-title i {
+    .doc-icon, .option-icon {
         font-size: 24px;
     }
 
-    .card-content {
-        padding: 12px 8px;
-        min-height: 140px;
-    }
-
-    .option-icon {
-        font-size: 32px;
-    }
-
-    .option-title {
-        font-size: 14px;
-    }
-
-    .option-description {
-        font-size: 11px;
+    .ant-card-meta-title {
+        overflow: hidden;
+        color: rgba(0, 0, 0, .85);
+        font-size: 10px;
+        text-overflow: ellipsis;
     }
 }

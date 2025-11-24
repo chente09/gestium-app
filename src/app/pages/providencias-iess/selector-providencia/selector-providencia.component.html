@@ -7,38 +7,63 @@
     <nz-breadcrumb-item>
         <a routerLink="/area/iess">IESS</a>
     </nz-breadcrumb-item>
-    <nz-breadcrumb-item>Seleccionar tipo de providencia</nz-breadcrumb-item>
+    <nz-breadcrumb-item *ngIf="vistaActual === 'principal'">Documentos</nz-breadcrumb-item>
+    <nz-breadcrumb-item *ngIf="vistaActual !== 'principal'">
+        <a (click)="volverPrincipal()" style="cursor: pointer;">Documentos</a>
+    </nz-breadcrumb-item>
+    <nz-breadcrumb-item *ngIf="vistaActual === 'inicio-cancelacion'">Inicio y Cancelación</nz-breadcrumb-item>
+    <nz-breadcrumb-item *ngIf="vistaActual === 'rpv'">RPV</nz-breadcrumb-item>
 </nz-breadcrumb>
 <hr class="divider">
 
-<div class="selector-container">
+<nz-layout class="area-container">
     <nz-card [nzBordered]="true">
-        <div class="header-section">
-            <h1 class="main-title">
-                <i nz-icon nzType="file-text" nzTheme="outline"></i>
-                Redacción de Providencias IESS
-            </h1>
-            <p class="subtitle">Selecciona el tipo de providencia que deseas generar</p>
-        </div>
-
+        <h2 class="title">{{ getTitulo() }}</h2>
         <hr class="divider">
 
-        <nz-row [nzGutter]="[16, 16]" justify="center">
-            <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="12" [nzLg]="12" *ngFor="let option of providenciasOptions">
+        <!-- VISTA PRINCIPAL -->
+        <nz-row [nzGutter]="16" justify="center" *ngIf="vistaActual === 'principal'">
+            <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="12" [nzLg]="8" *ngFor="let doc of documentosDisponibles">
+                <a (click)="seleccionarDocumento(doc.vista)" class="doc-link" style="cursor: pointer;">
+                    <nz-card class="doc-card" [nzBordered]="false" [nzHoverable]="true">
+                        <div class="doc-icon-wrapper">
+                            <i nz-icon [nzType]="doc.icono" nzTheme="outline" class="doc-icon"
+                                [style.color]="doc.color"></i>
+                            <span class="doc-badge" [style.background-color]="doc.color">{{ doc.cantidad }}</span>
+                        </div>
+                        <nz-card-meta [nzTitle]="doc.titulo" [nzDescription]="doc.descripcion">
+                        </nz-card-meta>
+                    </nz-card>
+                </a>
+            </nz-col>
+        </nz-row>
+
+        <!-- VISTA INICIO Y CANCELACIÓN -->
+        <nz-row [nzGutter]="16" justify="center" *ngIf="vistaActual === 'inicio-cancelacion'">
+            <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="12" [nzLg]="6" *ngFor="let option of opcionesInicioCancelacion">
                 <a [routerLink]="option.route" class="option-link">
                     <nz-card class="option-card" [nzBordered]="false" [nzHoverable]="true">
-                        <div class="card-content">
-                            <div class="icon-container">
-                                <i nz-icon [nzType]="option.icon" nzTheme="outline" class="option-icon"></i>
-                            </div>
-                            <div class="text-container">
-                                <h3 class="option-title">{{ option.title }}</h3>
-                                <p class="option-description">{{ option.description }}</p>
-                            </div>
+                        <div class="option-icon">
+                            <i nz-icon [nzType]="option.icon" nzTheme="outline"></i>
                         </div>
+                        <nz-card-meta [nzTitle]="option.title" [nzDescription]="option.description"></nz-card-meta>
+                    </nz-card>
+                </a>
+            </nz-col>
+        </nz-row>
+
+        <!-- VISTA RPV -->
+        <nz-row [nzGutter]="16" justify="center" *ngIf="vistaActual === 'rpv'">
+            <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="12" [nzLg]="8" *ngFor="let option of opcionesRpv">
+                <a [routerLink]="option.route" class="option-link">
+                    <nz-card class="option-card" [nzBordered]="false" [nzHoverable]="true">
+                        <div class="option-icon">
+                            <i nz-icon [nzType]="option.icon" nzTheme="outline"></i>
+                        </div>
+                        <nz-card-meta [nzTitle]="option.title" [nzDescription]="option.description"></nz-card-meta>
                     </nz-card>
                 </a>
             </nz-col>
         </nz-row>
     </nz-card>
-</div>
+</nz-layout>

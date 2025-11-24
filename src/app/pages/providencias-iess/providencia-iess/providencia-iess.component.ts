@@ -22,6 +22,7 @@ interface Abogado {
   nombre: string;
   pronombre: string;
   genero: string;
+  correos?: string;
 }
 
 @Component({
@@ -50,7 +51,7 @@ interface Abogado {
 export class ProvidenciaIessComponent implements OnInit {
 
   providenciaForm!: FormGroup;
-  tipoProvidencia: 'individual' | 'agrupados' = 'individual';
+  tipoProvidencia: 'individual' | 'agrupados' | 'rpv' = 'individual';
   tipoPersona: 'natural' | 'juridica' = 'natural';
   providenciasAcumuladas: any[] = []; // Array para acumular providencias
   horaBase: Date | null = null; // Hora base para incrementar
@@ -59,10 +60,10 @@ export class ProvidenciaIessComponent implements OnInit {
 
   // Lista de abogados
   abogados: Abogado[] = [
-    { nombre: 'AB. WILLIAM MARCELO MENA MENA', pronombre: 'el', genero: 'o' },
-    { nombre: 'AB. JESSICA VICTORIA ORDOÑEZ PARRAGA', pronombre: 'la', genero: 'a' },
-    { nombre: 'AB. MAYRA ALEXANDRA ORDOÑEZ PARRAGA', pronombre: 'la', genero: 'a' },
-    { nombre: 'AB. JOSE LUIS RUEDA BUSTE', pronombre: 'el', genero: 'o' }
+    { nombre: 'AB. WILLIAM MARCELO MENA MENA', pronombre: 'el', genero: 'o', correos: 'marcelo.mena.coactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' },
+    { nombre: 'AB. JESSICA VICTORIA ORDOÑEZ PARRAGA', pronombre: 'la', genero: 'a', correos: 'jessica.ordonez.coactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' },
+    { nombre: 'AB. MAYRA ALEXANDRA ORDOÑEZ PARRAGA', pronombre: 'la', genero: 'a', correos: 'jose.rueda.coactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' },
+    { nombre: 'AB. JOSE LUIS RUEDA BUSTE', pronombre: 'el', genero: 'o', correos: 'mayra.ordonezcoactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' }
   ];
 
   // Conceptos disponibles para títulos
@@ -92,11 +93,19 @@ export class ProvidenciaIessComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    // Obtener tipo de providencia de la ruta
     this.route.params.subscribe(params => {
       const routePath = this.router.url;
 
-      if (routePath.includes('individual-natural')) {
+      // ✅ Detectar RPV
+      if (routePath.includes('rpv-iess/natural')) {
+        this.tipoProvidencia = 'rpv';
+        this.tipoPersona = 'natural';
+      } else if (routePath.includes('rpv-iess/juridica')) {
+        this.tipoProvidencia = 'rpv';
+        this.tipoPersona = 'juridica';
+      }
+      // Lógica existente
+      else if (routePath.includes('individual-natural')) {
         this.tipoProvidencia = 'individual';
         this.tipoPersona = 'natural';
       } else if (routePath.includes('individual-juridica')) {
@@ -120,24 +129,45 @@ export class ProvidenciaIessComponent implements OnInit {
 
     const baseForm = {
       fechaProvidencia: [null, Validators.required],
-      horaProvidencia: [horaDefecto, Validators.required],
-      razonSocial: ['', Validators.required],
-      ruc: ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]],
+      numeroTC: ['', Validators.required],
       cedula: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
       abogadoSeleccionado: [null, Validators.required]
     };
 
-    // Agregar representante legal si es persona jurídica
-    if (this.tipoPersona === 'juridica') {
+    // ✅ RPV no usa hora, razonSocial ni RUC en persona natural
+    if (this.tipoProvidencia !== 'rpv') {
+      Object.assign(baseForm, {
+        horaProvidencia: [horaDefecto, Validators.required],
+        razonSocial: ['', Validators.required],
+        ruc: ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]]
+      });
+    }
+
+    // ✅ RPV persona jurídica SÍ necesita razón social y RUC
+    if (this.tipoProvidencia === 'rpv' && this.tipoPersona === 'juridica') {
+      Object.assign(baseForm, {
+        razonSocial: ['', Validators.required],
+        ruc: ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]]
+      });
+    }
+
+    // Representante legal para jurídicas (providencias)
+    if (this.tipoPersona === 'juridica' && this.tipoProvidencia !== 'rpv') {
       Object.assign(baseForm, {
         representanteLegal: ['', Validators.required]
       });
     }
 
-    // Para casos INDIVIDUALES
+    // ✅ Representante legal para ambos tipos en RPV
+    if (this.tipoProvidencia === 'rpv') {
+      Object.assign(baseForm, {
+        representanteLegal: ['', Validators.required]
+      });
+    }
+
+    // Para casos INDIVIDUALES (providencias)
     if (this.tipoProvidencia === 'individual') {
       Object.assign(baseForm, {
-        numeroTC: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
         capital: ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]],
         comprobante: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
         fechaCancelacion: [null, Validators.required],
@@ -155,7 +185,7 @@ export class ProvidenciaIessComponent implements OnInit {
 
     this.providenciaForm = this.fb.group(baseForm);
 
-    // Inicializar form para agregar títulos manualmente
+    // Form para títulos (solo agrupados)
     this.tituloForm = this.fb.group({
       orden: ['', Validators.required],
       numeroTC: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
@@ -182,6 +212,10 @@ export class ProvidenciaIessComponent implements OnInit {
 
   get esAgrupados(): boolean {
     return this.tipoProvidencia === 'agrupados';
+  }
+
+  get esRpv(): boolean {
+    return this.tipoProvidencia === 'rpv';
   }
 
   // ========== GESTIÓN DE TÍTULOS (AGRUPADOS) ==========
@@ -509,7 +543,6 @@ export class ProvidenciaIessComponent implements OnInit {
       return;
     }
 
-    // Preparar datos igual que en onSubmit
     const formValues = this.providenciaForm.value;
     const abogadoSeleccionado = this.abogados.find(a => a.nombre === formValues.abogadoSeleccionado);
 
@@ -518,6 +551,53 @@ export class ProvidenciaIessComponent implements OnInit {
       return;
     }
 
+    // ✅ LÓGICA PARA RPV
+    if (this.tipoProvidencia === 'rpv') {
+      const datos: any = {
+        fechaProvidencia: this.formatearFecha(formValues.fechaProvidencia),
+        numeroTC: formValues.numeroTC,
+        cedula: formValues.cedula,
+        representanteLegal: formValues.representanteLegal,
+        abogadoNombreMinusculas: this.convertirNombreMinusculas(abogadoSeleccionado.nombre),
+        genero: abogadoSeleccionado.genero,
+        pronombre: abogadoSeleccionado.pronombre,
+        correosAb: abogadoSeleccionado.correos
+      };
+
+      // Agregar campos de persona jurídica si aplica
+      if (this.tipoPersona === 'juridica') {
+        datos.razonSocial = formValues.razonSocial;
+        datos.ruc = formValues.ruc;
+      }
+
+      // Agregar o actualizar RPV
+      if (this.editingProvidenciaIndex !== null) {
+        this.providenciasAcumuladas[this.editingProvidenciaIndex] = {
+          tipo: this.tipoProvidencia,
+          personaTipo: this.tipoPersona,
+          datos: datos,
+          fechaOriginal: formValues.fechaProvidencia,
+          formValuesOriginal: JSON.parse(JSON.stringify(formValues))
+        };
+        this.message.success(`RPV ${this.editingProvidenciaIndex + 1} actualizado`);
+        this.editingProvidenciaIndex = null;
+      } else {
+        this.providenciasAcumuladas.push({
+          tipo: this.tipoProvidencia,
+          personaTipo: this.tipoPersona,
+          datos: datos,
+          fechaOriginal: formValues.fechaProvidencia,
+          formValuesOriginal: JSON.parse(JSON.stringify(formValues))
+        });
+        this.message.success(`RPV ${this.providenciasAcumuladas.length} agregado`);
+      }
+
+      // Limpiar formulario para siguiente RPV
+      this.resetFormularioParaSiguiente();
+      return;
+    }
+
+    // ✅ LÓGICA PARA PROVIDENCIAS (INDIVIDUAL Y AGRUPADOS)
     // Calcular hora incrementada
     if (!this.horaBase) {
       this.horaBase = formValues.horaProvidencia;
@@ -544,12 +624,11 @@ export class ProvidenciaIessComponent implements OnInit {
       datos.representanteLegal = formValues.representanteLegal;
     }
 
-    // Copiar resto de lógica según tipo (individual/agrupados)
+    // Lógica según tipo (individual/agrupados)
     if (this.tipoProvidencia === 'individual') {
       datos.nroProcedimientoCoactivo = formValues.numeroTC;
       datos.numeroTC = formValues.numeroTC;
 
-      // ✅ Normalizar capital con decimales
       const capitalNormalizado = this.normalizarValorConDecimales(formValues.capital);
       const { entero: enteroCapital, fraccion: fraccionCapital } = this.separarEnteroYDecimal(capitalNormalizado);
 
@@ -558,12 +637,10 @@ export class ProvidenciaIessComponent implements OnInit {
 
       datos.comprobante = formValues.comprobante;
 
-      // Formatear fecha de cancelación si es Date
       datos.fechaCancelacion = formValues.fechaCancelacion instanceof Date
         ? this.formatearFecha(formValues.fechaCancelacion)
         : formValues.fechaCancelacion;
 
-      // ✅ Normalizar cancelación con decimales
       const cancelacionNormalizada = this.normalizarValorConDecimales(formValues.cancelacion);
       const { entero: enteroCancelacion, fraccion: fraccionCancelacion } = this.separarEnteroYDecimal(cancelacionNormalizada);
 
@@ -580,7 +657,7 @@ export class ProvidenciaIessComponent implements OnInit {
         orden: titulo.orden,
         numeroTC: titulo.numeroTC,
         concepto: Array.isArray(titulo.concepto) ? titulo.concepto.join(', ') : titulo.concepto,
-        valorCapital: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorCapital)) // ✅ Normalizar
+        valorCapital: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorCapital))
       }));
 
       const totalCalculado = this.calcularTotalConFraccion();
@@ -593,14 +670,12 @@ export class ProvidenciaIessComponent implements OnInit {
         concepto: Array.isArray(titulo.concepto) ? titulo.concepto.join(', ') : titulo.concepto,
         comprobante: titulo.comprobante || '',
         fechaCancelacion: titulo.fechaCancelacion instanceof Date ? this.formatearFechaCorta(titulo.fechaCancelacion) : titulo.fechaCancelacion || '',
-        valorCancelado: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorCancelado || titulo.valorCapital)) // ✅ Normalizar
+        valorCancelado: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorCancelado || titulo.valorCapital))
       }));
     }
 
-    // ✅ AQUÍ ES DONDE SE DECIDE SI AGREGAR O ACTUALIZAR
-    // Verificar si estamos editando una providencia existente
+    // Agregar o actualizar providencia
     if (this.editingProvidenciaIndex !== null) {
-      // Actualizar la providencia existente
       this.providenciasAcumuladas[this.editingProvidenciaIndex] = {
         tipo: this.tipoProvidencia,
         personaTipo: this.tipoPersona,
@@ -611,9 +686,8 @@ export class ProvidenciaIessComponent implements OnInit {
       };
 
       this.message.success(`Providencia ${this.editingProvidenciaIndex + 1} actualizada. Hora: ${datos.horaProvidencia}`);
-      this.editingProvidenciaIndex = null; // Limpiar el índice de edición
+      this.editingProvidenciaIndex = null;
     } else {
-      // Agregar nueva providencia
       this.providenciasAcumuladas.push({
         tipo: this.tipoProvidencia,
         personaTipo: this.tipoPersona,
@@ -631,7 +705,7 @@ export class ProvidenciaIessComponent implements OnInit {
   }
 
   resetFormularioParaSiguiente(): void {
-    // Mantener fecha, hora y abogado
+    // Mantener fecha, hora (si no es RPV) y abogado
     const fechaActual = this.providenciaForm.get('fechaProvidencia')?.value;
     const horaActual = this.providenciaForm.get('horaProvidencia')?.value;
     const abogadoActual = this.providenciaForm.get('abogadoSeleccionado')?.value;
@@ -640,11 +714,17 @@ export class ProvidenciaIessComponent implements OnInit {
     this.providenciaForm.reset();
 
     // Restaurar valores que queremos mantener
-    this.providenciaForm.patchValue({
+    const valoresARestaurar: any = {
       fechaProvidencia: fechaActual,
-      horaProvidencia: horaActual,
       abogadoSeleccionado: abogadoActual
-    });
+    };
+
+    // Solo restaurar hora si NO es RPV
+    if (this.tipoProvidencia !== 'rpv') {
+      valoresARestaurar.horaProvidencia = horaActual;
+    }
+
+    this.providenciaForm.patchValue(valoresARestaurar);
 
     // Limpiar títulos si es agrupados
     if (this.tipoProvidencia === 'agrupados') {
@@ -776,13 +856,12 @@ export class ProvidenciaIessComponent implements OnInit {
     // ✅ Si está editando, primero guardar los cambios
     if (this.editingProvidenciaIndex !== null) {
       this.acumularProvidencia();
-      // Esperar un momento para que se procese
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    // Si no hay providencias acumuladas, generar solo la actual
+    // ✅ Si no hay acumuladas, acumular la actual
     if (this.providenciasAcumuladas.length === 0) {
-      this.editingProvidenciaIndex = null; // Asegurarse de limpiar
+      this.editingProvidenciaIndex = null;
       this.acumularProvidencia();
     }
 
@@ -790,9 +869,24 @@ export class ProvidenciaIessComponent implements OnInit {
       return;
     }
 
-    this.message.info(`Generando documento con ${this.providenciasAcumuladas.length} providencia(s)...`);
-
     try {
+      // ✅ GENERAR RPV MÚLTIPLES
+      if (this.tipoProvidencia === 'rpv') {
+        this.message.info(`Generando ${this.providenciasAcumuladas.length} RPV...`);
+
+        const fechaRpv = this.providenciasAcumuladas[0].fechaOriginal;
+        await this.documentoService.generarRpvMultiples(this.providenciasAcumuladas, fechaRpv);
+        this.message.success('RPV generados correctamente');
+
+        // Limpiar
+        this.providenciasAcumuladas = [];
+        this.editingProvidenciaIndex = null;
+        return;
+      }
+
+      // ✅ GENERAR PROVIDENCIAS MÚLTIPLES
+      this.message.info(`Generando documento con ${this.providenciasAcumuladas.length} providencia(s)...`);
+
       const fechaProvidencia = this.providenciasAcumuladas[0].fechaOriginal;
       await this.documentoService.generarProvidenciasMultiples(this.providenciasAcumuladas, fechaProvidencia);
       this.message.success('Documento generado correctamente');

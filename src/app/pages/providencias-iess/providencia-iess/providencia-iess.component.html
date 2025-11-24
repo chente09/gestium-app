@@ -8,11 +8,22 @@
         <a routerLink="/area/iess">IESS</a>
     </nz-breadcrumb-item>
     <nz-breadcrumb-item>
-        <a routerLink="/selector-providencia">Seleccionar providencia</a>
+        <a routerLink="/selector-providencia">
+            {{ esRpv ? 'Documentos' : 'Seleccionar providencia' }}
+        </a>
+    </nz-breadcrumb-item>
+    <!-- ✅ Breadcrumb diferente para RPV -->
+    <nz-breadcrumb-item *ngIf="esRpv">
+        <a [routerLink]="['/selector-providencia']" [queryParams]="{vista: 'rpv'}">RPV</a>
     </nz-breadcrumb-item>
     <nz-breadcrumb-item>
-        {{ tipoProvidencia === 'individual' ? 'Individual' : 'Agrupados' }} -
-        {{ tipoPersona === 'natural' ? 'Persona Natural' : 'Persona Jurídica' }}
+        <span *ngIf="esRpv">
+            {{ tipoPersona === 'natural' ? 'Persona Natural' : 'Persona Jurídica' }}
+        </span>
+        <span *ngIf="!esRpv">
+            {{ tipoProvidencia === 'individual' ? 'Individual' : 'Agrupados' }} -
+            {{ tipoPersona === 'natural' ? 'Persona Natural' : 'Persona Jurídica' }}
+        </span>
     </nz-breadcrumb-item>
 </nz-breadcrumb>
 <hr class="divider">
@@ -23,12 +34,17 @@
         <!-- ENCABEZADO -->
         <div class="form-header">
             <h1 class="form-title">
-                <i nz-icon nzType="file-text" nzTheme="outline"></i>
-                Providencia de Inicio y Cancelación
+                <i nz-icon [nzType]="esRpv ? 'dollar' : 'file-text'" nzTheme="outline"></i>
+                {{ esRpv ? 'Requerimiento de Pago Voluntario' : 'Providencia de Inicio y Cancelación' }}
             </h1>
             <p class="form-subtitle">
-                {{ tipoProvidencia === 'individual' ? 'Individual' : 'Agrupados' }} -
-                {{ tipoPersona === 'natural' ? 'Persona Natural' : 'Persona Jurídica' }}
+                <span *ngIf="esRpv">
+                    {{ tipoPersona === 'natural' ? 'Persona Natural' : 'Persona Jurídica' }}
+                </span>
+                <span *ngIf="!esRpv">
+                    {{ tipoProvidencia === 'individual' ? 'Individual' : 'Agrupados' }} -
+                    {{ tipoPersona === 'natural' ? 'Persona Natural' : 'Persona Jurídica' }}
+                </span>
             </p>
         </div>
 
@@ -36,14 +52,16 @@
         <div class="form-section">
             <h2 class="section-title">
                 <i nz-icon nzType="info-circle" nzTheme="outline"></i>
-                Datos Generales de la Providencia
+                Datos Generales {{ esRpv ? 'del RPV' : 'de la Providencia' }}
             </h2>
 
             <nz-row [nzGutter]="16">
                 <!-- Fecha de Providencia -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="esRpv ? 12 : 8">
                     <nz-form-item>
-                        <nz-form-label nzFor="fechaProvidencia" nzRequired>Fecha de Providencia</nz-form-label>
+                        <nz-form-label nzFor="fechaProvidencia" nzRequired>
+                            {{ esRpv ? 'Fecha del RPV' : 'Fecha de Providencia' }}
+                        </nz-form-label>
                         <nz-form-control nzErrorTip="La fecha es requerida">
                             <nz-date-picker id="fechaProvidencia" formControlName="fechaProvidencia"
                                 nzFormat="dd/MM/yyyy" nzPlaceHolder="Seleccione fecha" style="width: 100%;">
@@ -52,8 +70,8 @@
                     </nz-form-item>
                 </nz-col>
 
-                <!-- Hora de Providencia -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                <!-- Hora de Providencia (SOLO PROVIDENCIAS) -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" *ngIf="!esRpv">
                     <nz-form-item>
                         <nz-form-label nzFor="horaProvidencia" nzRequired>Hora de Providencia</nz-form-label>
                         <nz-form-control nzErrorTip="La hora es requerida">
@@ -65,7 +83,7 @@
                 </nz-col>
 
                 <!-- Abogado Secretario -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="esRpv ? 12 : 8">
                     <nz-form-item>
                         <nz-form-label nzFor="abogadoSeleccionado" nzRequired>Secretario Abogado</nz-form-label>
                         <nz-form-control nzErrorTip="Debe seleccionar un abogado">
@@ -85,12 +103,12 @@
         <div class="form-section">
             <h2 class="section-title">
                 <i nz-icon nzType="user" nzTheme="outline"></i>
-                Datos del Coactivado
+                {{ esRpv ? 'Datos del Deudor' : 'Datos del Coactivado' }}
             </h2>
 
             <nz-row [nzGutter]="16">
-                <!-- Razón Social / Nombre -->
-                <nz-col [nzXs]="24" [nzSm]="12">
+                <!-- Razón Social / Nombre (OCULTO en RPV Natural) -->
+                <nz-col [nzXs]="24" [nzSm]="12" *ngIf="!esRpv || tipoPersona === 'juridica'">
                     <nz-form-item>
                         <nz-form-label nzFor="razonSocial" nzRequired>
                             {{ tipoPersona === 'juridica' ? 'Razón Social' : 'Nombre Completo' }}
@@ -103,8 +121,8 @@
                     </nz-form-item>
                 </nz-col>
 
-                <!-- RUC -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+                <!-- RUC (OCULTO en RPV Natural) -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" *ngIf="!esRpv || tipoPersona === 'juridica'">
                     <nz-form-item>
                         <nz-form-label nzFor="ruc" nzRequired>RUC</nz-form-label>
                         <nz-form-control nzErrorTip="El RUC es requerido y debe tener 13 dígitos numéricos">
@@ -113,11 +131,13 @@
                     </nz-form-item>
                 </nz-col>
 
-                <!-- Representante Legal (Solo Persona Jurídica) -->
-                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" *ngIf="esPersonaJuridica">
+                <!-- Representante Legal (Para RPV siempre, para providencias solo jurídicas) -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" *ngIf="esRpv || esPersonaJuridica">
                     <nz-form-item>
-                        <nz-form-label nzFor="representanteLegal" nzRequired>Representante Legal</nz-form-label>
-                        <nz-form-control nzErrorTip="El representante legal es requerido">
+                        <nz-form-label nzFor="representanteLegal" nzRequired>
+                            {{ esRpv && tipoPersona === 'natural' ? 'Nombres y Apellidos' : 'Representante Legal' }}
+                        </nz-form-label>
+                        <nz-form-control nzErrorTip="Este campo es requerido">
                             <input nz-input id="representanteLegal" formControlName="representanteLegal"
                                 placeholder="Ej: BACA MANCHENO PABLO ALBERTO" />
                         </nz-form-control>
@@ -135,11 +155,21 @@
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
+
+                <!-- Número TC (para RPV) -->
+                <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" *ngIf="esRpv">
+                    <nz-form-item>
+                        <nz-form-label nzFor="numeroTC" nzRequired>Número de Título de Crédito</nz-form-label>
+                        <nz-form-control nzErrorTip="El número de TC es requerido">
+                            <input nz-input id="numeroTC" formControlName="numeroTC" placeholder="Ej: TC-2025-001" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
             </nz-row>
         </div>
 
         <!-- SECCIÓN: TÍTULO DE CRÉDITO (SOLO INDIVIDUAL) -->
-        <div class="form-section" *ngIf="!esAgrupados">
+        <div class="form-section" *ngIf="!esAgrupados && !esRpv">
             <h2 class="section-title">
                 <i nz-icon nzType="file-done" nzTheme="outline"></i>
                 Título de Crédito
@@ -290,10 +320,12 @@
 
         <!-- BOTONES DE ACCIONES -->
         <div class="form-actions">
+            <!-- Botones de acumulación (PARA TODOS) -->
             <button nz-button nzType="default" nzSize="large" type="button" (click)="acumularProvidencia()"
                 [disabled]="!providenciaForm.valid">
                 <i nz-icon [nzType]="editingProvidenciaIndex !== null ? 'save' : 'plus-circle'" nzTheme="outline"></i>
-                {{ editingProvidenciaIndex !== null ? 'Guardar Cambios' : 'Agregar Providencia' }} ({{
+                {{ editingProvidenciaIndex !== null ? 'Guardar Cambios' : esRpv ? 'Agregar RPV' : 'Agregar Providencia'
+                }} ({{
                 providenciasAcumuladas.length }})
             </button>
 
@@ -306,7 +338,7 @@
             <button nz-button nzType="primary" nzSize="large" type="submit"
                 [disabled]="providenciasAcumuladas.length === 0 && !providenciaForm.valid">
                 <i nz-icon nzType="file-word" nzTheme="outline"></i>
-                Generar {{ providenciasAcumuladas.length || 1 }} Documento(s)
+                Generar {{ providenciasAcumuladas.length || 1 }} {{ esRpv ? 'RPV' : 'Documento(s)' }}
             </button>
 
             <button nz-button nzType="default" nzSize="large" type="button" (click)="limpiarProvidenciasAcumuladas()"
@@ -315,7 +347,8 @@
                 Limpiar
             </button>
 
-            <button nz-button nzType="default" nzSize="large" type="button" routerLink="/selector-providencia">
+            <button nz-button nzType="default" nzSize="large" type="button" [routerLink]="['/selector-providencia']"
+                [queryParams]="esRpv ? {vista: 'rpv'} : {}">
                 <i nz-icon nzType="arrow-left" nzTheme="outline"></i>
                 Volver
             </button>

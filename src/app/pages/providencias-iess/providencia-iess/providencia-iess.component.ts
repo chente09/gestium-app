@@ -127,60 +127,50 @@ export class ProvidenciaIessComponent implements OnInit {
     const horaDefecto = new Date();
     horaDefecto.setHours(8, 0, 0, 0);
 
-    const baseForm = {
+    // ✅ CAMPOS BASE (SIEMPRE PRESENTES)
+    const baseForm: any = {
       fechaProvidencia: [null, Validators.required],
-      numeroTC: ['', Validators.required],
       cedula: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
       abogadoSeleccionado: [null, Validators.required]
     };
 
-    // ✅ RPV no usa hora, razonSocial ni RUC en persona natural
+    // ✅ CAMPOS PARA PROVIDENCIAS (NO RPV)
     if (this.tipoProvidencia !== 'rpv') {
-      Object.assign(baseForm, {
-        horaProvidencia: [horaDefecto, Validators.required],
-        razonSocial: ['', Validators.required],
-        ruc: ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]]
-      });
+      baseForm.horaProvidencia = [horaDefecto, Validators.required];
+      baseForm.razonSocial = ['', Validators.required];
+      baseForm.ruc = ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]];
     }
 
-    // ✅ RPV persona jurídica SÍ necesita razón social y RUC
+    // ✅ CAMPOS PARA RPV PERSONA JURÍDICA
     if (this.tipoProvidencia === 'rpv' && this.tipoPersona === 'juridica') {
-      Object.assign(baseForm, {
-        razonSocial: ['', Validators.required],
-        ruc: ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]]
-      });
+      baseForm.razonSocial = ['', Validators.required];
+      baseForm.ruc = ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]];
     }
 
-    // Representante legal para jurídicas (providencias)
-    if (this.tipoPersona === 'juridica' && this.tipoProvidencia !== 'rpv') {
-      Object.assign(baseForm, {
-        representanteLegal: ['', Validators.required]
-      });
+    // ✅ REPRESENTANTE LEGAL
+    // Para providencias jurídicas o para cualquier RPV
+    if ((this.tipoProvidencia !== 'rpv' && this.tipoPersona === 'juridica') || this.tipoProvidencia === 'rpv') {
+      baseForm.representanteLegal = ['', Validators.required];
     }
 
-    // ✅ Representante legal para ambos tipos en RPV
-    if (this.tipoProvidencia === 'rpv') {
-      Object.assign(baseForm, {
-        representanteLegal: ['', Validators.required]
-      });
+    // ✅ NÚMERO TC
+    // Para RPV siempre, para providencias solo en individual
+    if (this.tipoProvidencia === 'rpv' || this.tipoProvidencia === 'individual') {
+      baseForm.numeroTC = ['', Validators.required];
     }
 
-    // Para casos INDIVIDUALES (providencias)
+    // ✅ CAMPOS ESPECÍFICOS PARA INDIVIDUAL
     if (this.tipoProvidencia === 'individual') {
-      Object.assign(baseForm, {
-        capital: ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]],
-        comprobante: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
-        fechaCancelacion: [null, Validators.required],
-        cancelacion: ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]]
-      });
+      baseForm.capital = ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]];
+      baseForm.comprobante = ['', [Validators.required, Validators.pattern('^[0-9]*$')]];
+      baseForm.fechaCancelacion = [null, Validators.required];
+      baseForm.cancelacion = ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]];
     }
 
-    // Para casos AGRUPADOS
+    // ✅ CAMPOS PARA AGRUPADOS
     if (this.tipoProvidencia === 'agrupados') {
-      Object.assign(baseForm, {
-        titulos: this.fb.array([]),
-        cancelaciones: this.fb.array([])
-      });
+      baseForm.titulos = this.fb.array([]);
+      baseForm.cancelaciones = this.fb.array([]);
     }
 
     this.providenciaForm = this.fb.group(baseForm);

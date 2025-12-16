@@ -51,22 +51,21 @@ interface Abogado {
 export class ProvidenciaIessComponent implements OnInit {
 
   providenciaForm!: FormGroup;
-  tipoProvidencia: 'individual' | 'agrupados' | 'rpv' = 'individual';
+  tipoProvidencia: 'individual' | 'agrupados' | 'rpv' | 'opi' = 'individual';
+  tipoDocumento: 'individual' | 'agrupados' = 'individual';
   tipoPersona: 'natural' | 'juridica' = 'natural';
-  providenciasAcumuladas: any[] = []; // Array para acumular providencias
-  horaBase: Date | null = null; // Hora base para incrementar
-  contadorMinutos: number = 0; // Contador de minutos
-  editingProvidenciaIndex: number | null = null; // Índice de providencia en edición
+  providenciasAcumuladas: any[] = [];
+  horaBase: Date | null = null;
+  contadorMinutos: number = 0;
+  editingProvidenciaIndex: number | null = null;
 
-  // Lista de abogados
   abogados: Abogado[] = [
     { nombre: 'AB. WILLIAM MARCELO MENA MENA', pronombre: 'el', genero: 'o', correos: 'marcelo.mena.coactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' },
     { nombre: 'AB. JESSICA VICTORIA ORDOÑEZ PARRAGA', pronombre: 'la', genero: 'a', correos: 'jessica.ordonez.coactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' },
-    { nombre: 'AB. MAYRA ALEXANDRA ORDOÑEZ PARRAGA', pronombre: 'la', genero: 'a', correos: 'jose.rueda.coactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' },
-    { nombre: 'AB. JOSE LUIS RUEDA BUSTE', pronombre: 'el', genero: 'o', correos: 'mayra.ordonezcoactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' }
+    { nombre: 'AB. MAYRA ALEXANDRA ORDOÑEZ PARRAGA', pronombre: 'la', genero: 'a', correos: 'mayra.ordonezcoactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' },
+    { nombre: 'AB. JOSE LUIS RUEDA BUSTE', pronombre: 'el', genero: 'o', correos: 'jose.rueda.coactivaiess@gmail.com / notificaciones.iess.gestium@gmail.com' }
   ];
 
-  // Conceptos disponibles para títulos
   conceptosDisponibles: string[] = [
     'RESP. PATRONAL',
     'FONDOS DE RESERVA',
@@ -74,13 +73,10 @@ export class ProvidenciaIessComponent implements OnInit {
     'PRESTAMOS'
   ];
 
-  // Modal para agregar título manualmente
   isModalVisible = false;
   tituloForm!: FormGroup;
   editingIndex: number | null = null;
   isModalProvidenciasVisible = false;
-
-  // Conversión de números a letras
   valoresEnLetras: { [key: string]: string } = {};
 
   constructor(
@@ -96,26 +92,43 @@ export class ProvidenciaIessComponent implements OnInit {
     this.route.params.subscribe(params => {
       const routePath = this.router.url;
 
-      // ✅ Detectar RPV
       if (routePath.includes('rpv-iess/natural')) {
         this.tipoProvidencia = 'rpv';
         this.tipoPersona = 'natural';
       } else if (routePath.includes('rpv-iess/juridica')) {
         this.tipoProvidencia = 'rpv';
         this.tipoPersona = 'juridica';
-      }
-      // Lógica existente
-      else if (routePath.includes('individual-natural')) {
+      } else if (routePath.includes('opi-iess/individual-natural')) {
+        this.tipoProvidencia = 'opi';
+        this.tipoDocumento = 'individual';
+        this.tipoPersona = 'natural';
+      } else if (routePath.includes('opi-iess/individual-juridica')) {
+        this.tipoProvidencia = 'opi';
+        this.tipoDocumento = 'individual';
+        this.tipoPersona = 'juridica';
+      } else if (routePath.includes('opi-iess/agrupados-natural')) {
+        this.tipoProvidencia = 'opi';
+        this.tipoDocumento = 'agrupados';
+        this.tipoPersona = 'natural';
+      } else if (routePath.includes('opi-iess/agrupados-juridica')) {
+        this.tipoProvidencia = 'opi';
+        this.tipoDocumento = 'agrupados';
+        this.tipoPersona = 'juridica';
+      } else if (routePath.includes('individual-natural')) {
         this.tipoProvidencia = 'individual';
+        this.tipoDocumento = 'individual';
         this.tipoPersona = 'natural';
       } else if (routePath.includes('individual-juridica')) {
         this.tipoProvidencia = 'individual';
+        this.tipoDocumento = 'individual';
         this.tipoPersona = 'juridica';
       } else if (routePath.includes('agrupados-natural')) {
         this.tipoProvidencia = 'agrupados';
+        this.tipoDocumento = 'agrupados';
         this.tipoPersona = 'natural';
       } else if (routePath.includes('agrupados-juridica')) {
         this.tipoProvidencia = 'agrupados';
+        this.tipoDocumento = 'agrupados';
         this.tipoPersona = 'juridica';
       }
 
@@ -127,39 +140,32 @@ export class ProvidenciaIessComponent implements OnInit {
     const horaDefecto = new Date();
     horaDefecto.setHours(8, 0, 0, 0);
 
-    // ✅ CAMPOS BASE (SIEMPRE PRESENTES)
     const baseForm: any = {
       fechaProvidencia: [null, Validators.required],
       cedula: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
       abogadoSeleccionado: [null, Validators.required]
     };
 
-    // ✅ CAMPOS PARA PROVIDENCIAS (NO RPV)
     if (this.tipoProvidencia !== 'rpv') {
       baseForm.horaProvidencia = [horaDefecto, Validators.required];
       baseForm.razonSocial = ['', Validators.required];
       baseForm.ruc = ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]];
     }
 
-    // ✅ CAMPOS PARA RPV PERSONA JURÍDICA
     if (this.tipoProvidencia === 'rpv' && this.tipoPersona === 'juridica') {
       baseForm.razonSocial = ['', Validators.required];
       baseForm.ruc = ['', [Validators.required, Validators.pattern('^[0-9]{13}$')]];
     }
 
-    // ✅ REPRESENTANTE LEGAL
-    // Para providencias jurídicas o para cualquier RPV
     if ((this.tipoProvidencia !== 'rpv' && this.tipoPersona === 'juridica') || this.tipoProvidencia === 'rpv') {
       baseForm.representanteLegal = ['', Validators.required];
     }
 
-    // ✅ NÚMERO TC
-    // Para RPV siempre, para providencias solo en individual
-    if (this.tipoProvidencia === 'rpv' || this.tipoProvidencia === 'individual') {
+    if (this.tipoProvidencia === 'rpv' || this.tipoProvidencia === 'individual' ||
+      (this.tipoProvidencia === 'opi' && this.esIndividual)) {
       baseForm.numeroTC = ['', Validators.required];
     }
 
-    // ✅ CAMPOS ESPECÍFICOS PARA INDIVIDUAL
     if (this.tipoProvidencia === 'individual') {
       baseForm.capital = ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]];
       baseForm.comprobante = ['', [Validators.required, Validators.pattern('^[0-9]*$')]];
@@ -167,27 +173,46 @@ export class ProvidenciaIessComponent implements OnInit {
       baseForm.cancelacion = ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]];
     }
 
-    // ✅ CAMPOS PARA AGRUPADOS
+    if (this.tipoProvidencia === 'opi' && this.esIndividual) {
+      baseForm.capital = ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]];
+      baseForm.liquidacion = ['', [Validators.required, Validators.pattern('^[0-9]+([.,][0-9]{1,3})*([.,][0-9]{1,2})?$')]];
+      baseForm.fechanotificacionRPV = [null, Validators.required];
+      baseForm.concepto = ['', Validators.required];
+    }
+
     if (this.tipoProvidencia === 'agrupados') {
       baseForm.titulos = this.fb.array([]);
       baseForm.cancelaciones = this.fb.array([]);
+      baseForm.conceptoGeneral = ['', Validators.required];
+    }
+
+    if (this.tipoProvidencia === 'opi' && this.esAgrupados) {
+      baseForm.titulos = this.fb.array([]);
+      baseForm.fechanotificacionRPV = [null, Validators.required];
+      baseForm.conceptoGeneral = ['', Validators.required];
     }
 
     this.providenciaForm = this.fb.group(baseForm);
 
-    // Form para títulos (solo agrupados)
-    this.tituloForm = this.fb.group({
+    const tituloFormConfig: any = {
       orden: ['', Validators.required],
       numeroTC: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
-      concepto: ['', Validators.required],
-      valorCapital: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
-      comprobante: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
-      fechaCancelacion: ['', Validators.required],
-      valorCancelado: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]]
-    });
+      valorCapital: ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]]
+    };
+
+    if (this.tipoProvidencia === 'opi') {
+      tituloFormConfig.valorLiquidacion = ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]];
+    }
+
+    if (this.tipoProvidencia !== 'opi') {
+      tituloFormConfig.comprobante = ['', [Validators.required, Validators.pattern('^[0-9]*$')]];
+      tituloFormConfig.fechaCancelacion = ['', Validators.required];
+      tituloFormConfig.valorCancelado = ['', [Validators.required, Validators.pattern('^[0-9,.]*$')]];
+    }
+
+    this.tituloForm = this.fb.group(tituloFormConfig);
   }
 
-  // ========== GETTERS ==========
   get titulos(): FormArray {
     return this.providenciaForm.get('titulos') as FormArray;
   }
@@ -201,16 +226,31 @@ export class ProvidenciaIessComponent implements OnInit {
   }
 
   get esAgrupados(): boolean {
-    return this.tipoProvidencia === 'agrupados';
+    return this.tipoProvidencia === 'agrupados' ||
+      (this.tipoProvidencia === 'opi' && this.tipoDocumento === 'agrupados');
+  }
+
+  get esIndividual(): boolean {
+    return this.tipoProvidencia === 'individual' ||
+      (this.tipoProvidencia === 'opi' && this.tipoDocumento === 'individual');
   }
 
   get esRpv(): boolean {
     return this.tipoProvidencia === 'rpv';
   }
 
-  // ========== GESTIÓN DE TÍTULOS (AGRUPADOS) ==========
+  get esOpi(): boolean {
+    return this.tipoProvidencia === 'opi';
+  }
 
   mostrarModalTitulo(): void {
+    const conceptoGeneral = this.providenciaForm.get('conceptoGeneral')?.value;
+
+    if (!conceptoGeneral) {
+      this.message.warning('Primero debe seleccionar el Concepto General');
+      return;
+    }
+
     this.editingIndex = null;
     this.tituloForm.reset();
     const siguienteOrden = this.titulos.length + 1;
@@ -223,13 +263,13 @@ export class ProvidenciaIessComponent implements OnInit {
   handleOkModal(): void {
     if (this.tituloForm.valid) {
       const titulo = this.tituloForm.value;
+      const conceptoGeneral = this.providenciaForm.get('conceptoGeneral')?.value;
+      titulo.concepto = conceptoGeneral;
 
       if (this.editingIndex !== null) {
-        // Editar título existente
         this.titulos.at(this.editingIndex).patchValue(titulo);
         this.message.success('Título actualizado correctamente');
       } else {
-        // Agregar nuevo título
         this.titulos.push(this.fb.group(titulo));
         this.message.success('Título agregado correctamente');
       }
@@ -257,11 +297,11 @@ export class ProvidenciaIessComponent implements OnInit {
     this.tituloForm.patchValue({
       orden: titulo.orden,
       numeroTC: titulo.numeroTC,
-      concepto: titulo.concepto,
       valorCapital: titulo.valorCapital,
       comprobante: titulo.comprobante,
       fechaCancelacion: titulo.fechaCancelacion,
-      valorCancelado: titulo.valorCancelado
+      valorCancelado: titulo.valorCancelado,
+      valorLiquidacion: titulo.valorLiquidacion
     });
     this.isModalVisible = true;
   }
@@ -281,8 +321,6 @@ export class ProvidenciaIessComponent implements OnInit {
     });
   }
 
-  // ========== IMPORTACIÓN DESDE EXCEL ==========
-
   beforeUpload = (file: NzUploadFile): boolean => {
     const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
       file.type === 'application/vnd.ms-excel';
@@ -292,14 +330,12 @@ export class ProvidenciaIessComponent implements OnInit {
       return false;
     }
 
-    // NzUploadFile tiene una propiedad originFileObj que es el File nativo
     if (file.originFileObj) {
       this.importarDesdeExcel(file.originFileObj as File);
     }
 
-    return false; // Prevenir subida automática
+    return false;
   };
-
 
   async importarDesdeExcel(file: File): Promise<void> {
     const reader = new FileReader();
@@ -317,18 +353,23 @@ export class ProvidenciaIessComponent implements OnInit {
           return;
         }
 
+        const conceptoGeneral = this.providenciaForm.get('conceptoGeneral')?.value;
+
+        if (!conceptoGeneral) {
+          this.message.warning('Primero debe seleccionar el Concepto General antes de importar');
+          return;
+        }
+
         const jsonData: any[] = [];
         let headers: string[] = [];
 
-        // Leer encabezados (primera fila)
         const headerRow = worksheet.getRow(1);
         headerRow.eachCell((cell, colNumber) => {
           headers[colNumber] = String(cell.value).toUpperCase();
         });
 
-        // Leer datos (desde la segunda fila)
         worksheet.eachRow((row, rowNumber) => {
-          if (rowNumber > 1) { // Saltar encabezados
+          if (rowNumber > 1) {
             const rowData: any = {};
             row.eachCell((cell, colNumber) => {
               const header = headers[colNumber];
@@ -337,7 +378,6 @@ export class ProvidenciaIessComponent implements OnInit {
               }
             });
 
-            // Solo agregar si tiene datos
             if (Object.keys(rowData).length > 0) {
               jsonData.push(rowData);
             }
@@ -349,17 +389,13 @@ export class ProvidenciaIessComponent implements OnInit {
           return;
         }
 
-        // Limpiar títulos existentes
-        while (this.titulos.length) {
-          this.titulos.removeAt(0);
-        }
+        this.providenciaForm.setControl('titulos', this.fb.array([]));
 
-        // Agregar títulos desde Excel
         jsonData.forEach((row, index) => {
           this.titulos.push(this.fb.group({
             orden: [row['ORDEN'] || (index + 1), Validators.required],
             numeroTC: [row['NUMERO_TC'] || row['TC'] || '', Validators.required],
-            concepto: [row['CONCEPTO'] || '', Validators.required],
+            concepto: [conceptoGeneral, Validators.required],
             valorCapital: [row['VALOR_CAPITAL'] || row['CAPITAL'] || '', [Validators.required, Validators.pattern('^[0-9,.]*$')]],
             comprobante: [row['COMPROBANTE'] || '', Validators.required],
             fechaCancelacion: [row['FECHA_CANCELACION'] || row['FECHA'] || '', Validators.required],
@@ -377,16 +413,6 @@ export class ProvidenciaIessComponent implements OnInit {
     reader.readAsArrayBuffer(file);
   }
 
-  // ========== GESTIÓN DE CANCELACIONES (AGRUPADOS) ==========
-
-  mostrarModalCancelacion(): void {
-    // Similar a títulos, pero para cancelaciones
-    // Por ahora lo dejamos vacío, se puede implementar después
-    this.message.info('Función de cancelaciones en desarrollo');
-  }
-
-  // ========== CONVERSIÓN DE NÚMEROS A LETRAS ==========
-
   onValueChange(campo: string): void {
     const valor = this.providenciaForm.get(campo)?.value;
 
@@ -396,16 +422,9 @@ export class ProvidenciaIessComponent implements OnInit {
     }
 
     try {
-      // Normalizar valor (esto ya garantiza 2 decimales: 14522.20)
       const valorNormalizado = this.normalizarValorConDecimales(valor);
-
-      // Separar entero y decimal
       const { entero, fraccion } = this.separarEnteroYDecimal(valorNormalizado);
-
-      // Convertir a letras
       const valorEnLetras = this.convertirNumeroALetras(entero).toUpperCase();
-
-      // ✅ Formatear resultado completo - UN SOLO FORMATO
       this.valoresEnLetras[campo] = `${valorEnLetras} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccion}/100 (USD$ ${this.formatearNumeroConMiles(valorNormalizado)})`;
     } catch (error) {
       console.error('Error al convertir valor:', error);
@@ -416,31 +435,21 @@ export class ProvidenciaIessComponent implements OnInit {
   formatearNumeroConMiles(valor: string | number): string {
     if (!valor && valor !== 0) return '0.00';
 
-    // Normalizar primero para garantizar 2 decimales
     const valorNormalizado = this.normalizarValorConDecimales(valor);
-
-    // Separar parte entera y decimal
     const partes = valorNormalizado.split('.');
     const entero = partes[0];
     const decimal = partes[1] || '00';
-
-    // Formatear parte entera con comas cada 3 dígitos
     const enteroFormateado = entero.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-    // Retornar con punto decimal y siempre 2 decimales
     return `${enteroFormateado}.${decimal}`;
   }
 
-  /**
- * Formatea valores para mostrar en la tabla con 2 decimales
- */
   formatearValorTabla(valor: any): string {
     if (!valor) return '0.00';
-
-    // Normalizar y formatear
     const valorNormalizado = this.normalizarValorConDecimales(valor);
     return this.formatearNumeroConMiles(valorNormalizado);
   }
+
   convertirNumeroALetras(num: number): string {
     const unidades = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve'];
     const especiales = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
@@ -483,7 +492,58 @@ export class ProvidenciaIessComponent implements OnInit {
     return 'Número demasiado grande';
   }
 
-  // ========== FORMATEO DE FECHAS ==========
+  formatearValorRetencion(capitalString: string): string {
+    if (!capitalString) return '';
+
+    try {
+      const capitalNormalizado = capitalString.toString().replace(/,/g, '.');
+      const capitalNumerico = parseFloat(capitalNormalizado);
+
+      if (isNaN(capitalNumerico)) return '';
+
+      const valorRetencion = Math.ceil(capitalNumerico * 1.30);
+      return valorRetencion.toFixed(2);
+    } catch (error) {
+      console.error('Error al calcular valor de retención:', error);
+      return '';
+    }
+  }
+
+  calcularValorRetencion(capital: number): number {
+    return Math.ceil(capital * 1.30);
+  }
+
+  calcularValorRetencionTotal(): string {
+    if (this.titulos.length === 0) return '$0.00';
+
+    try {
+      const totalStr = this.calcularTotalLiquidacion();
+      const totalLimpio = totalStr.replace(/\$|,/g, '');
+      const totalNumerico = parseFloat(totalLimpio);
+
+      if (isNaN(totalNumerico)) return '$0.00';
+
+      const valorRetencion = Math.ceil(totalNumerico * 1.30);
+      return `$${valorRetencion.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    } catch (error) {
+      console.error('Error al calcular valor de retención total:', error);
+      return '$0.00';
+    }
+  }
+
+  calcularTotalLiquidacion(): string {
+    if (this.titulos.length === 0) return '$0.00';
+
+    let total = 0;
+    this.titulos.value.forEach((titulo: any) => {
+      const valorLiquidacion = titulo.valorLiquidacion || titulo.valorCapital || '0';
+      const valorNormalizado = this.normalizarValorConDecimales(valorLiquidacion);
+      total += parseFloat(valorNormalizado);
+    });
+
+    const totalFormateado = total.toFixed(2);
+    return `$${totalFormateado.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  }
 
   formatearFecha(fecha: Date): string {
     const meses = [
@@ -504,22 +564,15 @@ export class ProvidenciaIessComponent implements OnInit {
     return `${horas}H${minutos}`;
   }
 
-  // ========== CONVERSIÓN DE NOMBRE ==========
-
   convertirNombreMinusculas(nombre: string): string {
-    // Convierte "AB. WILLIAM MARCELO MENA MENA" a "Ab. William Marcelo Mena Mena"
     const palabras = nombre.split(' ');
     return palabras.map((palabra, index) => {
       if (index === 0) {
-        // Primera palabra (AB.) mantener Ab.
         return palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase();
       }
-      // Resto de palabras: Primera letra mayúscula, resto minúscula
       return palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase();
     }).join(' ');
   }
-
-  // ========== GENERACIÓN DEL DOCUMENTO ==========
 
   acumularProvidencia(): void {
     if (this.providenciaForm.invalid) {
@@ -541,7 +594,6 @@ export class ProvidenciaIessComponent implements OnInit {
       return;
     }
 
-    // ✅ LÓGICA PARA RPV
     if (this.tipoProvidencia === 'rpv') {
       const datos: any = {
         fechaProvidencia: this.formatearFecha(formValues.fechaProvidencia),
@@ -554,49 +606,24 @@ export class ProvidenciaIessComponent implements OnInit {
         correosAb: abogadoSeleccionado.correos
       };
 
-      // Agregar campos de persona jurídica si aplica
       if (this.tipoPersona === 'juridica') {
         datos.razonSocial = formValues.razonSocial;
         datos.ruc = formValues.ruc;
       }
 
-      // Agregar o actualizar RPV
-      if (this.editingProvidenciaIndex !== null) {
-        this.providenciasAcumuladas[this.editingProvidenciaIndex] = {
-          tipo: this.tipoProvidencia,
-          personaTipo: this.tipoPersona,
-          datos: datos,
-          fechaOriginal: formValues.fechaProvidencia,
-          formValuesOriginal: JSON.parse(JSON.stringify(formValues))
-        };
-        this.message.success(`RPV ${this.editingProvidenciaIndex + 1} actualizado`);
-        this.editingProvidenciaIndex = null;
-      } else {
-        this.providenciasAcumuladas.push({
-          tipo: this.tipoProvidencia,
-          personaTipo: this.tipoPersona,
-          datos: datos,
-          fechaOriginal: formValues.fechaProvidencia,
-          formValuesOriginal: JSON.parse(JSON.stringify(formValues))
-        });
-        this.message.success(`RPV ${this.providenciasAcumuladas.length} agregado`);
-      }
-
-      // Limpiar formulario para siguiente RPV
-      this.resetFormularioParaSiguiente();
+      this.guardarOActualizarProvidencia(datos, formValues);
       return;
     }
 
-    // ✅ LÓGICA PARA PROVIDENCIAS (INDIVIDUAL Y AGRUPADOS)
-    // Calcular hora incrementada
-    if (!this.horaBase) {
-      this.horaBase = formValues.horaProvidencia;
-    } else {
-      this.contadorMinutos += 2;
-      this.horaBase = new Date(formValues.horaProvidencia.getTime() + this.contadorMinutos * 60000);
+    if (this.editingProvidenciaIndex === null) {
+      if (!this.horaBase) {
+        this.horaBase = formValues.horaProvidencia;
+      } else {
+        this.contadorMinutos += 2;
+        this.horaBase = new Date(formValues.horaProvidencia.getTime() + this.contadorMinutos * 60000);
+      }
     }
 
-    // Preparar datos
     const datos: any = {
       fechaProvidencia: this.formatearFecha(formValues.fechaProvidencia),
       horaProvidencia: this.horaBase ? this.formatearHora(this.horaBase) : this.formatearHora(formValues.horaProvidencia),
@@ -609,35 +636,110 @@ export class ProvidenciaIessComponent implements OnInit {
       genero: abogadoSeleccionado.genero
     };
 
-    // Agregar representante legal si aplica
     if (this.tipoPersona === 'juridica') {
       datos.representanteLegal = formValues.representanteLegal;
     }
 
-    // Lógica según tipo (individual/agrupados)
+    if (this.tipoProvidencia === 'opi') {
+      if (this.esIndividual) {
+        datos.nroProcedimientoCoactivo = formValues.numeroTC;
+        datos.numeroTC = formValues.numeroTC;
+
+        if (formValues.fechanotificacionRPV) {
+          const fechaRPV = formValues.fechanotificacionRPV instanceof Date ?
+            formValues.fechanotificacionRPV :
+            new Date(formValues.fechanotificacionRPV);
+          datos.fechanotificacionRPV = this.formatearFecha(fechaRPV);
+        }
+        datos.concepto = formValues.concepto;
+
+        const capitalNorm = this.normalizarValorConDecimales(formValues.capital);
+        const capDes = this.separarEnteroYDecimal(capitalNorm);
+        datos.capital = this.formatearNumeroConMiles(capitalNorm);
+        datos.valorLetrasCapital = `${this.convertirNumeroALetras(capDes.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${capDes.fraccion}/100`;
+
+        const liqNorm = this.normalizarValorConDecimales(formValues.liquidacion);
+        const liqDes = this.separarEnteroYDecimal(liqNorm);
+        datos.liquidacion = this.formatearNumeroConMiles(liqNorm);
+        datos.valorLetrasLiquidacion = `${this.convertirNumeroALetras(liqDes.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${liqDes.fraccion}/100`;
+
+        const valRetencion = (parseFloat(liqNorm) * 1.30);
+        const retencionFinal = Math.ceil(valRetencion).toFixed(2);
+        const retDes = this.separarEnteroYDecimal(retencionFinal);
+
+        datos.valorRetencion = this.formatearNumeroConMiles(retencionFinal);
+        datos.valorLetrasRetencion = `${this.convertirNumeroALetras(retDes.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${retDes.fraccion}/100`;
+
+      } else {
+        if (this.titulos.length === 0) {
+          this.message.error('Debe agregar al menos un título de crédito');
+          return;
+        }
+
+        if (formValues.fechanotificacionRPV) {
+          const fechaRPV = formValues.fechanotificacionRPV instanceof Date ?
+            formValues.fechanotificacionRPV :
+            new Date(formValues.fechanotificacionRPV);
+          datos.fechanotificacionRPV = this.formatearFecha(fechaRPV);
+        }
+
+        datos.titulos = this.titulos.value.map((titulo: any) => {
+          const liqNorm = this.normalizarValorConDecimales(titulo.valorLiquidacion || titulo.valorCapital);
+          const retencionPorTitulo = (parseFloat(liqNorm) * 1.30);
+          const retencionFinal = Math.ceil(retencionPorTitulo).toFixed(2);
+
+          return {
+            orden: titulo.orden,
+            numeroTC: titulo.numeroTC,
+            concepto: Array.isArray(titulo.concepto) ? titulo.concepto.join(', ') : titulo.concepto,
+            valorCapital: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorCapital)),
+            valorRetencion: this.formatearNumeroConMiles(retencionFinal)
+          };
+        });
+
+        datos.liquidaciones = this.titulos.value.map((titulo: any) => ({
+          orden: titulo.orden,
+          numeroTC: titulo.numeroTC,
+          valorLiquidacion: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorLiquidacion || titulo.valorCapital))
+        }));
+
+        const totalCap = this.calcularTotalConFraccion();
+        datos.totalCapital = totalCap.formateado;
+        datos.totalCapitalLetras = `${this.convertirNumeroALetras(totalCap.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${totalCap.fraccion}/100`;
+
+        const totalLiq = this.calcularTotalLiquidacionConFraccion();
+        datos.totalLiquidacion = totalLiq.formateado;
+        datos.totalLiquidacionLetras = `${this.convertirNumeroALetras(totalLiq.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${totalLiq.fraccion}/100`;
+
+        const totalLiqNum = parseFloat(`${totalLiq.entero}.${totalLiq.fraccion}`);
+        const retencionTotal = Math.ceil(totalLiqNum * 1.30).toFixed(2);
+        const retTotalDes = this.separarEnteroYDecimal(retencionTotal);
+
+        datos.valorRetencion = this.formatearNumeroConMiles(retencionTotal);
+        datos.valorLetrasRetencion = `${this.convertirNumeroALetras(retTotalDes.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${retTotalDes.fraccion}/100`;
+      }
+
+      this.guardarOActualizarProvidencia(datos, formValues);
+      return;
+    }
+
     if (this.tipoProvidencia === 'individual') {
       datos.nroProcedimientoCoactivo = formValues.numeroTC;
       datos.numeroTC = formValues.numeroTC;
-
-      const capitalNormalizado = this.normalizarValorConDecimales(formValues.capital);
-      const { entero: enteroCapital, fraccion: fraccionCapital } = this.separarEnteroYDecimal(capitalNormalizado);
-
-      datos.capital = this.formatearNumeroConMiles(capitalNormalizado);
-      datos.valorLetrasCapital = `${this.convertirNumeroALetras(enteroCapital).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccionCapital}/100`;
-
       datos.comprobante = formValues.comprobante;
+      datos.fechaCancelacion = formValues.fechaCancelacion instanceof Date ? this.formatearFecha(formValues.fechaCancelacion) : formValues.fechaCancelacion;
 
-      datos.fechaCancelacion = formValues.fechaCancelacion instanceof Date
-        ? this.formatearFecha(formValues.fechaCancelacion)
-        : formValues.fechaCancelacion;
+      const capNorm = this.normalizarValorConDecimales(formValues.capital);
+      const capDes = this.separarEnteroYDecimal(capNorm);
+      datos.capital = this.formatearNumeroConMiles(capNorm);
+      datos.valorLetrasCapital = `${this.convertirNumeroALetras(capDes.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${capDes.fraccion}/100`;
 
-      const cancelacionNormalizada = this.normalizarValorConDecimales(formValues.cancelacion);
-      const { entero: enteroCancelacion, fraccion: fraccionCancelacion } = this.separarEnteroYDecimal(cancelacionNormalizada);
+      const cancNorm = this.normalizarValorConDecimales(formValues.cancelacion);
+      const cancDes = this.separarEnteroYDecimal(cancNorm);
+      datos.cancelacion = this.formatearNumeroConMiles(cancNorm);
+      datos.valorLetrasCancelacion = `${this.convertirNumeroALetras(cancDes.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${cancDes.fraccion}/100`;
 
-      datos.cancelacion = this.formatearNumeroConMiles(cancelacionNormalizada);
-      datos.valorLetrasCancelacion = `${this.convertirNumeroALetras(enteroCancelacion).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${fraccionCancelacion}/100`;
     } else {
-      // Lógica para agrupados
       if (this.titulos.length === 0) {
         this.message.error('Debe agregar al menos un título de crédito');
         return;
@@ -650,9 +752,9 @@ export class ProvidenciaIessComponent implements OnInit {
         valorCapital: this.formatearNumeroConMiles(this.normalizarValorConDecimales(titulo.valorCapital))
       }));
 
-      const totalCalculado = this.calcularTotalConFraccion();
-      datos.totalCapital = totalCalculado.formateado;
-      datos.totalCapitalLetras = `${this.convertirNumeroALetras(totalCalculado.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${totalCalculado.fraccion}/100`;
+      const totalCap = this.calcularTotalConFraccion();
+      datos.totalCapital = totalCap.formateado;
+      datos.totalCapitalLetras = `${this.convertirNumeroALetras(totalCap.entero).toUpperCase()} DÓLARES DE LOS ESTADOS UNIDOS DE AMÉRICA CON ${totalCap.fraccion}/100`;
 
       datos.cancelaciones = this.titulos.value.map((titulo: any) => ({
         orden: titulo.orden,
@@ -664,66 +766,71 @@ export class ProvidenciaIessComponent implements OnInit {
       }));
     }
 
-    // Agregar o actualizar providencia
-    if (this.editingProvidenciaIndex !== null) {
-      this.providenciasAcumuladas[this.editingProvidenciaIndex] = {
-        tipo: this.tipoProvidencia,
-        personaTipo: this.tipoPersona,
-        datos: datos,
-        fechaOriginal: formValues.fechaProvidencia,
-        horaOriginal: this.horaBase || formValues.horaProvidencia,
-        formValuesOriginal: JSON.parse(JSON.stringify(formValues))
-      };
+    this.guardarOActualizarProvidencia(datos, formValues);
+  }
 
-      this.message.success(`Providencia ${this.editingProvidenciaIndex + 1} actualizada. Hora: ${datos.horaProvidencia}`);
+  guardarOActualizarProvidencia(datos: any, formValues: any): void {
+    const nuevaProvidencia = {
+      tipo: this.tipoProvidencia,
+      tipoDocumento: this.tipoDocumento,
+      personaTipo: this.tipoPersona,
+      datos: datos,
+      fechaOriginal: formValues.fechaProvidencia,
+      horaOriginal: this.horaBase || formValues.horaProvidencia,
+      formValuesOriginal: JSON.parse(JSON.stringify(formValues))
+    };
+
+    let etiquetaTipo = 'Providencia';
+    if (this.tipoProvidencia === 'rpv') etiquetaTipo = 'RPV';
+    else if (this.tipoProvidencia === 'opi') etiquetaTipo = 'OPI';
+
+    const numeroSecuencial = this.editingProvidenciaIndex !== null
+      ? this.editingProvidenciaIndex + 1
+      : this.providenciasAcumuladas.length + 1;
+
+    const mensajeHora = datos.horaProvidencia ? `. Hora: ${datos.horaProvidencia}` : '';
+
+    if (this.editingProvidenciaIndex !== null) {
+      this.providenciasAcumuladas[this.editingProvidenciaIndex] = nuevaProvidencia;
+      this.message.success(`${etiquetaTipo} ${numeroSecuencial} actualizado${mensajeHora}`);
       this.editingProvidenciaIndex = null;
     } else {
-      this.providenciasAcumuladas.push({
-        tipo: this.tipoProvidencia,
-        personaTipo: this.tipoPersona,
-        datos: datos,
-        fechaOriginal: formValues.fechaProvidencia,
-        horaOriginal: this.horaBase || formValues.horaProvidencia,
-        formValuesOriginal: JSON.parse(JSON.stringify(formValues))
-      });
-
-      this.message.success(`Providencia ${this.providenciasAcumuladas.length} agregada. Hora: ${datos.horaProvidencia}`);
+      this.providenciasAcumuladas.push(nuevaProvidencia);
+      this.message.success(`${etiquetaTipo} ${numeroSecuencial} agregado${mensajeHora}`);
     }
 
-    // Limpiar formulario para siguiente providencia
     this.resetFormularioParaSiguiente();
   }
 
   resetFormularioParaSiguiente(): void {
-    // Mantener fecha, hora (si no es RPV) y abogado
     const fechaActual = this.providenciaForm.get('fechaProvidencia')?.value;
     const horaActual = this.providenciaForm.get('horaProvidencia')?.value;
     const abogadoActual = this.providenciaForm.get('abogadoSeleccionado')?.value;
+    const conceptoActual = this.providenciaForm.get('conceptoGeneral')?.value;
 
-    // Reset del formulario
     this.providenciaForm.reset();
 
-    // Restaurar valores que queremos mantener
     const valoresARestaurar: any = {
       fechaProvidencia: fechaActual,
       abogadoSeleccionado: abogadoActual
     };
 
-    // Solo restaurar hora si NO es RPV
     if (this.tipoProvidencia !== 'rpv') {
       valoresARestaurar.horaProvidencia = horaActual;
     }
 
+    if (this.esAgrupados && conceptoActual) {
+      valoresARestaurar.conceptoGeneral = conceptoActual;
+    }
+
     this.providenciaForm.patchValue(valoresARestaurar);
 
-    // Limpiar títulos si es agrupados
-    if (this.tipoProvidencia === 'agrupados') {
-      while (this.titulos.length) {
-        this.titulos.removeAt(0);
+    if (this.tipoProvidencia === 'agrupados' || (this.tipoProvidencia === 'opi' && this.esAgrupados)) {
+      if (this.providenciaForm.contains('titulos')) {
+        this.providenciaForm.setControl('titulos', this.fb.array([]));
       }
     }
 
-    // Limpiar valores en letras
     this.valoresEnLetras = {};
   }
 
@@ -750,7 +857,6 @@ export class ProvidenciaIessComponent implements OnInit {
         this.providenciasAcumuladas.splice(index, 1);
         this.message.success('Providencia eliminada');
 
-        // Cerrar modal si ya no hay providencias
         if (this.providenciasAcumuladas.length === 0) {
           this.cerrarModalProvidencias();
         }
@@ -789,10 +895,8 @@ export class ProvidenciaIessComponent implements OnInit {
       return;
     }
 
-    // Guardar el índice que estamos editando
     this.editingProvidenciaIndex = index;
 
-    // ✅ Convertir fechas a objetos Date
     const valoresRestaurados = { ...providencia.formValuesOriginal };
 
     if (valoresRestaurados.fechaProvidencia && !(valoresRestaurados.fechaProvidencia instanceof Date)) {
@@ -807,17 +911,15 @@ export class ProvidenciaIessComponent implements OnInit {
       valoresRestaurados.fechaCancelacion = new Date(valoresRestaurados.fechaCancelacion);
     }
 
-    // Restaurar valores del formulario
+    if (valoresRestaurados.fechanotificacionRPV && !(valoresRestaurados.fechanotificacionRPV instanceof Date)) {
+      valoresRestaurados.fechanotificacionRPV = new Date(valoresRestaurados.fechanotificacionRPV);
+    }
+
     this.providenciaForm.patchValue(valoresRestaurados);
 
-    // Para agrupados, recargar títulos
     if (providencia.tipo === 'agrupados') {
-      // Limpiar títulos existentes
-      while (this.titulos.length) {
-        this.titulos.removeAt(0);
-      }
+      this.providenciaForm.setControl('titulos', this.fb.array([]));
 
-      // Recargar desde formValuesOriginal si existe el array
       if (valoresRestaurados.titulos) {
         valoresRestaurados.titulos.forEach((titulo: any) => {
           this.titulos.push(this.fb.group({
@@ -833,23 +935,36 @@ export class ProvidenciaIessComponent implements OnInit {
       }
     }
 
-    // ✅ Restaurar horaBase para que las horas continúen correctamente
+    if (providencia.tipo === 'opi' && providencia.tipoDocumento === 'agrupados') {
+      this.providenciaForm.setControl('titulos', this.fb.array([]));
+
+      if (valoresRestaurados.titulos) {
+        valoresRestaurados.titulos.forEach((titulo: any) => {
+          this.titulos.push(this.fb.group({
+            orden: titulo.orden,
+            numeroTC: titulo.numeroTC,
+            concepto: titulo.concepto,
+            valorCapital: titulo.valorCapital,
+            valorLiquidacion: titulo.valorLiquidacion || titulo.valorCapital
+          }));
+        });
+      }
+    }
+
     if (providencia.horaOriginal) {
       this.horaBase = new Date(providencia.horaOriginal);
-      this.contadorMinutos = 0; // Reiniciar contador
+      this.contadorMinutos = 0;
     }
 
     this.message.info('Providencia cargada para edición. Haga los cambios y presione "Guardar Cambios"');
   }
 
   async onSubmit(): Promise<void> {
-    // ✅ Si está editando, primero guardar los cambios
     if (this.editingProvidenciaIndex !== null) {
       this.acumularProvidencia();
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    // ✅ Si no hay acumuladas, acumular la actual
     if (this.providenciasAcumuladas.length === 0) {
       this.editingProvidenciaIndex = null;
       this.acumularProvidencia();
@@ -860,7 +975,6 @@ export class ProvidenciaIessComponent implements OnInit {
     }
 
     try {
-      // ✅ GENERAR RPV MÚLTIPLES
       if (this.tipoProvidencia === 'rpv') {
         this.message.info(`Generando ${this.providenciasAcumuladas.length} RPV...`);
 
@@ -868,24 +982,63 @@ export class ProvidenciaIessComponent implements OnInit {
         await this.documentoService.generarRpvMultiples(this.providenciasAcumuladas, fechaRpv);
         this.message.success('RPV generados correctamente');
 
-        // Limpiar
         this.providenciasAcumuladas = [];
         this.editingProvidenciaIndex = null;
+        this.providenciaForm.reset();
+
         return;
       }
 
-      // ✅ GENERAR PROVIDENCIAS MÚLTIPLES
+      if (this.tipoProvidencia === 'opi') {
+        this.message.info(`Generando ${this.providenciasAcumuladas.length} OPI...`);
+
+        const fechaOpi = this.providenciasAcumuladas[0].fechaOriginal;
+        await this.documentoService.generarOpiMultiples(this.providenciasAcumuladas, fechaOpi);
+        this.message.success('OPI generados correctamente');
+
+        this.providenciasAcumuladas = [];
+        this.horaBase = null;
+        this.contadorMinutos = 0;
+        this.editingProvidenciaIndex = null;
+
+        if (this.providenciaForm.contains('titulos')) {
+          this.providenciaForm.setControl('titulos', this.fb.array([]));
+        }
+
+        this.providenciaForm.reset();
+
+        const horaDefecto = new Date();
+        horaDefecto.setHours(8, 0, 0, 0);
+        this.providenciaForm.patchValue({
+          horaProvidencia: horaDefecto
+        });
+
+        return;
+      }
+
       this.message.info(`Generando documento con ${this.providenciasAcumuladas.length} providencia(s)...`);
 
       const fechaProvidencia = this.providenciasAcumuladas[0].fechaOriginal;
       await this.documentoService.generarProvidenciasMultiples(this.providenciasAcumuladas, fechaProvidencia);
       this.message.success('Documento generado correctamente');
 
-      // Limpiar
       this.providenciasAcumuladas = [];
       this.horaBase = null;
       this.contadorMinutos = 0;
       this.editingProvidenciaIndex = null;
+
+      if (this.providenciaForm.contains('titulos')) {
+        this.providenciaForm.setControl('titulos', this.fb.array([]));
+      }
+
+      this.providenciaForm.reset();
+
+      const horaDefecto = new Date();
+      horaDefecto.setHours(8, 0, 0, 0);
+      this.providenciaForm.patchValue({
+        horaProvidencia: horaDefecto
+      });
+
     } catch (error) {
       this.message.error('Error al generar el documento');
       console.error('Error:', error);
@@ -899,11 +1052,9 @@ export class ProvidenciaIessComponent implements OnInit {
     return `${dia}/${mes}/${anio}`;
   }
 
-  // ========== CALCULAR TOTAL (AGRUPADOS) ==========
-
   calcularTotal(): string {
     const total = this.calcularTotalConFraccion();
-    return total.formateado; // Ya viene formateado con 2 decimales
+    return total.formateado;
   }
 
   calcularTotalConFraccion(): { entero: number, fraccion: string, formateado: string } {
@@ -912,13 +1063,11 @@ export class ProvidenciaIessComponent implements OnInit {
     this.titulos.controls.forEach((titulo: any) => {
       const valor = titulo.value.valorCapital;
       if (valor) {
-        // ✅ Normalizar y sumar
         const valorNormalizado = this.normalizarValorConDecimales(valor);
         totalDecimal += parseFloat(valorNormalizado);
       }
     });
 
-    // ✅ Usar toFixed para asegurar 2 decimales
     const totalStr = totalDecimal.toFixed(2);
     const partes = totalStr.split('.');
 
@@ -929,56 +1078,65 @@ export class ProvidenciaIessComponent implements OnInit {
     };
   }
 
-  /**
- * Normaliza un valor numérico para asegurar que tenga 2 decimales
- * Acepta formatos: 140.21, 140,21, 1.400,21, 1,400.21
- * Siempre retorna formato: 140.21
- */
+  calcularTotalLiquidacionConFraccion(): { entero: number, fraccion: string, formateado: string } {
+    let total = 0;
+
+    this.titulos.value.forEach((titulo: any) => {
+      const valorLiquidacion = titulo.valorLiquidacion || titulo.valorCapital || '0';
+      const valorNormalizado = this.normalizarValorConDecimales(valorLiquidacion);
+      total += parseFloat(valorNormalizado);
+    });
+
+    const totalStr = total.toFixed(2);
+    const partes = totalStr.split('.');
+
+    return {
+      entero: parseInt(partes[0], 10),
+      fraccion: partes[1] || '00',
+      formateado: this.formatearNumeroConMiles(totalStr)
+    };
+  }
+
+  calcularRetencionPorTitulo(valorLiquidacion: string | number): string {
+    if (!valorLiquidacion) return '$0.00';
+
+    const valorNormalizado = this.normalizarValorConDecimales(valorLiquidacion.toString());
+    const retencion = parseFloat(valorNormalizado) * 1.30;
+    const retencionRedondeada = Math.ceil(retencion).toFixed(2);
+
+    return this.formatearNumeroConMiles(retencionRedondeada);
+  }
+
   private normalizarValorConDecimales(valor: string | number): string {
     if (!valor) return '0.00';
 
-    // Convertir a string
     let valorStr = String(valor).trim();
 
-    // Detectar el formato basándose en la última coma o punto
     const ultimoPunto = valorStr.lastIndexOf('.');
     const ultimaComa = valorStr.lastIndexOf(',');
 
-    // Si tiene ambos, el último es el separador decimal
     if (ultimoPunto > -1 && ultimaComa > -1) {
       if (ultimoPunto > ultimaComa) {
-        // Formato: 1,400.21 (inglés)
         valorStr = valorStr.replace(/,/g, '');
       } else {
-        // Formato: 1.400,21 (europeo)
         valorStr = valorStr.replace(/\./g, '').replace(',', '.');
       }
     } else if (ultimaComa > -1) {
-      // Solo tiene coma - verificar si es decimal o miles
       const partesDespuesComa = valorStr.split(',')[1];
       if (partesDespuesComa && partesDespuesComa.length <= 2) {
-        // Es decimal: 140,21
         valorStr = valorStr.replace(',', '.');
       } else {
-        // Es miles: 1,400
         valorStr = valorStr.replace(/,/g, '');
       }
     }
-    // Si solo tiene punto, ya está en formato correcto
 
-    // Convertir a número
     const numero = parseFloat(valorStr);
 
     if (isNaN(numero)) return '0.00';
 
-    // Retornar con 2 decimales fijos
     return numero.toFixed(2);
   }
 
-  /**
-   * Separa valor en parte entera y decimal
-   * Ejemplo: "125.42" → { entero: 125, fraccion: "42" }
-   */
   private separarEnteroYDecimal(valor: string): { entero: number, fraccion: string } {
     const valorNormalizado = this.normalizarValorConDecimales(valor);
     const partes = valorNormalizado.split('.');

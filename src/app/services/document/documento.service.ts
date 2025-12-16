@@ -10,248 +10,389 @@ import { firstValueFrom } from 'rxjs';
 })
 export class DocumentoService {
 
-  private dmdProcOrd = 'assets/procOrdinario.docx';
-  private matrizIssfa = 'assets/matriz.docx';
-
-  // Plantillas de providencias IESS
-  private providenciaIndividualNatural = 'assets/iess/inicio-cancelacion/inicio-cancelacion-individual-natural.docx';
-  private providenciaIndividualJuridica = 'assets/iess/inicio-cancelacion/inicio-cancelacion-individual-juridica.docx';
-  private providenciaAgrupadosNatural = 'assets/iess/inicio-cancelacion/inicio-cancelacion-agrupados-natural.docx';
-  private providenciaAgrupadosJuridica = 'assets/iess/inicio-cancelacion/inicio-cancelacion-agrupados-juridica.docx';
-  private rpvNatural = 'assets/iess/rpv/rpvNaturales.docx';
-  private rpvJuridica = 'assets/iess/rpv/rpvJuridicos.docx';
+  // ✅ Mapeo estructurado de plantillas (fácil de mantener y escalar)
+  private templates = {
+    procOrdinario: 'assets/procOrdinario.docx',
+    matrizIssfa: 'assets/matriz.docx',
+    providencia: {
+      individual: {
+        natural: 'assets/iess/inicio-cancelacion/inicio-cancelacion-individual-natural.docx',
+        juridica: 'assets/iess/inicio-cancelacion/inicio-cancelacion-individual-juridica.docx'
+      },
+      agrupados: {
+        natural: 'assets/iess/inicio-cancelacion/inicio-cancelacion-agrupados-natural.docx',
+        juridica: 'assets/iess/inicio-cancelacion/inicio-cancelacion-agrupados-juridica.docx'
+      }
+    },
+    rpv: {
+      natural: 'assets/iess/rpv/rpvNaturales.docx',
+      juridica: 'assets/iess/rpv/rpvJuridicos.docx'
+    },
+    opi: {
+      individual: {
+        natural: 'assets/iess/opi/opi-indiv-natural.docx',
+        juridica: 'assets/iess/opi/opi-indiv-juridica.docx'
+      },
+      agrupados: {
+        natural: 'assets/iess/opi/opi-agrup-natural.docx',
+        juridica: 'assets/iess/opi/opi-agrup-juridica.docx'
+      }
+    }
+  };
 
   constructor(private http: HttpClient) { }
 
+  // ========================================
+  // MÉTODOS PÚBLICOS - DOCUMENTOS SIMPLES
+  // ========================================
+
   generarDmdProcOrd(datos: any) {
-    this.http.get(this.dmdProcOrd, { responseType: 'arraybuffer' }).subscribe({
-      next: (buffer: ArrayBuffer) => {
-        try {
-          const zip = new PizZip(buffer);
-          const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-          doc.setData(datos);
-
-          try {
-            doc.render();
-          } catch (error) {
-            console.error('Error al renderizar la plantilla:', error);
-            return;
-          }
-
-          const blob = doc.getZip().generate({ type: 'blob' });
-          saveAs(blob, 'demanda.docx');
-          console.log('Documento generado correctamente.');
-
-        } catch (error) {
-          console.error('Error al procesar la plantilla:', error);
-        }
-      },
-      error: (error) => {
-        console.error('Error al cargar la plantilla:', error);
-      }
-    });
+    this.generarDocumentoSimple(this.templates.procOrdinario, datos, 'demanda.docx');
   }
 
   generarMatrizIssfa(datos: any) {
-    this.http.get(this.matrizIssfa, { responseType: 'arraybuffer' }).subscribe({
-      next: (buffer: ArrayBuffer) => {
-        try {
-          const zip = new PizZip(buffer);
-          const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-          doc.setData(datos);
-
-          try {
-            doc.render();
-          } catch (error) {
-            console.error('Error al renderizar la plantilla:', error);
-            return;
-          }
-
-          const blob = doc.getZip().generate({ type: 'blob' });
-          saveAs(blob, 'matrizIssfa.docx');
-          console.log('Documento generado correctamente.');
-
-        } catch (error) {
-          console.error('Error al procesar la plantilla:', error);
-        }
-      },
-      error: (error) => {
-        console.error('Error al cargar la plantilla:', error);
-      }
-    });
+    this.generarDocumentoSimple(this.templates.matrizIssfa, datos, 'matrizIssfa.docx');
   }
 
-  /**
-   * Genera providencia de inicio y cancelación - Individual Persona Natural
-   */
+  // --- PROVIDENCIAS INDIVIDUALES ---
+
   generarProvidenciaIndividualNatural(datos: any) {
-    this.generarProvidencia(this.providenciaIndividualNatural, datos, 'providencia-individual-natural.docx');
+    this.generarDocumentoSimple(
+      this.templates.providencia.individual.natural,
+      datos,
+      'providencia-individual-natural.docx'
+    );
   }
 
-  /**
-   * Genera providencia de inicio y cancelación - Individual Persona Jurídica
-   */
   generarProvidenciaIndividualJuridica(datos: any) {
-    this.generarProvidencia(this.providenciaIndividualJuridica, datos, 'providencia-individual-juridica.docx');
+    this.generarDocumentoSimple(
+      this.templates.providencia.individual.juridica,
+      datos,
+      'providencia-individual-juridica.docx'
+    );
   }
 
-  /**
-   * Genera providencia de inicio y cancelación - Agrupados Persona Natural
-   */
   generarProvidenciaAgrupadosNatural(datos: any) {
-    this.generarProvidencia(this.providenciaAgrupadosNatural, datos, 'providencia-agrupados-natural.docx');
+    this.generarDocumentoSimple(
+      this.templates.providencia.agrupados.natural,
+      datos,
+      'providencia-agrupados-natural.docx'
+    );
   }
 
-  /**
-   * Genera providencia de inicio y cancelación - Agrupados Persona Jurídica
-   */
   generarProvidenciaAgrupadosJuridica(datos: any) {
-    this.generarProvidencia(this.providenciaAgrupadosJuridica, datos, 'providencia-agrupados-juridica.docx');
+    this.generarDocumentoSimple(
+      this.templates.providencia.agrupados.juridica,
+      datos,
+      'providencia-agrupados-juridica.docx'
+    );
   }
 
-  /**
- * Genera RPV para Persona Natural
- */
+  // --- RPV INDIVIDUALES ---
+
   generarRpvNatural(datos: any) {
-    this.generarProvidencia(this.rpvNatural, datos, 'RPV-Persona-Natural.docx');
+    this.generarDocumentoSimple(
+      this.templates.rpv.natural,
+      datos,
+      'RPV-Persona-Natural.docx'
+    );
   }
 
-  /**
-   * Genera RPV para Persona Jurídica
-   */
   generarRpvJuridica(datos: any) {
-    this.generarProvidencia(this.rpvJuridica, datos, 'RPV-Persona-Juridica.docx');
+    this.generarDocumentoSimple(
+      this.templates.rpv.juridica,
+      datos,
+      'RPV-Persona-Juridica.docx'
+    );
   }
 
-  /**
-   * Método privado genérico para generar providencias
-   */
-  private generarProvidencia(templatePath: string, datos: any, nombreArchivo: string) {
-    this.http.get(templatePath, { responseType: 'arraybuffer' }).subscribe({
-      next: (buffer: ArrayBuffer) => {
-        try {
-          const zip = new PizZip(buffer);
-          const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+  // --- OPI INDIVIDUALES ---
 
-          doc.setData(datos);
-
-          try {
-            doc.render();
-          } catch (error) {
-            console.error('Error al renderizar la plantilla:', error);
-            console.error('Datos enviados:', datos);
-            return;
-          }
-
-          const blob = doc.getZip().generate({ type: 'blob' });
-          saveAs(blob, nombreArchivo);
-          console.log('Providencia generada correctamente:', nombreArchivo);
-
-        } catch (error) {
-          console.error('Error al procesar la plantilla:', error);
-        }
-      },
-      error: (error) => {
-        console.error('Error al cargar la plantilla:', error);
-      }
-    });
+  generarOpiIndividualNatural(datos: any) {
+    this.generarDocumentoSimple(
+      this.templates.opi.individual.natural,
+      datos,
+      'OPI-Individual-Persona-Natural.docx'
+    );
   }
 
+  generarOpiIndividualJuridica(datos: any) {
+    this.generarDocumentoSimple(
+      this.templates.opi.individual.juridica,
+      datos,
+      'OPI-Individual-Persona-Juridica.docx'
+    );
+  }
+
+  generarOpiAgrupadosNatural(datos: any) {
+    this.generarDocumentoSimple(
+      this.templates.opi.agrupados.natural,
+      datos,
+      'OPI-Agrupados-Persona-Natural.docx'
+    );
+  }
+
+  generarOpiAgrupadosJuridica(datos: any) {
+    this.generarDocumentoSimple(
+      this.templates.opi.agrupados.juridica,
+      datos,
+      'OPI-Agrupados-Persona-Juridica.docx'
+    );
+  }
+
+  // ========================================
+  // MÉTODOS PÚBLICOS - DOCUMENTOS MÚLTIPLES (WRAPPERS)
+  // ========================================
+
   /**
-   * Genera múltiples providencias en un solo documento
+   * Genera múltiples providencias de inicio y cancelación en un solo documento
    */
   async generarProvidenciasMultiples(providencias: any[], fechaProvidencia: Date) {
-    if (providencias.length === 0) {
-      console.error('No hay providencias para generar');
+    return this.generarDocumentosMultiples(providencias, 'INICIO_CANCELACION', fechaProvidencia);
+  }
+
+  /**
+   * Genera múltiples RPV en un solo documento
+   */
+  async generarRpvMultiples(rpvs: any[], fechaRpv: Date) {
+    return this.generarDocumentosMultiples(rpvs, 'RPV', fechaRpv);
+  }
+
+  /**
+   * Genera múltiples OPI en un solo documento
+   */
+  async generarOpiMultiples(opis: any[], fechaOpi: Date) {
+    return this.generarDocumentosMultiples(opis, 'OPI', fechaOpi);
+  }
+
+  /**
+   * ✅ Método universal para generar múltiples documentos combinados
+   * CORREGIDO: Detecta automáticamente si es individual o agrupado para OPI
+   */
+  private async generarDocumentosMultiples(
+    items: any[],
+    categoria: 'INICIO_CANCELACION' | 'RPV' | 'OPI',
+    fecha: Date
+  ) {
+    if (items.length === 0) {
+      console.error('No hay documentos para generar');
       return;
     }
 
     try {
       const documentos: ArrayBuffer[] = [];
 
-      // Generar cada documento individualmente en memoria
-      for (let i = 0; i < providencias.length; i++) {
-        const providencia = providencias[i];
-        console.log(`Generando providencia ${i + 1} de ${providencias.length}...`);
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        console.log(`Generando documento ${i + 1} de ${items.length}...`);
 
-        const buffer = await this.generarDocumentoEnMemoria(providencia);
+        // --- CORRECCIÓN #30 ---
+        // Usar tipoDocumento si existe, sino usar tipo
+        let tipoParaTemplate = item.tipoDocumento || item.tipo;
+
+        // ✅ NUEVO: Fallback para detectar agrupados por presencia de array titulos
+        // Aplica tanto para OPI como para INICIO_CANCELACION
+        if (!item.tipoDocumento && !item.tipo) {
+          // Si no hay tipo explícito, detectar por estructura de datos
+          if (item.datos.titulos && Array.isArray(item.datos.titulos) && item.datos.titulos.length > 0) {
+            tipoParaTemplate = 'agrupados';
+          } else {
+            tipoParaTemplate = 'individual';
+          }
+        }
+
+        // ✅ AGREGADO: Validación adicional para INICIO_CANCELACION
+        // Si dice "agrupados" pero no tiene array de titulos, es un error
+        if (categoria === 'INICIO_CANCELACION' && tipoParaTemplate === 'agrupados') {
+          if (!item.datos.titulos || !Array.isArray(item.datos.titulos) || item.datos.titulos.length === 0) {
+            console.error('⚠️ Error: Documento marcado como "agrupados" pero no tiene array de títulos');
+            tipoParaTemplate = 'individual'; // Fallback seguro
+          }
+        }
+
+        console.log(`🔍 DEBUG - Item ${i + 1}:`, {
+          categoria,
+          'item.tipo': item.tipo,
+          'item.tipoDocumento': item.tipoDocumento,
+          'item.personaTipo': item.personaTipo,
+          'tipoParaTemplate (FINAL)': tipoParaTemplate,
+          'tiene titulos': !!item.datos.titulos,
+          'cantidad titulos': item.datos.titulos?.length || 0
+        });
+        // -------------------------------
+
+        const templatePath = this.obtenerRutaPlantilla(categoria, tipoParaTemplate, item.personaTipo);
+        console.log(`📄 Template seleccionada: ${templatePath}`);
+
+        const buffer = await this.generarBufferEnMemoria(templatePath, item.datos);
         documentos.push(buffer);
       }
 
-      // Preparar nombre dinámico del documento
-      const primerProvidencia = providencias[0];
-      const tipo = primerProvidencia.tipo === 'individual' ? 'INDIVIDUAL' : 'AGRUPADOS';
-      const personaTipo = primerProvidencia.personaTipo === 'natural' ? 'PERSONA_NATURAL' : 'PERSONA_JURIDICA';
-      const fecha = this.formatearFechaParaNombre(fechaProvidencia);
-      const nombreBase = `INICIO_CANCELACION_${tipo}_${personaTipo}_${fecha}`;
+      const primerItem = items[0];
+      const nombreBase = this.construirNombreArchivo(categoria, primerItem, fecha);
 
-      // Combinar manualmente usando PizZip
       await this.combinarDocumentos(documentos, nombreBase);
 
-      console.log('Documento combinado generado correctamente');
+      console.log(`Documento combinado generado correctamente: ${nombreBase}.docx`);
     } catch (error) {
-      console.error('Error al generar providencias múltiples:', error);
+      console.error(`Error al generar múltiples ${categoria}:`, error);
       throw error;
     }
   }
 
+  // ========================================
+  // HELPERS PRIVADOS - REUTILIZABLES
+  // ========================================
+
   /**
-   * Formatea fecha para el nombre del archivo
+   * Obtiene la ruta de la plantilla según categoría, tipo y persona
    */
-  private formatearFechaParaNombre(fecha: Date): string {
-    const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
-    const dia = fecha.getDate().toString().padStart(2, '0');
-    const mes = meses[fecha.getMonth()];
-    const anio = fecha.getFullYear();
-    return `${dia}${mes}${anio}`;
+  private obtenerRutaPlantilla(
+    categoria: string,
+    tipo: 'individual' | 'agrupados',
+    personaTipo: 'natural' | 'juridica'
+  ): string {
+    if (categoria === 'INICIO_CANCELACION') {
+      return this.templates.providencia[tipo][personaTipo];
+    }
+    if (categoria === 'OPI') {
+      return this.templates.opi[tipo][personaTipo];
+    }
+    if (categoria === 'RPV') {
+      return this.templates.rpv[personaTipo];
+    }
+    throw new Error(`Categoría desconocida: ${categoria}`);
   }
 
   /**
-   * Genera un documento en memoria sin descargarlo
+   * Construye el nombre del archivo según la categoría
    */
-  private async generarDocumentoEnMemoria(providencia: any): Promise<ArrayBuffer> {
-    let templatePath = '';
+  private construirNombreArchivo(
+    categoria: string,
+    primerItem: any,
+    fecha: Date
+  ): string {
+    const personaStr = primerItem.personaTipo === 'natural' ? 'PERSONA_NATURAL' : 'PERSONA_JURIDICA';
+    const fechaStr = this.formatearFechaParaNombre(fecha);
 
-    // Determinar qué plantilla usar
-    if (providencia.tipo === 'individual') {
-      templatePath = providencia.personaTipo === 'natural'
-        ? this.providenciaIndividualNatural
-        : this.providenciaIndividualJuridica;
-    } else {
-      templatePath = providencia.personaTipo === 'natural'
-        ? this.providenciaAgrupadosNatural
-        : this.providenciaAgrupadosJuridica;
+    // RPV no tiene tipo individual/agrupados
+    if (categoria === 'RPV') {
+      return `RPV_${personaStr}_${fechaStr}`;
     }
 
+    // Para INICIO_CANCELACION y OPI - usar tipoDocumento si existe, sino tipo
+    const tipoParaNombre = primerItem.tipoDocumento || primerItem.tipo;
+    const tipoStr = tipoParaNombre === 'individual' ? 'INDIVIDUAL' : 'AGRUPADOS';
+    return `${categoria}_${tipoStr}_${personaStr}_${fechaStr}`;
+  }
+
+  /**
+   * Genera un documento simple (descarga inmediata)
+   */
+  private generarDocumentoSimple(templatePath: string, datos: any, nombreSalida: string) {
+    this.http.get(templatePath, { responseType: 'arraybuffer' }).subscribe({
+      next: (buffer: ArrayBuffer) => {
+        try {
+          const blob = this.procesarPlantilla(buffer, datos);
+          if (blob) {
+            saveAs(blob, nombreSalida);
+            console.log(`Documento generado correctamente: ${nombreSalida}`);
+          }
+        } catch (error) {
+          console.error('Error al procesar la plantilla:', error);
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar la plantilla:', error);
+      }
+    });
+  }
+
+  /**
+   * Genera un buffer en memoria sin descargarlo
+   */
+  private async generarBufferEnMemoria(templatePath: string, datos: any): Promise<ArrayBuffer> {
     try {
-      // Cargar la plantilla
+      console.log('╔═══════════════════════════════════════╗');
+      console.log('║   GENERANDO BUFFER EN MEMORIA         ║');
+      console.log('╚═══════════════════════════════════════╝');
+      console.log('📄 Template:', templatePath);
+      console.log('📦 Datos enviados:', JSON.stringify(datos, null, 2));
+
       const buffer = await firstValueFrom(
         this.http.get(templatePath, { responseType: 'arraybuffer' })
       );
 
       const zip = new PizZip(buffer);
-      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+      const doc = new Docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+        nullGetter: (part: any) => {
+          console.warn('⚠️ Variable no encontrada:', part.value);
+          return '';
+        }
+      });
 
-      // Rellenar con datos
-      doc.setData(providencia.datos);
-      doc.render();
+      doc.setData(datos);
 
-      // Retornar como ArrayBuffer
+      try {
+        doc.render();
+        console.log('✅ Documento renderizado correctamente');
+      } catch (renderError: any) {
+        console.error('❌ ERROR AL RENDERIZAR:');
+        console.error('Mensaje:', renderError.message);
+
+        if (renderError.properties) {
+          console.error('📍 Propiedades del error:', renderError.properties);
+
+          // Mostrar errores individuales si existen
+          if (renderError.properties.errors) {
+            console.error('📋 Lista de errores:');
+            renderError.properties.errors.forEach((err: any, index: number) => {
+              console.error(`  ${index + 1}. ${err.message}`);
+              if (err.properties) {
+                console.error('     Variable:', err.properties.id);
+                console.error('     Explicación:', err.properties.explanation);
+              }
+            });
+          }
+        }
+
+        throw renderError;
+      }
+
       return doc.getZip().generate({
         type: 'arraybuffer',
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       }) as ArrayBuffer;
-    } catch (error) {
-      console.error('Error al generar documento en memoria:', error);
+    } catch (error: any) {
+      console.error('❌ Error crítico:', error);
       throw error;
     }
   }
 
   /**
- * Combina múltiples documentos ArrayBuffer en uno solo
- */
+   * Procesa una plantilla y retorna un Blob listo para guardar
+   */
+  private procesarPlantilla(buffer: ArrayBuffer, datos: any): Blob | null {
+    try {
+      const zip = new PizZip(buffer);
+      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+      doc.setData(datos);
+      doc.render();
+
+      return doc.getZip().generate({ type: 'blob' });
+    } catch (error) {
+      console.error('Error al renderizar la plantilla:', error);
+      console.error('Datos enviados:', datos);
+      return null;
+    }
+  }
+
+  /**
+   * Combina múltiples documentos ArrayBuffer en uno solo
+   */
   private async combinarDocumentos(documentos: ArrayBuffer[], nombreBase: string): Promise<void> {
     if (documentos.length === 0) return;
 
@@ -290,7 +431,6 @@ export class DocumentoService {
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       });
 
-      // ✅ Usar el nombre base recibido
       const nombreArchivo = `${nombreBase}.docx`;
       saveAs(blob, nombreArchivo);
 
@@ -302,69 +442,14 @@ export class DocumentoService {
   }
 
   /**
- * Genera múltiples RPV en un solo documento
- */
-  async generarRpvMultiples(rpvs: any[], fechaRpv: Date) {
-    if (rpvs.length === 0) {
-      console.error('No hay RPV para generar');
-      return;
-    }
-
-    try {
-      const documentos: ArrayBuffer[] = [];
-
-      // Generar cada RPV individualmente en memoria
-      for (let i = 0; i < rpvs.length; i++) {
-        const rpv = rpvs[i];
-        console.log(`Generando RPV ${i + 1} de ${rpvs.length}...`);
-
-        const buffer = await this.generarRpvEnMemoria(rpv);
-        documentos.push(buffer);
-      }
-
-      // Preparar nombre dinámico del documento
-      const primerRpv = rpvs[0];
-      const personaTipo = primerRpv.personaTipo === 'natural' ? 'PERSONA_NATURAL' : 'PERSONA_JURIDICA';
-      const fecha = this.formatearFechaParaNombre(fechaRpv);
-      const nombreBase = `RPV_${personaTipo}_${fecha}`;
-
-      // Combinar documentos
-      await this.combinarDocumentos(documentos, nombreBase);
-
-      console.log('RPV múltiples generados correctamente');
-    } catch (error) {
-      console.error('Error al generar RPV múltiples:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Genera un RPV en memoria sin descargarlo
+   * Formatea fecha para el nombre del archivo
    */
-  private async generarRpvEnMemoria(rpv: any): Promise<ArrayBuffer> {
-    const templatePath = rpv.personaTipo === 'natural'
-      ? this.rpvNatural
-      : this.rpvJuridica;
-
-    try {
-      const buffer = await firstValueFrom(
-        this.http.get(templatePath, { responseType: 'arraybuffer' })
-      );
-
-      const zip = new PizZip(buffer);
-      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
-
-      doc.setData(rpv.datos);
-      doc.render();
-
-      return doc.getZip().generate({
-        type: 'arraybuffer',
-        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      }) as ArrayBuffer;
-    } catch (error) {
-      console.error('Error al generar RPV en memoria:', error);
-      throw error;
-    }
+  private formatearFechaParaNombre(fecha: Date): string {
+    const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const mes = meses[fecha.getMonth()];
+    const anio = fecha.getFullYear();
+    return `${dia}${mes}${anio}`;
   }
 
 }

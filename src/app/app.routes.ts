@@ -10,8 +10,8 @@ import { AreaDetailComponentComponent } from './pages/area-detail-component/area
 import { MatrizDocIsffaComponent } from './pages/matriz-doc-isffa/matriz-doc-isffa.component';
 import { ProcesosComponent } from './pages/gestionProcesos/procesos/procesos.component';
 import { ConsultasComponent } from './components/consultas/consultas.component';
-import { UserAreaAdminComponent } from './pages/user-admin/user-area-admin/user-area-admin.component'; // ✅ NUEVA IMPORTACIÓN
-import { AdminGuard } from './guards/guards/admin.guard'; // ✅ IMPORTAR GUARD
+import { UserAreaAdminComponent } from './pages/user-admin/user-area-admin/user-area-admin.component';
+import { AdminGuard } from './guards/guards/admin.guard';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
 import { SelectorProvidenciaComponent } from './pages/providencias-iess/selector-providencia/selector-providencia.component';
@@ -26,9 +26,8 @@ export const redirectUnauthorizedToHome = () => redirectUnauthorizedTo(['/welcom
 // Agrupación de rutas para mejor organización
 const publicRoutes: Routes = [
   { path: '', component: LoginComponent },
-  { path: 'login', component: LoginComponent }, // Mantenemos /login por si hay enlaces directos
+  { path: 'login', component: LoginComponent },
   { path: 'consultas', component: ConsultasComponent },
-  // Otras rutas públicas que puedas tener
 ];
 
 const basicProtectedRoutes: Routes = [
@@ -47,34 +46,42 @@ const adminRoutes: Routes = [
   { path: 'matriz-doc-isffa', component: MatrizDocIsffaComponent },
   { path: 'procesos', component: ProcesosComponent },
   { path: 'selector-providencia', component: SelectorProvidenciaComponent },
+  
+  // Rutas de Inicio y Cancelación
   { path: 'providencia-iess/individual-natural', component: ProvidenciaIessComponent },
   { path: 'providencia-iess/individual-juridica', component: ProvidenciaIessComponent },
   { path: 'providencia-iess/agrupados-natural', component: ProvidenciaIessComponent },
   { path: 'providencia-iess/agrupados-juridica', component: ProvidenciaIessComponent },
+  
+  // Rutas de RPV
   { path: 'rpv-iess/natural', component: ProvidenciaIessComponent },
   { path: 'rpv-iess/juridica', component: ProvidenciaIessComponent },
+  
+  // Rutas de OPI (Orden de Pago Inmediato)
+  { path: 'opi-iess/individual-natural', component: ProvidenciaIessComponent },
+  { path: 'opi-iess/individual-juridica', component: ProvidenciaIessComponent },
+  { path: 'opi-iess/agrupados-natural', component: ProvidenciaIessComponent },
+  { path: 'opi-iess/agrupados-juridica', component: ProvidenciaIessComponent },
 ].map(route => ({
   ...route,
   ...canActivate(redirectUnauthorizedToLogin)
 }));
 
-// ✅ NUEVAS RUTAS PROTEGIDAS PARA ADMINISTRADORES
 const superAdminRoutes: Routes = [
   { 
     path: 'admin/users', 
     component: UserAreaAdminComponent,
-    canActivate: [AdminGuard] // ✅ Protegida con guard personalizado
+    canActivate: [AdminGuard]
   },
 ].map(route => ({
   ...route,
-  ...canActivate(redirectUnauthorizedToLogin) // También requiere autenticación
+  ...canActivate(redirectUnauthorizedToLogin)
 }));
 
-// Rutas para errores y páginas no encontradas
 const errorRoutes: Routes = [
   { path: 'unauthorized', component: UnauthorizedComponent }, 
   { path: 'not-found', component: NotFoundComponent }, 
-  { path: '**', redirectTo: '/not-found' } // Captura cualquier ruta no definida
+  { path: '**', redirectTo: '/not-found' }
 ];
 
 // Combina todas las rutas
@@ -82,6 +89,6 @@ export const routes: Routes = [
   ...publicRoutes,
   ...basicProtectedRoutes,
   ...adminRoutes,
-  ...superAdminRoutes, // ✅ AGREGAR RUTAS DE SUPER ADMIN
+  ...superAdminRoutes,
   ...errorRoutes
 ];

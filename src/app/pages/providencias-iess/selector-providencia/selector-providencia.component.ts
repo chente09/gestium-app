@@ -26,14 +26,14 @@ import { NzLayoutModule } from 'ng-zorro-antd/layout';
 })
 export class SelectorProvidenciaComponent implements OnInit {
 
-  vistaActual: 'principal' | 'inicio-cancelacion' | 'rpv' = 'principal';
+  vistaActual: 'principal' | 'inicio-cancelacion' | 'rpv' | 'opi' = 'principal';
   
   // Vista Principal
   documentosDisponibles = [
     {
       titulo: 'Inicio y Cancelación',
       descripcion: 'Providencias de inicio y cancelación de procedimientos',
-      icono: 'file-text',
+      icono: 'dollar',
       color: '#595959',
       cantidad: 4,
       vista: 'inicio-cancelacion'
@@ -41,10 +41,18 @@ export class SelectorProvidenciaComponent implements OnInit {
     {
       titulo: 'Requerimiento de Pago Voluntario',
       descripcion: 'RPV para personas naturales y jurídicas',
-      icono: 'dollar',
+      icono: 'file',
       color: '#595959',
       cantidad: 2,
       vista: 'rpv'
+    },
+    {
+      titulo: 'Orden de Pago Inmediato',
+      descripcion: 'OPI para personas naturales y jurídicas',
+      icono: 'file-text',
+      color: '#595959',
+      cantidad: 4,
+      vista: 'opi'
     }
   ];
 
@@ -92,6 +100,34 @@ export class SelectorProvidenciaComponent implements OnInit {
     }
   ];
 
+  // Opciones de OPI
+  opcionesOpi = [
+    {
+      title: 'Individual - Persona Natural',
+      description: 'Orden de Pago Inmediato para un solo título de crédito de persona natural',
+      icon: 'user',
+      route: '/opi-iess/individual-natural'
+    },
+    {
+      title: 'Individual - Persona Jurídica',
+      description: 'Orden de Pago Inmediato para un solo título de crédito de empresa',
+      icon: 'shop',
+      route: '/opi-iess/individual-juridica'
+    },
+    {
+      title: 'Agrupados - Persona Natural',
+      description: 'Orden de Pago Inmediato para múltiples títulos de crédito de persona natural',
+      icon: 'team',
+      route: '/opi-iess/agrupados-natural'
+    },
+    {
+      title: 'Agrupados - Persona Jurídica',
+      description: 'Orden de Pago Inmediato para múltiples títulos de crédito de empresa',
+      icon: 'cluster',
+      route: '/opi-iess/agrupados-juridica'
+    }
+  ];
+
   constructor(
     private router: Router,
     private route: ActivatedRoute
@@ -125,6 +161,8 @@ export class SelectorProvidenciaComponent implements OnInit {
         return 'Providencias de Inicio y Cancelación';
       case 'rpv':
         return 'Requerimiento de Pago Voluntario';
+      case 'opi':
+        return 'Orden de Pago Inmediato';
       default:
         return 'Documentos Disponibles IESS';
     }

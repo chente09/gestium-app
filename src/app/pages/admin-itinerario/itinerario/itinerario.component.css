@@ -1,3 +1,4 @@
+/* ========== ESTILOS GENERALES ========== */
 .divider {
     margin: 20px 0;
     border: none;
@@ -30,37 +31,23 @@
     text-decoration: underline;
 }
 
-/* Responsivo: en pantallas pequeñas se coloca todo en una sola columna */
-@media (max-width: 768px) {
-    .header-grid {
-        grid-template-columns: 1fr;
-        /* Una columna en pantallas pequeñas */
-    }
-}
-
-/* Contenedor de la tabla con scroll horizontal */
+/* ========== TABLA ========== */
 .table-container {
     width: 100%;
     overflow-x: auto;
-    /* Permite el desplazamiento horizontal */
     -ms-overflow-style: auto;
     scrollbar-width: thin;
-    /* Para navegadores compatibles con esta propiedad */
     -webkit-overflow-scrolling: touch;
-    /* Suaviza el desplazamiento en dispositivos móviles */
 }
 
-/* Personalizar la barra de desplazamiento en navegadores WebKit (Chrome, Edge, Safari) */
 .table-container::-webkit-scrollbar {
     height: 6px;
-    /* Ajusta la altura de la barra de desplazamiento */
     background-color: #f1f1f1;
     border-radius: 3px;
 }
 
 .table-container::-webkit-scrollbar-thumb {
     background-color: #888;
-    /* Color del scroll */
     border-radius: 3px;
 }
 
@@ -74,15 +61,12 @@
     width: 100%;
 }
 
-/* Personalizar la barra de desplazamiento en navegadores WebKit (Chrome, Edge, Safari) */
 .itinerario-table::-webkit-scrollbar {
     height: 6px;
-    /* Ajusta la altura de la barra de desplazamiento */
 }
 
 .itinerario-table::-webkit-scrollbar-thumb {
     background-color: #888;
-    /* Color del scroll */
     border-radius: 3px;
 }
 
@@ -95,21 +79,14 @@
     text-align: left;
     padding: 8px;
     word-wrap: break-word;
-    /* Asegura que el texto largo se divida correctamente */
     overflow: hidden;
-    /* Oculta contenido desbordante */
     text-overflow: ellipsis;
-    /* Agrega "..." si el contenido es muy largo */
     white-space: normal;
-    /* Permite que el texto se ajuste en múltiples líneas */
 }
 
-/* Estilos adicionales para los inputs en modo edición */
 .itinerario-table input[nz-input] {
     width: 100%;
-    /* Ajusta el ancho del input a la celda */
     box-sizing: border-box;
-    /* Evita que el padding afecte el tamaño */
 }
 
 ::ng-deep .ant-table-tbody>tr:hover td {
@@ -117,22 +94,18 @@
     transition: background-color 0.3s ease-in-out;
 }
 
-
-/* Ajustar el modal */
+/* ========== MODALES ========== */
 .nz-modal-body {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    /* Espaciado entre elementos */
     padding: 20px;
 }
 
-/* Asegurar que el formulario ocupe todo el espacio */
 form[nz-form] {
     width: 100%;
 }
 
-/* Estilos para cada item del formulario */
 .nz-form-item {
     display: flex;
     flex-direction: column;
@@ -140,40 +113,31 @@ form[nz-form] {
     width: 100%;
 }
 
-/* Ajustar el label */
 nz-form-label {
     font-weight: 600;
     margin-bottom: 8px;
 }
 
-/* Asegurar que el textarea ocupe el 100% */
 textarea[nz-input] {
     width: 100%;
     min-height: 120px;
     padding: 8px;
-    resize: none;
-    /* Evita que el usuario lo redimensione */
+    resize: vertical;
     border-radius: 5px;
     border: 1px solid #d9d9d9;
 }
 
-/* Estilos para la sección de subida de imágenes */
 nz-upload {
     width: 100%;
 }
 
-/* Botones alineados a la derecha */
 nz-modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
 }
 
-
-textarea {
-    resize: vertical;
-}
-
+/* ========== FILTROS ========== */
 .filters {
     display: flex;
     flex-wrap: wrap;
@@ -187,37 +151,20 @@ textarea {
     margin-bottom: 20px;
 }
 
-/* Asegura que los elementos de filtro tengan un tamaño uniforme */
 .filters nz-select,
 .filters nz-range-picker,
 .filters button {
     min-width: 200px;
 }
 
-/* Espaciado y tamaño de los botones */
 .filters button {
     padding: 2px 1px;
     font-size: 14px;
 }
 
-/* Mejora la apariencia de los selectores en pantallas grandes */
 .filters nz-select,
 .filters nz-range-picker {
     width: auto;
-}
-
-/* Responsivo: en pantallas pequeñas, apila los elementos */
-@media (max-width: 768px) {
-    .filters {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .filters nz-select,
-    .filters nz-range-picker,
-    .filters button {
-        width: 100%;
-    }
 }
 
 .download-button {
@@ -227,27 +174,24 @@ textarea {
     width: 115px;
 }
 
+/* ========== BOTONES DE ACCIONES ========== */
 .action-buttons {
     display: flex;
     gap: 8px;
-    /* Espacio entre botones */
     justify-content: center;
     align-items: center;
 }
 
 .action-buttons button {
     min-width: 120px;
-    /* Tamaño uniforme */
     font-size: 14px;
     font-weight: 500;
     padding: 6px 12px;
     display: flex;
     align-items: center;
     gap: 6px;
-    /* Espacio entre ícono y texto */
 }
 
-/* Botón "En Proceso" con estilo diferenciado */
 .btn-completado {
     background-color: #0d141bd0;
     color: #fff;
@@ -271,19 +215,7 @@ textarea {
     color: #fff;
 }
 
-/* Responsivo: en pantallas pequeñas, apila los botones */
-@media (max-width: 768px) {
-    .action-buttons {
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .action-buttons button {
-        width: 100%;
-    }
-}
-
-/* Contenedor de las notificaciones */
+/* ========== NOTIFICACIONES (PALETA DEL SISTEMA) ========== */
 .notification-container {
     position: fixed;
     top: 100px;
@@ -292,107 +224,231 @@ textarea {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    gap: 10px;
 }
 
 /* Botón de notificaciones */
-.notification-container button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
+.notification-button {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
     background-color: #032341;
-    color: white;
     border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: background-color 0.3s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
     position: relative;
+    color: white;
 }
 
-.notification-container button:hover {
+.notification-button:hover {
     background-color: #313d46;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Badge de cantidad de notificaciones */
+.notification-button.has-notifications {
+    background-color: #8f1d21;
+    animation: pulseNotification 2s infinite;
+}
+
+@keyframes pulseNotification {
+    0%, 100% {
+        box-shadow: 0 4px 8px rgba(143, 29, 33, 0.4);
+    }
+    50% {
+        box-shadow: 0 4px 16px rgba(143, 29, 33, 0.6);
+    }
+}
+
+/* Badge contador */
 .notification-badge {
     position: absolute;
-    top: -2px;
-    right: -2px;
-    background-color: #ff4d4f;
+    top: -5px;
+    right: -5px;
+    background: #d3272c;
     color: white;
-    border-radius: 50%;
+    border-radius: 10px;
     padding: 2px 6px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Menú de notificaciones */
 .notification-menu {
-    position: absolute;
-    top: 50px;
-    right: 0;
-    width: 300px;
-    max-height: 300px;
+    width: 380px;
+    max-height: 600px;
     overflow-y: auto;
     background: #fff;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 10px;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    z-index: 1001;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-out;
     border: 1px solid #032341;
 }
 
-/* Evita movimientos bruscos al mostrar */
-.notification-menu.ng-enter {
-    opacity: 0;
-    transform: translateY(-10px);
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-.notification-menu.ng-enter-active {
-    opacity: 1;
-    transform: translateY(0);
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: #032341;
+    color: white;
+    border-radius: 8px 8px 0 0;
 }
 
-/* Estilos para cada notificación */
+.notification-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+}
+
+.notification-header button {
+    color: white;
+}
+
+.notification-menu hr {
+    margin: 0;
+    border: none;
+    border-top: 1px solid #eff2f5;
+}
+
+/* Lista de notificaciones */
+.notification-list {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Item de notificación */
 .notification-item {
-    padding: 10px;
-    border-bottom: 1px solid #f0f0f0;
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 12px;
+    border-left: 4px solid #d9d9d9;
+    transition: all 0.2s ease;
 }
 
-.notification-item:last-child {
-    border-bottom: none;
+.notification-item:hover {
+    background: #eff2f5;
+    transform: translateX(-4px);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.notification-item strong {
-    font-size: 14px;
-    color: #333;
-    display: block;
+.notification-item.priority-high {
+    border-left-color: #d3272c;
+    background: #fff5f5;
 }
 
-.notification-item p {
-    margin: 4px 0 0;
+.notification-item.priority-medium {
+    border-left-color: #e0c10f;
+    background: #fffef5;
+}
+
+.notification-item.priority-low {
+    border-left-color: #8c8c8c;
+    background: #fafafa;
+}
+
+/* Header de notificación */
+.notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.notif-area {
     font-size: 12px;
-    color: #666;
+    color: #595959;
+    font-weight: 500;
 }
 
-/* Estilos base (para pantallas grandes) */
-/* Resetear estilos predeterminados de listas */
+/* Trámite */
+.notif-tramite {
+    font-size: 14px;
+    font-weight: 600;
+    color: #032341;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+/* Detalles */
+.notif-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.notif-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #595959;
+}
+
+.notif-row span[nz-icon] {
+    font-size: 14px;
+    color: #8c8c8c;
+}
+
+.notif-row.highlight {
+    background: #fff5f5;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    border-left: 3px solid #d3272c;
+}
+
+.notif-row.highlight strong {
+    color: #8f1d21;
+}
+
+/* Mensaje vacío */
+.empty-notifications {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8c8c8c;
+}
+
+.empty-notifications p {
+    margin: 12px 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #032341;
+}
+
+.empty-notifications small {
+    font-size: 14px;
+    color: #595959;
+}
+
+/* ========== GESTIÓN DE RUTAS ========== */
 ul.list-group {
     padding-left: 2px;
-    /* Eliminar el padding-left predeterminado */
     margin-left: 0;
-    /* Eliminar el margin-left predeterminado */
-
 }
 
 ul.list-group li {
     padding-left: 5px;
-    /* Asegurarse de que no haya padding-left en los elementos de la lista */
     margin-left: 0;
-    /* Asegurarse de que no haya margin-left en los elementos de la lista */
 }
 
 .gestion-rutas-container {
@@ -434,6 +490,12 @@ ul.list-group li {
     color: #fff;
     font-size: 13px;
     cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.actividad-input button:hover {
+    transform: translateY(-2px);
 }
 
 .actividad-item {
@@ -477,161 +539,33 @@ ul.list-group li {
     color: #6c757d;
 }
 
-/* Media Queries para Responsividad */
-
-/* Pantallas medianas (tablets, hasta 768px) */
-@media (max-width: 768px) {
-    .gestion-rutas-container {
-        max-width: 90%;
-        /* Reducir el ancho del contenedor */
-        padding: 15px;
-    }
-
-    .gestion-title {
-        font-size: 22px;
-        /* Reducir el tamaño del título */
-    }
-
-    .actividad-input input {
-        font-size: 14px;
-        /* Reducir el tamaño del texto del input */
-    }
-
-    .actividad-input button {
-        padding: 8px 16px;
-        /* Reducir el tamaño del botón */
-        font-size: 14px;
-    }
-
-    .actividad-text {
-        font-size: 16px;
-        /* Reducir el tamaño del texto de la actividad */
-    }
-
-    .actividad-actions button nz-icon {
-        font-size: 14px;
-        /* Reducir el tamaño de los íconos */
-    }
-}
-
-/* Pantallas pequeñas (móviles, hasta 480px) */
-@media (max-width: 480px) {
-    .gestion-rutas-container {
-        max-width: 100%;
-        /* Ocupar todo el ancho disponible */
-        padding: 10px;
-    }
-
-    .gestion-title {
-        font-size: 20px;
-        /* Título más pequeño */
-    }
-
-    .actividad-input {
-        flex-direction: column;
-        /* Cambiar a disposición vertical */
-        gap: 8px;
-    }
-
-    .actividad-input input {
-        width: 100%;
-        /* Input ocupa todo el ancho */
-    }
-
-    .actividad-input button {
-        width: 100%;
-        /* Botón ocupa todo el ancho */
-        padding: 10px;
-    }
-
-    .actividad-item {
-        flex-direction: column;
-        /* Cambiar a disposición vertical */
-        align-items: flex-start;
-        /* Alinear el texto a la izquierda */
-        gap: 10px;
-        /* Espacio entre texto y acciones */
-    }
-
-    .actividad-text {
-        margin-right: 0;
-        /* Eliminar margen derecho */
-        font-size: 16px;
-        /* Tamaño de texto más pequeño */
-    }
-
-    .actividad-actions {
-        width: 100%;
-        /* Acciones ocupan todo el ancho */
-        justify-content: flex-end;
-        /* Alinear acciones a la derecha */
-    }
-
-    .actividad-actions button nz-icon {
-        font-size: 14px;
-        /* Íconos más pequeños */
-    }
-}
-
-.actividad-input {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 20px;
-}
-
-.actividad-input button {
-    font-weight: 500;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.actividad-input button:hover {
-    transform: translateY(-2px);
-}
-
 /* Contenedor de las tarjetas */
 .actividad-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    /* Centrar las tarjetas */
     margin: -8px;
-    /* Compensar el gutter */
 }
 
-/* Columnas de las tarjetas */
 .actividad-col {
     padding: 8px;
-    /* Añadir padding para el gutter */
     flex: 1 1 100%;
-    /* Por defecto, ocupa todo el ancho */
     max-width: 100%;
-    /* Por defecto, ocupa todo el ancho */
     display: flex;
     justify-content: center;
-    /* Centrar la tarjeta dentro de la columna */
 }
 
-/* Estilos para las tarjetas */
 .actividad-card {
-
     width: 100%;
-    /* Ocupar todo el ancho disponible */
     min-height: 300px;
-    /* Altura mínima para consistencia */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    /* Espaciado entre contenido y botón */
     overflow: hidden;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    /* Sombra para mejor apariencia */
     border-radius: 8px;
-    /* Bordes redondeados */
 }
 
-
-
-/* Botón de eliminar */
 .delete-btn {
     font-weight: 500;
     background: #8f1d21c0;
@@ -644,37 +578,150 @@ ul.list-group li {
 .delete-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
 }
 
+/* ========== RESPONSIVE ========== */
 
-/* Ajustes responsivos */
-@media (min-width: 576px) {
+/* Pantallas medianas (tablets, hasta 768px) */
+@media (max-width: 768px) {
+    .header-grid {
+        grid-template-columns: 1fr;
+    }
 
-    /* Tablets y móviles grandes */
+    .filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filters nz-select,
+    .filters nz-range-picker,
+    .filters button {
+        width: 100%;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .action-buttons button {
+        width: 100%;
+    }
+
+    .notification-container {
+        right: 15px;
+        top: 80px;
+    }
+    
+    .notification-menu {
+        width: calc(100vw - 30px);
+        max-width: 350px;
+    }
+    
+    .notification-button {
+        width: 45px;
+        height: 45px;
+        font-size: 20px;
+    }
+
+    .gestion-rutas-container {
+        max-width: 90%;
+        padding: 15px;
+    }
+
+    .gestion-title {
+        font-size: 22px;
+    }
+
+    .actividad-input input {
+        font-size: 14px;
+    }
+
+    .actividad-input button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+
+    .actividad-text {
+        font-size: 16px;
+    }
+
+    .actividad-actions button nz-icon {
+        font-size: 14px;
+    }
+
     .actividad-col {
         flex: 1 1 50%;
-        /* Dos columnas */
         max-width: 50%;
     }
 }
 
-@media (min-width: 768px) {
+/* Pantallas pequeñas (móviles, hasta 480px) */
+@media (max-width: 480px) {
+    .gestion-rutas-container {
+        max-width: 100%;
+        padding: 10px;
+    }
 
-    /* Tablets grandes y pantallas pequeñas */
+    .gestion-title {
+        font-size: 20px;
+    }
+
+    .actividad-input {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .actividad-input input {
+        width: 100%;
+    }
+
+    .actividad-input button {
+        width: 100%;
+        padding: 10px;
+    }
+
+    .actividad-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .actividad-text {
+        margin-right: 0;
+        font-size: 16px;
+    }
+
+    .actividad-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .actividad-actions button nz-icon {
+        font-size: 14px;
+    }
+}
+
+/* Tablets y móviles grandes */
+@media (min-width: 576px) {
+    .actividad-col {
+        flex: 1 1 50%;
+        max-width: 50%;
+    }
+}
+
+/* Tablets grandes y pantallas pequeñas */
+@media (min-width: 768px) {
     .actividad-col {
         flex: 1 1 33.333%;
-        /* Tres columnas */
         max-width: 33.333%;
     }
 }
 
+/* Pantallas grandes */
 @media (min-width: 992px) {
-
-    /* Pantallas grandes */
     .actividad-col {
         flex: 1 1 25%;
-        /* Cuatro columnas */
         max-width: 25%;
     }
 }

@@ -17,6 +17,7 @@ export class SharedDataService {
   ];
 
   readonly unidades: string[] = [
+    'Ofi. Depositarios',
     'Pague Ya',
     'Coordinación de la Unidad Judicial Penal',
     'Municipio', 

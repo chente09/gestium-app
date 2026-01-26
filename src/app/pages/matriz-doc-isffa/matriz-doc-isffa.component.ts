@@ -176,7 +176,6 @@ export class MatrizDocIsffaComponent {
         fechaOficioFormateada
       };
 
-      console.log('Datos enviados al documento:', datos);
       this.documentoService.generarMatrizIssfa(datos);
     } else {
       console.warn('El formulario no es válido.');

@@ -184,7 +184,6 @@ export class DocumentoService {
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        console.log(`Generando documento ${i + 1} de ${items.length}...`);
 
         // --- CORRECCIÓN #30 ---
         // Usar tipoDocumento si existe, sino usar tipo
@@ -210,19 +209,7 @@ export class DocumentoService {
           }
         }
 
-        console.log(`🔍 DEBUG - Item ${i + 1}:`, {
-          categoria,
-          'item.tipo': item.tipo,
-          'item.tipoDocumento': item.tipoDocumento,
-          'item.personaTipo': item.personaTipo,
-          'tipoParaTemplate (FINAL)': tipoParaTemplate,
-          'tiene titulos': !!item.datos.titulos,
-          'cantidad titulos': item.datos.titulos?.length || 0
-        });
-        // -------------------------------
-
         const templatePath = this.obtenerRutaPlantilla(categoria, tipoParaTemplate, item.personaTipo);
-        console.log(`📄 Template seleccionada: ${templatePath}`);
 
         const buffer = await this.generarBufferEnMemoria(templatePath, item.datos);
         documentos.push(buffer);
@@ -233,7 +220,6 @@ export class DocumentoService {
 
       await this.combinarDocumentos(documentos, nombreBase);
 
-      console.log(`Documento combinado generado correctamente: ${nombreBase}.docx`);
     } catch (error) {
       console.error(`Error al generar múltiples ${categoria}:`, error);
       throw error;
@@ -296,7 +282,6 @@ export class DocumentoService {
           const blob = this.procesarPlantilla(buffer, datos);
           if (blob) {
             saveAs(blob, nombreSalida);
-            console.log(`Documento generado correctamente: ${nombreSalida}`);
           }
         } catch (error) {
           console.error('Error al procesar la plantilla:', error);
@@ -313,12 +298,6 @@ export class DocumentoService {
    */
   private async generarBufferEnMemoria(templatePath: string, datos: any): Promise<ArrayBuffer> {
     try {
-      console.log('╔═══════════════════════════════════════╗');
-      console.log('║   GENERANDO BUFFER EN MEMORIA         ║');
-      console.log('╚═══════════════════════════════════════╝');
-      console.log('📄 Template:', templatePath);
-      console.log('📦 Datos enviados:', JSON.stringify(datos, null, 2));
-
       const buffer = await firstValueFrom(
         this.http.get(templatePath, { responseType: 'arraybuffer' })
       );
@@ -337,7 +316,6 @@ export class DocumentoService {
 
       try {
         doc.render();
-        console.log('✅ Documento renderizado correctamente');
       } catch (renderError: any) {
         console.error('❌ ERROR AL RENDERIZAR:');
         console.error('Mensaje:', renderError.message);
@@ -433,8 +411,6 @@ export class DocumentoService {
 
       const nombreArchivo = `${nombreBase}.docx`;
       saveAs(blob, nombreArchivo);
-
-      console.log(`Documento combinado generado: ${nombreArchivo}`);
     } catch (error) {
       console.error('Error al combinar documentos:', error);
       throw error;

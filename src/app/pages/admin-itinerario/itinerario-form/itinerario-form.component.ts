@@ -18,6 +18,7 @@ import { NzUploadModule } from 'ng-zorro-antd/upload';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { doc } from '@angular/fire/firestore';
+import { DateUtilsService } from '../../../services/date-utils/date-utils.service';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -68,7 +69,7 @@ export class ItinerarioFormComponent implements OnInit {
   piso: string[] = [];
   juecesPorPiso: { [key: string]: string[] } = {};
   jueces: string[] = [];
-  
+
   selectedFileType: string = 'image';
   selectedFileName: string | null = null;
   imageFileList: any[] = [];
@@ -86,7 +87,8 @@ export class ItinerarioFormComponent implements OnInit {
     private usersService: UsersService,
     private message: NzMessageService,
     private modal: NzModalService,
-    private sharedDataService: SharedDataService // ✅ INYECTAR SERVICIO
+    private sharedDataService: SharedDataService, // ✅ INYECTAR SERVICIO
+    private dateUtils: DateUtilsService
   ) {
     this.itinerarioForm = this.fb.group({
       fileType: [''],
@@ -151,9 +153,9 @@ export class ItinerarioFormComponent implements OnInit {
       diligencia: [''],
       manualDiligencia: [''],
       solicita: [''],
-      fechaSolicitud: [new Date().toISOString().split('T')[0], Validators.required],
-      horaSolicitud: [new Date().toTimeString().slice(0, 5), Validators.required],
-      fechaTermino: ['', [Validators.required, this.fechaTerminoValidator]],
+      fechaSolicitud: [this.dateUtils.getFechaActualEcuador(), Validators.required],
+      horaSolicitud: [this.dateUtils.getHoraActualEcuador(), Validators.required],
+      fechaTermino: ['', [Validators.required, this.fechaTerminoValidator.bind(this)]],
       estado: [Estado.PENDIENTE, Validators.required],
       observaciones: [''],
       area: [''],
@@ -224,12 +226,22 @@ export class ItinerarioFormComponent implements OnInit {
   }
 
   async submitForm(): Promise<void> {
-    if (this.itinerarioForm.invalid || !this.selectedArea) {
-      this.message.warning('Debe completar todos los campos obligatorios.');
+    // ✅ PROTECCIÓN #1: Verificar si ya está guardando
+    if (this.isLoading) {
+      console.warn('⚠️ Ya hay un guardado en proceso. Ignorando clic duplicado.');
       return;
     }
 
+    // ✅ PROTECCIÓN #2: Activar loading INMEDIATAMENTE
     this.isLoading = true;
+
+    // Validación después de activar loading
+    if (this.itinerarioForm.invalid || !this.selectedArea) {
+      this.message.warning('Debe completar todos los campos obligatorios.');
+      this.isLoading = false; // ✅ Desactivar loading si falla validación
+      return;
+    }
+
     this.message.loading('Guardando itinerario...', { nzDuration: 1000 });
 
     try {
@@ -239,45 +251,62 @@ export class ItinerarioFormComponent implements OnInit {
         const existingItinerario = await this.itinerarioService.getItinerarioByNroProceso(nroProceso);
 
         if (!existingItinerario.empty) {
-          const existingDocs = existingItinerario.docs.map(doc => doc.data() as Itinerario).filter(doc => doc.estado !== Estado.COMPLETADO);
+          const existingDocs = existingItinerario.docs
+            .map(doc => doc.data() as Itinerario)
+            .filter(doc => doc.estado !== Estado.COMPLETADO);
 
-          const duplicadosMsg = existingDocs.map((doc, index) =>
-            `📌 #${index + 1} - Trámite: ${doc.tramite} 📅 Fecha de Solicitud: ${doc.fechaSolicitud} 📝 Observaciones: ${doc.observaciones || 'Sin observaciones'}`).join('\n\n');
+          // ✅ PROTECCIÓN #3: Desactivar loading antes del modal
+          this.isLoading = false;
 
           const userConfirmed = await new Promise<boolean>((resolve) => {
             this.modal.confirm({
               nzTitle: 'Número de proceso duplicado',
               nzContent: `
-                    <div style="max-height: 300px; overflow-y: auto;">
-                        <p>⚠️ El número de proceso "<b>${nroProceso}</b>" ya está registrado en los siguientes trámites:</p>
-                        <ul style="padding-left: 20px;">
-                            ${existingDocs.map((doc, index) => `
-                                <li>
-                                    <b>#${index + 1}</b> - <b>Trámite:</b> ${doc.tramite} <br>
-                                    📅 <b>Fecha de Solicitud:</b> ${doc.fechaSolicitud} <br>
-                                    📝 <b>Observaciones:</b> ${doc.observaciones || 'Sin observaciones'}
-                                </li>
-                            `).join('')}
-                        </ul>
-                        <p>¿Desea continuar con el guardado?</p>
-                    </div>
-                `,
+              <div style="max-height: 300px; overflow-y: auto;">
+                <p>⚠️ El número de proceso "<b>${nroProceso}</b>" ya está registrado en los siguientes trámites:</p>
+                <ul style="padding-left: 20px;">
+                  ${existingDocs.map((doc, index) => `
+                    <li>
+                      <b>#${index + 1}</b> - <b>Trámite:</b> ${doc.tramite} <br>
+                      📅 <b>Fecha de Solicitud:</b> ${doc.fechaSolicitud} <br>
+                      📝 <b>Observaciones:</b> ${doc.observaciones || 'Sin observaciones'}
+                    </li>
+                  `).join('')}
+                </ul>
+                <p>¿Desea continuar con el guardado?</p>
+              </div>
+            `,
               nzOkText: 'Sí, continuar',
               nzCancelText: 'No, cancelar',
+              nzOkLoading: false, // ✅ PROTECCIÓN #4: Deshabilitar loading del botón OK
               nzOnOk: () => resolve(true),
               nzOnCancel: () => resolve(false),
             });
           });
+
           if (!userConfirmed) {
-            console.log('Usuario canceló la operación');
-            this.isLoading = false;
-            return;
+            return; // ✅ isLoading ya está en false
           }
+
+          // ✅ PROTECCIÓN #5: Reactivar loading después de confirmar
+          this.isLoading = true;
         }
       }
 
+      // ✅ PROTECCIÓN #6: Verificar NUEVAMENTE antes de guardar
+      if (!this.isLoading) {
+        this.isLoading = true;
+      }
+
+      const formData = this.itinerarioForm.value;
+
+      const itinerarioData = {
+        ...formData,
+        createdAtServer: this.dateUtils.getServerTimestamp()
+      };
+
       await this.itinerarioService.createItinerario(
-        this.itinerarioForm.value,
+        itinerarioData,
         this.selectedImage ?? undefined,
         this.selectedPDF ?? undefined
       );
@@ -289,6 +318,7 @@ export class ItinerarioFormComponent implements OnInit {
       console.error('Error al guardar el itinerario:', error);
       this.message.error('Hubo un error al guardar el itinerario. Intente de nuevo.');
     } finally {
+      // ✅ PROTECCIÓN #7: Siempre desactivar loading al final
       this.isLoading = false;
     }
   }
@@ -328,10 +358,10 @@ export class ItinerarioFormComponent implements OnInit {
   private fechaTerminoValidator(control: AbstractControl): ValidationErrors | null {
     if (!control.value) return null;
 
-    const fechaTermino = new Date(control.value);
-    const fechaHoy = new Date();
-    fechaHoy.setHours(0, 0, 0, 0);
+    const fechaTermino = control.value;
+    const fechaActual = this.dateUtils.getFechaActualEcuador();
 
-    return fechaTermino <= fechaHoy ? { fechaInvalida: true } : null;
+    // Solo permite fechas FUTURAS (mayor que hoy, sin incluir hoy)
+    return fechaTermino > fechaActual ? null : { fechaInvalida: true };
   }
 }

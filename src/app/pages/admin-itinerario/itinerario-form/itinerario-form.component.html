@@ -44,7 +44,8 @@
             <nz-form-item>
                 <nz-form-label nzFor="nroProceso">N°. Juicio</nz-form-label>
                 <nz-form-control>
-                    <input nz-input formControlName="nroProceso" placeholder="Ingrese el N° de proceso para validar duplicados" />
+                    <input nz-input formControlName="nroProceso"
+                        placeholder="Ingrese el N° de proceso para validar duplicados" />
                 </nz-form-control>
             </nz-form-item>
         </nz-col>
@@ -64,7 +65,8 @@
                 <nz-form-item>
                     <nz-form-label nzFor="juzgado">Unidad, Juzgado o Entidad</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="juzgado" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la unidad, juzgado o entidad">
+                        <nz-select formControlName="juzgado" nzShowSearch nzAllowClear
+                            nzPlaceHolder="Seleccione la unidad, juzgado o entidad">
                             <nz-option *ngFor="let juzgado of unidad" [nzValue]="juzgado"
                                 [nzLabel]="juzgado"></nz-option>
                         </nz-select>
@@ -108,7 +110,8 @@
                 <nz-form-item>
                     <nz-form-label nzFor="materia">Selecciona el área</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="materia" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la materia">
+                        <nz-select formControlName="materia" nzShowSearch nzAllowClear
+                            nzPlaceHolder="Seleccione la materia">
                             <nz-option *ngFor="let materia of materia" [nzValue]="materia"
                                 [nzLabel]="materia"></nz-option>
                         </nz-select>
@@ -122,7 +125,8 @@
                 <nz-form-item>
                     <nz-form-label nzFor="diligencia">Seleciona la diligencia</nz-form-label>
                     <nz-form-control>
-                        <nz-select formControlName="diligencia" nzShowSearch nzAllowClear nzPlaceHolder="Seleccione la diligencia">
+                        <nz-select formControlName="diligencia" nzShowSearch nzAllowClear
+                            nzPlaceHolder="Seleccione la diligencia">
                             <nz-option *ngFor="let diligencia of diligencia" [nzValue]="diligencia"
                                 [nzLabel]="diligencia"></nz-option>
                         </nz-select>
@@ -175,9 +179,11 @@
             <nz-col nzSpan="24">
                 <nz-form-item>
                     <nz-form-control>
-                        <div class="save-button" nzBlock  (click)="submitForm()">
-                            <span>Guardar... </span><nz-icon [nzType]="'save'"></nz-icon>
-                        </div>
+                        <button nz-button nzType="primary" nzBlock nzSize="large" [nzLoading]="isLoading"
+                            [disabled]="isLoading || itinerarioForm.invalid" (click)="submitForm()" class="save-button">
+                            <span nz-icon nzType="save" nzTheme="outline"></span>
+                            <span>{{ isLoading ? 'Guardando...' : 'Guardar' }}</span>
+                        </button>
                     </nz-form-control>
                 </nz-form-item>
             </nz-col>

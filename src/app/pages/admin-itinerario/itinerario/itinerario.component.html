@@ -16,30 +16,79 @@
     </div>
 </div>
 <div class="notification-container">
-    <!-- Botón de notificaciones en un contenedor fijo -->
-    <div class="button-wrapper">
-        <button (click)="mostrarNotificaciones = !mostrarNotificaciones">
-            <i nz-icon nzType="bell"></i>
-            <span *ngIf="notificaciones.length > 0" class="notification-badge">{{ notificaciones.length }}</span>
+    <!-- Botón de notificaciones -->
+    <div style="position: relative;">
+        <button nz-button nzType="primary" nzShape="circle" nzSize="large" class="notification-button"
+            [class.has-notifications]="notificaciones.length > 0"
+            (click)="mostrarNotificaciones = !mostrarNotificaciones">
+            <span nz-icon nzType="bell" [nzTheme]="notificaciones.length > 0 ? 'fill' : 'outline'"></span>
         </button>
+
+        <!-- Badge fuera del botón -->
+        <span *ngIf="notificaciones.length > 0" class="notification-badge">
+            {{ notificaciones.length }}
+        </span>
     </div>
 
-    <!-- Menu de notificaciones -->
+    <!-- Menú de notificaciones -->
     <div *ngIf="mostrarNotificaciones" class="notification-menu">
-        <h4>Notificaciones</h4>
+        <div class="notification-header">
+            <h4>🔔 Actividades Vencidas</h4>
+            <button nz-button nzType="text" nzSize="small" (click)="mostrarNotificaciones = false">
+                <span nz-icon nzType="close"></span>
+            </button>
+        </div>
+
         <hr>
-        <ul>
-            <li *ngFor="let notificacion of notificaciones">
-                <div class="notification-item">
-                    <strong>{{ notificacion.area }}</strong>
-                    <strong>{{ notificacion.tramite }}</strong>
-                    <p>Solicita: {{ notificacion.solicita }}</p>
-                    <p>Fecha de término: {{ notificacion.fechaTermino }}</p>
-                    <p>Id: {{ notificacion.id }}</p>
+
+        <!-- Lista de notificaciones -->
+        <div class="notification-list" *ngIf="notificaciones.length > 0">
+            <div *ngFor="let notif of notificaciones" class="notification-item"
+                [class.priority-high]="notif.prioridad === 'alta'" [class.priority-medium]="notif.prioridad === 'media'"
+                [class.priority-low]="notif.prioridad === 'baja'">
+
+                <!-- Área y prioridad -->
+                <div class="notif-header">
+                    <span class="notif-area">{{ notif.area }}</span>
+                    <nz-tag
+                        [nzColor]="notif.prioridad === 'alta' ? 'red' : notif.prioridad === 'media' ? 'orange' : 'gold'">
+                        {{ notif.prioridad === 'alta' ? 'Urgente' : notif.prioridad === 'media' ? 'Importante' :
+                        'Reciente' }}
+                    </nz-tag>
                 </div>
-            </li>
-            <li *ngIf="notificaciones.length === 0">No hay notificaciones.</li>
-        </ul>
+
+                <!-- Trámite -->
+                <div class="notif-tramite">{{ notif.tramite }}</div>
+
+                <!-- Detalles -->
+                <div class="notif-details">
+                    <div class="notif-row">
+                        <span nz-icon nzType="user"></span>
+                        <span>{{ notif.solicita }}</span>
+                    </div>
+                    <div class="notif-row">
+                        <span nz-icon nzType="calendar"></span>
+                        <span>{{ notif.fechaLegible }}</span>
+                    </div>
+                    <div class="notif-row">
+                        <span nz-icon nzType="idcard"></span>
+                        <span>{{ notif.id }}</span>
+                    </div>
+                    <div class="notif-row highlight">
+                        <span nz-icon nzType="clock-circle" nzTheme="fill"></span>
+                        <strong>Vencida hace {{ notif.diasVencidos }} {{ notif.diasVencidos === 1 ? 'día' : 'días'
+                            }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mensaje vacío -->
+        <div *ngIf="notificaciones.length === 0" class="empty-notifications">
+            <span nz-icon nzType="check-circle" nzTheme="fill" style="font-size: 48px; color: #52c41a;"></span>
+            <p>¡Todo al día!</p>
+            <small>No hay actividades vencidas</small>
+        </div>
     </div>
 </div>
 <hr class="divider">
@@ -281,9 +330,9 @@
                 <nz-form-control>
                     <ng-container *ngIf="selectedItem">
                         <!-- ✅ CORREGIDO: obsEnProceso en lugar de obsCompletado -->
-                        <textarea nz-input [(ngModel)]="selectedItem.obsEnProceso" (input)="validarFormularioEnProceso()"
-                            id="observaciones" name="observaciones" placeholder="Ingrese observaciones" rows="4"
-                            style="width: 100%;"></textarea>
+                        <textarea nz-input [(ngModel)]="selectedItem.obsEnProceso"
+                            (input)="validarFormularioEnProceso()" id="observaciones" name="observaciones"
+                            placeholder="Ingrese observaciones" rows="4" style="width: 100%;"></textarea>
                     </ng-container>
                 </nz-form-control>
             </nz-form-item>
@@ -427,4 +476,3 @@
         No hay actividades guardadas.
     </div>
 </div>
-

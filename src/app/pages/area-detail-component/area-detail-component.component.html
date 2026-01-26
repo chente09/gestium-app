@@ -39,7 +39,23 @@
         <hr class="divider">
         <nz-row [nzGutter]="16" justify="center">
             <nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="12" *ngFor="let option of options">
-                <a [routerLink]="option.route" class="option-link">
+
+                <!-- ✅ Para enlaces externos -->
+                <a *ngIf="option.isExternal" [href]="option.externalUrl" target="_blank" rel="noopener noreferrer"
+                    class="option-link">
+                    <nz-card class="option-card" [nzBordered]="false" [nzHoverable]="true">
+                        <div class="option-icon">
+                            <i nz-icon [nzType]="option.icon"></i>
+                        </div>
+                        <nz-card-meta [nzTitle]="option.title" [nzDescription]="option.description"></nz-card-meta>
+                        <!-- Indicador visual de enlace externo -->
+                        <i nz-icon nzType="export" nzTheme="outline"
+                            style="position: absolute; top: 8px; right: 8px; font-size: 12px; color: #1890ff;"></i>
+                    </nz-card>
+                </a>
+
+                <!-- ✅ Para rutas internas (existente) -->
+                <a *ngIf="!option.isExternal" [routerLink]="option.route" class="option-link">
                     <nz-card class="option-card" [nzBordered]="false" [nzHoverable]="true">
                         <div class="option-icon">
                             <i nz-icon [nzType]="option.icon"></i>
@@ -47,6 +63,7 @@
                         <nz-card-meta [nzTitle]="option.title" [nzDescription]="option.description"></nz-card-meta>
                     </nz-card>
                 </a>
+
             </nz-col>
         </nz-row>
     </nz-card>
@@ -60,7 +77,7 @@
             Agenda de {{ areaId | uppercase }}
         </h2>
         <hr class="divider">
-        
+
         <!-- Componente de agenda -->
         <app-agenda-area [area]="areaId!"></app-agenda-area>
     </nz-card>

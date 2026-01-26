@@ -35,7 +35,6 @@ export const authAreaGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
 
   // 3️⃣ Admin y Coordinador tienen acceso a todas las áreas
   if (currentRegister.role === 'admin' || currentRegister.role === 'coordinador') {
-    console.log(`✅ [AuthAreaGuard] ${currentRegister.role} tiene acceso a área: ${areaSlug}`);
     return true;
   }
 
@@ -44,7 +43,6 @@ export const authAreaGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
     const hasAccess = currentRegister.areaAsignada === areaSlug;
 
     if (hasAccess) {
-      console.log(`✅ [AuthAreaGuard] Empleado tiene acceso a su área: ${areaSlug}`);
       return true;
     } else {
       console.warn(`🔒 [AuthAreaGuard] Acceso denegado - Empleado de '${currentRegister.areaAsignada}' intentó acceder a '${areaSlug}'`);

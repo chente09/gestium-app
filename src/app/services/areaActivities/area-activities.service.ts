@@ -130,7 +130,6 @@ export class AreaActivitiesService {
     try {
       const activitiesRef = collection(this.firestore, this.collectionName);
       const docRef = await addDoc(activitiesRef, newActivity);
-      console.log('✅ Actividad creada:', docRef.id);
       return docRef.id;
     } catch (error: any) {
       console.error('❌ Error creando actividad:', error);
@@ -289,7 +288,6 @@ export class AreaActivitiesService {
       }
 
       await updateDoc(docRef, updates);
-      console.log('✅ Actividad actualizada:', activityId);
       
     } catch (error: any) {
       console.error('❌ Error actualizando actividad:', error);
@@ -311,7 +309,6 @@ export class AreaActivitiesService {
       
       const docRef = doc(this.firestore, `${this.collectionName}/${activityId}`);
       await deleteDoc(docRef);
-      console.log('✅ Actividad eliminada:', activityId);
       
     } catch (error: any) {
       console.error('❌ Error eliminando actividad:', error);

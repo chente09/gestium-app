@@ -26,9 +26,11 @@ import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/iti
 import { UsersService } from '../../../services/users/users.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { SharedDataService } from '../../../services/sharedData/shared-data.service';
+import { DateUtilsService } from '../../../services/date-utils/date-utils.service';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -72,7 +74,16 @@ export class ItinerarioComponent implements OnInit {
   itinerarios: Itinerario[] = [];
   filteredItinerarios: Itinerario[] = [];
   listOfCurrentPageData: Itinerario[] = [];
-  notificaciones: { area: string; tramite: string; fechaTermino: string, solicita: string, id: string }[] = [];
+  notificaciones: {
+    area: string;
+    tramite: string;
+    fechaTermino: string;
+    solicita: string;
+    id: string;
+    diasVencidos: number;
+    prioridad: 'alta' | 'media' | 'baja';
+    fechaLegible: string;
+  }[] = [];
 
   // ========== PROPIEDADES DE ESTADO ==========
   loading = true;
@@ -140,7 +151,8 @@ export class ItinerarioComponent implements OnInit {
     private usersService: UsersService,
     private message: NzMessageService,
     private cdr: ChangeDetectorRef,
-    private sharedDataService: SharedDataService
+    private sharedDataService: SharedDataService,
+    private dateUtils: DateUtilsService
   ) { }
 
   // ========== MÉTODOS DE CICLO DE VIDA ==========
@@ -184,7 +196,7 @@ export class ItinerarioComponent implements OnInit {
 
       this.itinerarios.forEach(item => {
         this.editCache[item.id] = { edit: false };
-        if (this.esFechaTerminoHoy(item.fechaTermino, item.estado)) {
+        if (this.esFechaTerminoVencida(item.fechaTermino, item.estado)) {
           this.agregarNotificacion(item);
         }
       });
@@ -260,13 +272,62 @@ export class ItinerarioComponent implements OnInit {
   }
 
   mostrarDuplicados(): void {
-    const tramiteMap = new Map<string, number>();
-    this.filteredItinerarios.forEach(item => {
-      const count = tramiteMap.get(item.tramite) || 0;
-      tramiteMap.set(item.tramite, count + 1);
+    const duplicadosMap = new Map<string, Itinerario[]>();
+
+    // Crear una "huella digital" única para cada registro
+    this.itinerarios.forEach(item => {
+      // Combinar TODOS los campos importantes que deberían ser únicos
+      const huella = [
+        item.area,
+        item.tramite,
+        item.nroProceso || '',
+        item.juzgado || '',
+        item.piso || '',
+        item.materia || '',
+        item.diligencia || '',
+        item.solicita || '',
+        item.fechaSolicitud,
+        item.horaSolicitud || '',
+        item.fechaTermino,
+        item.creadoPor
+      ].join('|').toLowerCase().trim();
+
+      if (!duplicadosMap.has(huella)) {
+        duplicadosMap.set(huella, []);
+      }
+      duplicadosMap.get(huella)!.push(item);
     });
-    const duplicados = this.filteredItinerarios.filter(item => tramiteMap.get(item.tramite)! > 1);
-    this.filteredItinerarios = duplicados;
+
+    // Extraer solo grupos con más de 1 registro (duplicados reales)
+    const duplicados: Itinerario[] = [];
+    let gruposDuplicados = 0;
+
+    duplicadosMap.forEach((items, huella) => {
+      if (items.length > 1) {
+        duplicados.push(...items);
+        gruposDuplicados++;
+      }
+    });
+
+    if (duplicados.length === 0) {
+      this.message.info('✅ No se encontraron registros duplicados.');
+      this.filteredItinerarios = [];
+    } else {
+      this.filteredItinerarios = this.sortData(duplicados);
+      this.message.warning(
+        `⚠️ Se encontraron ${duplicados.length} registros duplicados distribuidos en ${gruposDuplicados} grupos.`
+      );
+      console.table(duplicados.map(d => ({
+        ID: d.id,
+        Trámite: d.tramite,
+        Área: d.area,
+        'Nº Proceso': d.nroProceso,
+        Fecha: d.fechaSolicitud,
+        'Creado por': d.creadoPor
+      })));
+    }
+
+    this.cdr.detectChanges();
   }
 
   showAllAreas(): void {
@@ -329,7 +390,6 @@ export class ItinerarioComponent implements OnInit {
         const filePath = `itinerarios/imagesComplete/${Date.now()}_${this.imagenSeleccionada.name}`;
         try {
           imgURL = await this.itinerarioService.uploadImage(filePath, this.imagenSeleccionada);
-          console.log('Imagen subida exitosamente:', imgURL);
         } catch (error) {
           this.message.error('Error al subir la imagen');
           console.error('Error al subir la imagen:', error);
@@ -442,7 +502,6 @@ export class ItinerarioComponent implements OnInit {
   onFileSelected(event: any): void {
     const file = event.target?.files?.[0] || null;
     if (file) {
-      console.log('Archivo seleccionado:', file);
       this.imagenSeleccionada = file;
       this.imageFileList = [{
         uid: '-1',
@@ -584,25 +643,48 @@ export class ItinerarioComponent implements OnInit {
   }
 
   // ========== MÉTODOS DE NOTIFICACIONES ==========
-  private esFechaTerminoHoy(fechaTermino: string, estado: Estado): boolean {
-    const fechaActual = new Date().toISOString().split('T')[0];
-    return fechaTermino <= fechaActual && estado !== Estado.COMPLETADO;
+  private esFechaTerminoVencida(fechaTermino: string, estado: Estado): boolean {
+    if (estado === Estado.COMPLETADO) {
+      return false;
+    }
+
+    // ✅ LÓGICA CORREGIDA: solo vencidas (anterior a hoy, SIN incluir hoy)
+    return this.dateUtils.isFechaVencida(fechaTermino);
   }
 
   agregarNotificacion(item: Itinerario): void {
-    if (this.esFechaTerminoHoy(item.fechaTermino, item.estado)) {
-      const notificacion = {
-        id: item.id,
-        solicita: item.creadoPor,
-        area: item.area,
-        tramite: item.tramite,
-        fechaTermino: item.fechaTermino,
-      };
+    if (!this.esFechaTerminoVencida(item.fechaTermino, item.estado)) {
+      return;
+    }
 
-      if (!this.notificaciones.some(n => n.tramite === notificacion.tramite && n.fechaTermino === notificacion.fechaTermino)) {
-        this.notificaciones.push(notificacion);
-        this.ordenarNotificacionesPorFecha();
-      }
+    const diasVencidos = this.dateUtils.getDiasVencidos(item.fechaTermino);
+
+    let prioridad: 'alta' | 'media' | 'baja';
+    if (diasVencidos > 7) {
+      prioridad = 'alta';
+    } else if (diasVencidos > 3) {
+      prioridad = 'media';
+    } else {
+      prioridad = 'baja';
+    }
+
+    const notificacion = {
+      id: item.id,
+      solicita: item.creadoPor,
+      area: item.area,
+      tramite: item.tramite,
+      fechaTermino: item.fechaTermino,
+      diasVencidos: diasVencidos,
+      prioridad: prioridad,
+      fechaLegible: this.dateUtils.formatFechaLegible(item.fechaTermino)
+    };
+
+    // Verificar duplicados por ID (más confiable)
+    const yaExiste = this.notificaciones.some(n => n.id === notificacion.id);
+
+    if (!yaExiste) {
+      this.notificaciones.push(notificacion);
+      this.ordenarNotificacionesPorFecha();
     }
   }
 

@@ -54,7 +54,12 @@ export class AreaDetailComponentComponent implements OnInit {
     ],
     // ✅ AGREGAR ESTA SECCIÓN PARA IESS
     iess: [
-      { title: 'Redacción de Providencias', route: '/selector-providencia', icon: 'form' },
+      {
+        title: 'Redacción de Providencias',
+        externalUrl: 'https://prov-iess.netlify.app/login',
+        icon: 'form',
+        isExternal: true
+      },
     ],
   };
 

@@ -14,8 +14,6 @@ import { UserAreaAdminComponent } from './pages/user-admin/user-area-admin/user-
 import { AdminGuard } from './guards/guards/admin.guard';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
-import { SelectorProvidenciaComponent } from './pages/providencias-iess/selector-providencia/selector-providencia.component';
-import { ProvidenciaIessComponent } from './pages/providencias-iess/providencia-iess/providencia-iess.component';
 
 // Redirección para usuarios no autenticados
 export const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['/login']);
@@ -45,23 +43,6 @@ const adminRoutes: Routes = [
   { path: 'dmd-proc-ordinario', component: DmdProcOrdinarioComponent },
   { path: 'matriz-doc-isffa', component: MatrizDocIsffaComponent },
   { path: 'procesos', component: ProcesosComponent },
-  { path: 'selector-providencia', component: SelectorProvidenciaComponent },
-  
-  // Rutas de Inicio y Cancelación
-  { path: 'providencia-iess/individual-natural', component: ProvidenciaIessComponent },
-  { path: 'providencia-iess/individual-juridica', component: ProvidenciaIessComponent },
-  { path: 'providencia-iess/agrupados-natural', component: ProvidenciaIessComponent },
-  { path: 'providencia-iess/agrupados-juridica', component: ProvidenciaIessComponent },
-  
-  // Rutas de RPV
-  { path: 'rpv-iess/natural', component: ProvidenciaIessComponent },
-  { path: 'rpv-iess/juridica', component: ProvidenciaIessComponent },
-  
-  // Rutas de OPI (Orden de Pago Inmediato)
-  { path: 'opi-iess/individual-natural', component: ProvidenciaIessComponent },
-  { path: 'opi-iess/individual-juridica', component: ProvidenciaIessComponent },
-  { path: 'opi-iess/agrupados-natural', component: ProvidenciaIessComponent },
-  { path: 'opi-iess/agrupados-juridica', component: ProvidenciaIessComponent },
 ].map(route => ({
   ...route,
   ...canActivate(redirectUnauthorizedToLogin)

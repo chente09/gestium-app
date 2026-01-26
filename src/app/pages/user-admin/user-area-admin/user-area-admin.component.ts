@@ -149,7 +149,6 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
         next: (registers) => {
           this.allUsers = registers;
           this.filterUsers();
-          console.log('📊 Usuarios cargados:', this.allUsers.length);
         },
         error: (error) => {
           console.error('Error cargando usuarios:', error);
@@ -164,7 +163,6 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
         next: (areas) => {
           this.allAreas = areas;
           this.loading = false;
-          console.log('🏢 Áreas cargadas:', this.allAreas.length);
         },
         error: (error) => {
           console.error('Error cargando áreas:', error);

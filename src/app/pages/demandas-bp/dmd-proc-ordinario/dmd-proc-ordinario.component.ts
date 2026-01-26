@@ -185,8 +185,6 @@ export class DmdProcOrdinarioComponent {
         fechaVencimientoFormateada, // Fecha de vencimiento formateada
         fechaLiquidacionFormateada // Fecha de liquidación formateada
       };
-  
-      console.log('Datos enviados al documento:', datos);
       this.documentoService.generarDmdProcOrd(datos);
     } else {
       console.warn('El formulario no es válido.');

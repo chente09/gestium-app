@@ -79,7 +79,6 @@ export class RegistersService {
     try {
       // NUEVO: Establecer persistencia LOCAL antes del login
       await this.usersService.setLocalPersistence();
-      console.log('✅ Persistencia local establecida');
 
       const userCredential: UserCredential = await this.usersService.loginWithGoogle();
       const uid = userCredential.user.uid;
@@ -101,7 +100,6 @@ export class RegistersService {
 
       // CRÍTICO: Asignar a currentRegister ANTES de retornar
       this.currentRegister = register;
-      console.log('✅ currentRegister asignado:', this.currentRegister);
 
       return register;
 
@@ -116,7 +114,6 @@ export class RegistersService {
     try {
       await this.usersService.logout();
       this.currentRegister = undefined;
-      console.log('Sesión cerrada exitosamente');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       throw error;
@@ -172,7 +169,6 @@ export class RegistersService {
       await setDoc(docRef, newRegister);
 
       this.currentRegister = newRegister;
-      console.log('✅ Usuario registrado:', newRegister);
 
       return newRegister;
 
@@ -185,7 +181,6 @@ export class RegistersService {
   // 🆕 Auto-registro desde Firebase Auth (para Google Sign-In)
   private async createRegisterFromFirebaseUser(firebaseUser: any): Promise<Register> {
     try {
-      console.log('📸 [Auto-registro] photoURL de Google:', firebaseUser.photoURL);
 
       const newRegister: Register = {
         uid: firebaseUser.uid,
@@ -202,8 +197,6 @@ export class RegistersService {
 
       const docRef = doc(this.firestore, `${this.collectionName}/${firebaseUser.uid}`);
       await setDoc(docRef, newRegister);
-
-      console.log('✅ Usuario auto-registrado con foto:', newRegister.photoURL);
 
       return newRegister;
 
@@ -224,7 +217,6 @@ export class RegistersService {
       }
 
       await updateDoc(docRef, { ...register });
-      console.log('✅ Registro actualizado:', register.uid);
 
     } catch (error) {
       console.error('❌ Error actualizando registro:', error);
@@ -247,8 +239,6 @@ export class RegistersService {
         fechaAsignacion: new Date()
       });
 
-      console.log(`✅ Área "${areaAsignada}" y rol "${role}" asignados a ${uid}`);
-
     } catch (error) {
       console.error('❌ Error asignando área/rol:', error);
       throw error;
@@ -260,9 +250,6 @@ export class RegistersService {
     try {
       const docRef = doc(this.firestore, `${this.collectionName}/${uid}`);
       await updateDoc(docRef, { activo });
-
-      console.log(`✅ Usuario ${uid} ${activo ? 'activado' : 'desactivado'}`);
-
     } catch (error) {
       console.error('❌ Error cambiando estado:', error);
       throw error;
@@ -278,8 +265,6 @@ export class RegistersService {
       // Luego eliminar de Firestore
       const docRef = doc(this.firestore, `${this.collectionName}/${register.uid}`);
       await deleteDoc(docRef);
-
-      console.log('✅ Usuario eliminado completamente:', register.uid);
 
     } catch (error) {
       console.error('❌ Error eliminando registro:', error);
@@ -389,7 +374,6 @@ export class RegistersService {
       const areasRef = collection(this.firestore, 'areasOficina');
       const docRef = await addDoc(areasRef, newArea);
 
-      console.log('✅ Área creada:', nombre, 'con slug:', slug);
       return docRef.id;
 
     } catch (error) {
@@ -416,8 +400,6 @@ export class RegistersService {
       const docRef = doc(this.firestore, `areasOficina/${areaId}`);
       await updateDoc(docRef, { ...updates });
 
-      console.log('✅ Área actualizada:', areaId);
-
     } catch (error) {
       console.error('❌ Error actualizando área:', error);
       throw error;
@@ -428,7 +410,6 @@ export class RegistersService {
   async deleteArea(areaId: string): Promise<void> {
     try {
       await this.updateArea(areaId, { activo: false });
-      console.log('✅ Área desactivada:', areaId);
 
     } catch (error) {
       console.error('❌ Error eliminando área:', error);
@@ -449,8 +430,6 @@ export class RegistersService {
       // Luego eliminar el área
       const docRef = doc(this.firestore, `areasOficina/${areaId}`);
       await deleteDoc(docRef);
-
-      console.log(`✅ Área "${nombreArea}" eliminada. ${usersInArea.length} usuarios reasignados.`);
 
     } catch (error) {
       console.error('❌ Error eliminando área permanentemente:', error);

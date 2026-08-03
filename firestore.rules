@@ -1,0 +1,137 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // 🔐 FUNCIONES AUXILIARES DE SEGURIDAD
+    // ============================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserRegister() {
+      return get(/databases/$(database)/documents/registers/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRegister().role == 'admin';
+    }
+
+    function isCoordinador() {
+      return isAuthenticated() && getUserRegister().role == 'coordinador';
+    }
+
+    function isAdminOrCoordinador() {
+      return isAdmin() || isCoordinador();
+    }
+
+    function isActiveUser() {
+      return isAuthenticated() && getUserRegister().activo == true;
+    }
+
+    function hasAreaAssigned() {
+      return isAuthenticated() &&
+             getUserRegister().areaAsignada != null &&
+             getUserRegister().areaAsignada != 'sin_asignar';
+    }
+
+    function ownsArea(area) {
+      return isAuthenticated() && getUserRegister().areaAsignada == area;
+    }
+
+    // ============================================
+    // 📋 registers — perfiles/roles (fuente de verdad)
+    // ============================================
+    match /registers/{userId} {
+      // Solo usuarios logueados de la intranet, nunca público.
+      allow read: if isAuthenticated();
+
+      // Auto-registro: siempre como 'empleado', nunca con rol elevado.
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == userId &&
+                       request.resource.data.uid == userId &&
+                       request.resource.data.role == 'empleado';
+
+      // El propio usuario no puede cambiarse su rol/área; admin sí puede.
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId &&
+         request.resource.data.role == resource.data.role &&
+         request.resource.data.areaAsignada == resource.data.areaAsignada) ||
+        isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // 🏢 areasOficina
+    // ============================================
+    match /areasOficina/{areaId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ============================================
+    // 📊 area_activities — agenda por área
+    // Empleado: solo su área. Admin/coordinador: todas.
+    // ============================================
+    match /area_activities/{activityId} {
+      allow read: if isAuthenticated() && (
+        isAdminOrCoordinador() || ownsArea(resource.data.area)
+      );
+
+      allow create: if isAuthenticated() &&
+                       isActiveUser() &&
+                       hasAreaAssigned() &&
+                       request.resource.data.creadoPor == request.auth.uid &&
+                       request.resource.data.titulo != null &&
+                       request.resource.data.estado != null &&
+                       (isAdminOrCoordinador() ||
+                        request.resource.data.area == getUserRegister().areaAsignada);
+
+      // No se puede cambiar el área ni el creador.
+      allow update: if isAuthenticated() &&
+                       isActiveUser() &&
+                       (resource.data.creadoPor == request.auth.uid || isAdminOrCoordinador()) &&
+                       request.resource.data.area == resource.data.area &&
+                       request.resource.data.creadoPor == resource.data.creadoPor;
+
+      allow delete: if isAuthenticated() &&
+                       isActiveUser() &&
+                       (resource.data.creadoPor == request.auth.uid || isAdminOrCoordinador());
+    }
+
+    // ============================================
+    // itinerarios / rutasDiarias / procesos
+    // El frontend hoy solo exige estar logueado para estas
+    // rutas (no hay restricción por área/rol a nivel de
+    // componente), así que las reglas reflejan exactamente
+    // eso: cualquier usuario activo autenticado puede leer y
+    // escribir. Restringir por área aquí sería un cambio de
+    // producto, no solo de reglas — evaluar aparte.
+    // ============================================
+    match /itinerarios/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isActiveUser();
+    }
+
+    match /rutasDiarias/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isActiveUser();
+    }
+
+    match /procesos/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isActiveUser();
+    }
+
+    // ============================================
+    // 🚫 Todo lo demás: denegado por defecto
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

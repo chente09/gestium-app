@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "gestium-intranet"
+  },
+  "targets": {
+    "gestium-intranet": {
+      "storage": {
+        "default": [
+          "gestium-intranet.firebasestorage.app"
+        ]
+      }
+    }
+  }
+}

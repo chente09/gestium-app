@@ -28,13 +28,13 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideHttpClient(),
     provideFirebaseApp(() => initializeApp({
-      projectId: "app-pokemon-9a58f",
-      appId: "1:301046760346:web:6807f97a9c827393083023",
-      storageBucket: "app-pokemon-9a58f.appspot.com",
-      apiKey: "AIzaSyDIrytbyeOLqrML1z-suu_xG3t16trDdCw",
-      authDomain: "app-pokemon-9a58f.firebaseapp.com",
-      messagingSenderId: "301046760346",
-      measurementId: "G-H339SH51L0"
+      projectId: "gestium-intranet",
+      appId: "1:679871394309:web:0c26c47bd384d1355fe26c",
+      storageBucket: "gestium-intranet.firebasestorage.app",
+      apiKey: "AIzaSyD7dNjR2dxnmeXq_XBqNADEcVksuhfWdJ8",
+      authDomain: "gestium-intranet.firebaseapp.com",
+      messagingSenderId: "679871394309",
+      measurementId: "G-VLSDB8TRN3"
     })),
     provideAuth(() => getAuth()),
     provideAnalytics(() => getAnalytics()),

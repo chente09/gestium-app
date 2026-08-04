@@ -248,4 +248,23 @@ export class SharedDataService {
   getTotalOptions(): number {
     return this.areas.length + this.unidades.length + this.materias.length + this.diligencias.length;
   }
+
+  // 🆕 Normaliza un slug/id de área (ej. 'inmobiliaria') al valor exacto
+  // guardado en Register.areaAsignada, para que las consultas a Firestore
+  // que filtran por área encuentren coincidencias reales.
+  private readonly areaNameMap: { [key: string]: string } = {
+    'issfa': 'ISSFA',
+    'produbanco': 'Produbanco',
+    'pichincha': 'Pichincha',
+    'inmobiliaria': 'INMOBILIARIA',
+    'bnf': 'BNF',
+    'david': 'David',
+    'iess': 'IESS',
+    'tramites': 'TRAMITES',
+    'cooprogreso': 'COOPROGRESO'
+  };
+
+  normalizeAreaName(area: string): string {
+    return this.areaNameMap[area.toLowerCase()] || area;
+  }
 }

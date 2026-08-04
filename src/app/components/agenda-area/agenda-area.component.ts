@@ -27,6 +27,7 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 
 import { AreaActivitiesService, AreaActivity } from '../../services/areaActivities/area-activities.service';
 import { RegistersService, Register } from '../../services/registers/registers.service';
+import { SharedDataService } from '../../services/sharedData/shared-data.service';
 import { Subject, takeUntil } from 'rxjs';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 
@@ -105,7 +106,8 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     private areaActivitiesService: AreaActivitiesService,
     private registersService: RegistersService,
     private messageService: NzMessageService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private sharedDataService: SharedDataService
   ) {
     this.createForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(100)]],
@@ -140,25 +142,11 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   // 👥 Cargar usuarios del área
   private async loadAreaUsers(): Promise<void> {
     try {
-      const normalizedArea = this.normalizeAreaName(this.area);
+      const normalizedArea = this.sharedDataService.normalizeAreaName(this.area);
       this.areaUsers = await this.registersService.getUsersByArea(normalizedArea);
     } catch (error) {
       this.areaUsers = [];
     }
-  }
-
-  // ✅ Normalizar nombre de área
-  private normalizeAreaName(areaId: string): string {
-    const areaMapping: { [key: string]: string } = {
-      'issfa': 'ISSFA',
-      'produbanco': 'Produbanco',
-      'pichincha': 'Pichincha',
-      'inmobiliaria': 'Inmobiliaria',
-      'bnf': 'BNF',
-      'david': 'David',
-      'iess': 'IESS'
-    };
-    return areaMapping[areaId.toLowerCase()] || areaId;
   }
 
   // ✅ Getter para dropdown de usuarios

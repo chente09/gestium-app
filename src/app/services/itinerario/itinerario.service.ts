@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Firestore, addDoc, collection, collectionData, doc, deleteDoc, updateDoc, getDoc, runTransaction, setDoc, writeBatch, query, where, getDocs } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, collectionData, doc, deleteDoc, deleteField, updateDoc, getDoc, runTransaction, setDoc, writeBatch, query, where, getDocs } from '@angular/fire/firestore';
 import { Storage, ref, getDownloadURL, deleteObject, uploadBytes } from '@angular/fire/storage';
 import { firstValueFrom, map, Observable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
+import { ImageCompressionService } from '../image-compression/image-compression.service';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -17,6 +18,8 @@ export interface EntradaHistorial {
   uid: string;
   email?: string; // Correo electrónico del usuario (opcional)
   nombre?: string; // Nombre del usuario (opcional)
+  imagenUrl?: string; // Evidencia adjunta al momento de esta entrada (opcional)
+  pdfUrl?: string;
 }
 
 export interface Itinerario {
@@ -48,6 +51,7 @@ export interface Itinerario {
   obsCompletado?: string;
   completPor?: string;
   imgcompletado?: string; //Guardar la URL de la imagen
+  pdfCompletado?: string; //Guardar la URL del PDF de finalización
   historial?: EntradaHistorial[];
 }
 
@@ -68,6 +72,7 @@ export class ItinerarioService {
   constructor(
     private firestore: Firestore,
     private storage: Storage,
+    private imageCompression: ImageCompressionService,
   ) { }
 
   // 📌 Crear un nuevo itinerario con imagen y PDF opcionales
@@ -85,7 +90,8 @@ export class ItinerarioService {
       if (imageFile) {
         const imagePath = `itinerarios/images/${id}.jpg`;
         const imageRef = ref(this.storage, imagePath);
-        await uploadBytes(imageRef, imageFile);
+        const compressed = await this.imageCompression.compressImage(imageFile);
+        await uploadBytes(imageRef, compressed);
         imageUrl = await getDownloadURL(imageRef);
       }
 
@@ -101,7 +107,8 @@ export class ItinerarioService {
       if (selectedImage2) {
         const image2Path = `itinerarios/imagesComplete/${id}.jpg`;
         const image2Ref = ref(this.storage, image2Path);
-        await uploadBytes(image2Ref, selectedImage2);
+        const compressed2 = await this.imageCompression.compressImage(selectedImage2);
+        await uploadBytes(image2Ref, compressed2);
         image2Url = await getDownloadURL(image2Ref);
       }
 
@@ -181,9 +188,11 @@ export class ItinerarioService {
     }
   }
 
-  async uploadImage(filePath: string, file: File): Promise<string> {
+  // Genérico: comprime si es imagen (no hace nada si es PDF u otro tipo).
+  async uploadFile(filePath: string, file: File): Promise<string> {
     const fileRef = ref(this.storage, filePath);
-    await uploadBytes(fileRef, file); // Subir el archivo
+    const compressed = await this.imageCompression.compressImage(file);
+    await uploadBytes(fileRef, compressed); // Subir el archivo
     return await getDownloadURL(fileRef); // Retornar la URL del archivo
   }
 
@@ -212,7 +221,8 @@ export class ItinerarioService {
           );
         }
 
-        await uploadBytes(imageRef, newImageFile);
+        const compressedNewImage = await this.imageCompression.compressImage(newImageFile);
+        await uploadBytes(imageRef, compressedNewImage);
         updatedData.imagen = await getDownloadURL(imageRef);
       }
 
@@ -301,10 +311,66 @@ export class ItinerarioService {
         await deleteObject(image2Ref).catch(() => console.warn('No se pudo eliminar la imagen 2.'));
       }
 
+      // 🗑️ Eliminar PDF de finalización si existe
+      if (itinerarioData.pdfCompletado) {
+        const pdfCompletadoRef = ref(this.storage, itinerarioData.pdfCompletado);
+        await deleteObject(pdfCompletadoRef).catch(() => console.warn('No se pudo eliminar el PDF de finalización.'));
+      }
+
       // 🗑️ Eliminar documento en Firestore
       await deleteDoc(docRef);
     } catch (error: any) {
       throw new Error(`Error al eliminar el itinerario ${id}: ${error.message}`);
+    }
+  }
+
+  // 🔄 Volver un itinerario completado a pendiente, para reutilizarlo si el
+  // mismo trámite vuelve a surgir en vez de crear uno nuevo. Limpia la
+  // evidencia de la finalización anterior (Storage + campos) ya que deja de
+  // ser válida.
+  async revertirAPendiente(id: string, revertidoPor: { uid: string; email?: string; nombre?: string }): Promise<void> {
+    const docRef = doc(this.firestore, `${this.collectionName}/${id}`);
+
+    try {
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        throw new Error(`El itinerario con ID ${id} no existe.`);
+      }
+
+      const itinerarioData = docSnap.data() as Itinerario;
+      const ahora = new Date();
+
+      // No se borra nada de Storage ni se pierde el dato: la finalización
+      // anterior (quién, cuándo, observación, evidencia) queda registrada
+      // como una entrada más en el historial antes de limpiar los campos
+      // activos.
+      const entradaReversion: EntradaHistorial = {
+        observacion: itinerarioData.completPor || itinerarioData.obsCompletado
+          ? `Revertido a pendiente. Completado antes por ${itinerarioData.completPor || 'desconocido'}${itinerarioData.fechaCompletado ? ` el ${itinerarioData.fechaCompletado} ${itinerarioData.horaCompletado || ''}` : ''}${itinerarioData.obsCompletado ? `. Observación: "${itinerarioData.obsCompletado}"` : ''}.`
+          : 'Revertido a pendiente.',
+        fecha: ahora.toISOString().split('T')[0],
+        hora: ahora.toTimeString().slice(0, 5),
+        uid: revertidoPor.uid,
+        ...(revertidoPor.email ? { email: revertidoPor.email } : {}),
+        ...(revertidoPor.nombre ? { nombre: revertidoPor.nombre } : {}),
+        ...(itinerarioData.imgcompletado ? { imagenUrl: itinerarioData.imgcompletado } : {}),
+        ...(itinerarioData.pdfCompletado ? { pdfUrl: itinerarioData.pdfCompletado } : {}),
+      };
+
+      const historialActualizado = [...(itinerarioData.historial || []), entradaReversion];
+
+      await updateDoc(docRef, {
+        estado: Estado.PENDIENTE,
+        historial: historialActualizado,
+        fechaCompletado: deleteField(),
+        horaCompletado: deleteField(),
+        completPor: deleteField(),
+        obsCompletado: deleteField(),
+        imgcompletado: deleteField(),
+        pdfCompletado: deleteField(),
+      });
+    } catch (error: any) {
+      throw new Error(`Error al revertir el itinerario ${id}: ${error.message}`);
     }
   }
 

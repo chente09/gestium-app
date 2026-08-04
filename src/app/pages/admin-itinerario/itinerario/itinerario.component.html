@@ -287,6 +287,24 @@
                     <button nz-button (click)="fileInput.click()">
                         <i nz-icon nzType="upload"></i> Subir Imagen
                     </button>
+                    <span *ngIf="imagenSeleccionada" style="margin-left: 8px;">{{ imagenSeleccionada.name }}</span>
+                </nz-form-control>
+            </nz-form-item>
+
+            <!-- PDF de finalización -->
+            <nz-form-item>
+                <nz-form-label nzFor="pdfCompletado">PDF (opcional)</nz-form-label>
+                <nz-form-control>
+                    <input type="file" accept="application/pdf" (change)="onPdfCompletadoSelected($event)"
+                        #pdfInput style="display: none;" />
+                    <button nz-button (click)="pdfInput.click()">
+                        <i nz-icon nzType="upload"></i> Subir PDF
+                    </button>
+                    <span *ngIf="pdfCompletadoSeleccionado" style="margin-left: 8px;">{{ pdfCompletadoSeleccionado.name }}</span>
+                    <nz-alert nzType="info" nzShowIcon
+                        nzMessage="Máximo {{ maxPdfSizeMB }}MB. Si es más pesado, comprímelo antes en ilovepdf.com o smallpdf.com."
+                        style="margin-top: 8px;">
+                    </nz-alert>
                 </nz-form-control>
             </nz-form-item>
         </form>

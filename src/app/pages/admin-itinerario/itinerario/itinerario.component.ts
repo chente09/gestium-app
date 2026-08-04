@@ -20,10 +20,12 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { Subject, takeUntil } from 'rxjs';
 
 import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
 import { UsersService } from '../../../services/users/users.service';
+import { RegistersService } from '../../../services/registers/registers.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { SharedDataService } from '../../../services/sharedData/shared-data.service';
 import { DateUtilsService } from '../../../services/date-utils/date-utils.service';
@@ -63,7 +65,8 @@ enum Estado {
     NzCardModule,
     NzEmptyModule,
     NzGridModule,
-    NzPopconfirmModule
+    NzPopconfirmModule,
+    NzAlertModule
   ],
   templateUrl: './itinerario.component.html',
   styleUrl: './itinerario.component.css'
@@ -121,6 +124,8 @@ export class ItinerarioComponent implements OnInit {
   // ========== PROPIEDADES DE ARCHIVOS ==========
   imagenSeleccionada: File | null = null;
   imageFileList: any[] = [];
+  pdfCompletadoSeleccionado: File | null = null;
+  readonly maxPdfSizeMB = 5;
 
   // ========== PROPIEDADES DE FECHA/HORA ==========
   fechaActual: string = '';
@@ -149,6 +154,7 @@ export class ItinerarioComponent implements OnInit {
   constructor(
     private itinerarioService: ItinerarioService,
     private usersService: UsersService,
+    private registersService: RegistersService,
     private message: NzMessageService,
     private cdr: ChangeDetectorRef,
     private sharedDataService: SharedDataService,
@@ -345,22 +351,19 @@ export class ItinerarioComponent implements OnInit {
     this.validarFormulario();
   }
 
+  // Por área en vez de por email: así reasignar quién está en Trámites
+  // (o quitar la restricción) se hace desde Admin > Usuarios, sin tocar código.
   validarFormulario(): void {
-    const user = this.usersService.getCurrentUser();
+    const area = this.registersService.getCurrentRegister()?.areaAsignada;
 
-    const usuariosRestrictivos = [
-      'mmarcillo.gestium@gmail.com',
-      'msaguano.gestium@gmail.com'
-    ];
-
-    if (usuariosRestrictivos.includes(user?.email ?? '')) {
+    if (area === 'TRAMITES') {
       // Solo válido si tiene observación + imagen
       this.formularioValido = !!(
         this.selectedItem?.obsCompletado?.trim() &&
         this.imagenSeleccionada
       );
     } else {
-      // Para cualquier otro usuario siempre es válido
+      // Para el resto de áreas siempre es válido
       this.formularioValido = true;
     }
   }
@@ -389,10 +392,24 @@ export class ItinerarioComponent implements OnInit {
       if (this.imagenSeleccionada) {
         const filePath = `itinerarios/imagesComplete/${Date.now()}_${this.imagenSeleccionada.name}`;
         try {
-          imgURL = await this.itinerarioService.uploadImage(filePath, this.imagenSeleccionada);
+          imgURL = await this.itinerarioService.uploadFile(filePath, this.imagenSeleccionada);
         } catch (error) {
           this.message.error('Error al subir la imagen');
           console.error('Error al subir la imagen:', error);
+          return;
+        }
+      }
+
+      let pdfURL = this.selectedItem.pdfCompletado;
+
+      // Subir PDF si hay uno nuevo seleccionado
+      if (this.pdfCompletadoSeleccionado) {
+        const pdfPath = `itinerarios/pdfsComplete/${Date.now()}_${this.pdfCompletadoSeleccionado.name}`;
+        try {
+          pdfURL = await this.itinerarioService.uploadFile(pdfPath, this.pdfCompletadoSeleccionado);
+        } catch (error) {
+          this.message.error('Error al subir el PDF');
+          console.error('Error al subir el PDF:', error);
           return;
         }
       }
@@ -409,6 +426,11 @@ export class ItinerarioComponent implements OnInit {
       // Solo agregar imgcompletado si no es undefined
       if (imgURL !== undefined && imgURL !== null) {
         datosActualizados.imgcompletado = imgURL;
+      }
+
+      // Solo agregar pdfCompletado si no es undefined
+      if (pdfURL !== undefined && pdfURL !== null) {
+        datosActualizados.pdfCompletado = pdfURL;
       }
 
       // Eliminar cualquier campo undefined del objeto
@@ -513,6 +535,22 @@ export class ItinerarioComponent implements OnInit {
     } else {
       console.warn('No se seleccionó ningún archivo.');
     }
+  }
+
+  onPdfCompletadoSelected(event: any): void {
+    const file = event.target?.files?.[0] || null;
+    if (!file) return;
+
+    const maxBytes = this.maxPdfSizeMB * 1024 * 1024;
+    if (file.size > maxBytes) {
+      this.message.error(
+        `El PDF pesa ${(file.size / 1024 / 1024).toFixed(1)}MB, el máximo permitido es ${this.maxPdfSizeMB}MB. Comprímelo antes de subirlo (ej. ilovepdf.com o smallpdf.com) y vuelve a intentarlo.`
+      );
+      event.target.value = '';
+      return;
+    }
+
+    this.pdfCompletadoSeleccionado = file;
   }
 
   // ========== MÉTODOS DE ACTIVIDADES ==========
@@ -724,6 +762,7 @@ export class ItinerarioComponent implements OnInit {
     this.selectedItem = null;
     this.imagenSeleccionada = null;
     this.imageFileList = [];
+    this.pdfCompletadoSeleccionado = null;
     this.isVisible = false;
   }
 

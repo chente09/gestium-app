@@ -83,11 +83,13 @@ export class RegistersService {
       const userCredential: UserCredential = await this.usersService.loginWithGoogle();
       const uid = userCredential.user.uid;
 
-      // Validar dominio @gestium
+      // Validar correo: convención *.gestium@gmail.com para el personal,
+      // o el dominio real @gestium-sli.com.
       const email = userCredential.user.email || '';
-      if (!email.includes('gestium')) {
+      const isAllowedEmail = /\.gestium@gmail\.com$/i.test(email) || /@gestium-sli\.com$/i.test(email);
+      if (!isAllowedEmail) {
         await this.usersService.logout();
-        throw new Error('Solo correos con dominio @gestium pueden acceder');
+        throw new Error('Solo correos *.gestium@gmail.com o @gestium-sli.com pueden acceder');
       }
 
       // Verificar si existe, si no existe lo crea automáticamente
@@ -260,7 +262,7 @@ export class RegistersService {
   async deleteRegister(register: Register): Promise<void> {
     try {
       // Primero eliminar de Firebase Auth
-      await this.usersService.deleteRegister(register.uid);
+      await this.usersService.deleteRegister(register.uid, this.isCurrentUserAdmin());
 
       // Luego eliminar de Firestore
       const docRef = doc(this.firestore, `${this.collectionName}/${register.uid}`);

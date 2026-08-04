@@ -16,7 +16,6 @@ import {
   sendPasswordResetEmail
 } from '@angular/fire/auth';
 import { Observable } from 'rxjs';
-import { addDoc, collection, doc, getDoc, getFirestore } from '@angular/fire/firestore';
 import { getFunctions, httpsCallable } from '@angular/fire/functions';
 
 export interface LoginInfo {
@@ -92,32 +91,14 @@ export class UsersService {
     return sendPasswordResetEmail(this.auth, email);
   }
 
-  // Gestión de roles y permisos
-  async getUserRoles(): Promise<string[]> {
-    const user = this.auth.currentUser;
-    if (!user) return [];
-    
-    try {
-      const db = getFirestore();
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      return userDoc.exists() ? userDoc.data()?.['roles'] || [] : [];
-    } catch (error) {
-      console.error('Error obteniendo roles:', error);
-      return [];
-    }
-  }
-
-  async hasRole(role: string): Promise<boolean> {
-    const roles = await this.getUserRoles();
-    return roles.includes(role);
-  }
-
-  // Eliminación de usuarios
-  async deleteRegister(uid: string): Promise<any> {
+  // Eliminación de usuarios. isCallerAdmin lo decide el llamador
+  // (RegistersService, a partir de Register.role — la fuente de verdad
+  // real de roles) en vez de leerlo acá de una colección propia.
+  async deleteRegister(uid: string, isCallerAdmin: boolean): Promise<any> {
     const currentUser = this.auth.currentUser;
-    
+
     // Solo permite eliminar si es el mismo usuario o es un admin
-    if (currentUser?.uid === uid || await this.hasRole('admin')) {
+    if (currentUser?.uid === uid || isCallerAdmin) {
       if (currentUser?.uid === uid) {
         // Si es el propio usuario
         return deleteUser(currentUser);
@@ -130,47 +111,7 @@ export class UsersService {
         return Promise.resolve();
       }
     }
-    
+
     return Promise.reject('No autorizado para eliminar este usuario');
-  }
-
-  // Método para verificar si el usuario tiene acceso a una ruta específica
-  async canAccessRoute(route: string): Promise<boolean> {
-    // Implementa lógica basada en roles para verificar acceso
-    // Ejemplo simple:
-    const routePermissions: {[key: string]: string[]} = {
-      '/admin': ['admin'],
-      '/procesos': ['admin', 'editor'],
-      // Añade otras rutas según sea necesario
-    };
-
-    if (!routePermissions[route]) return true; // Si no hay restricciones específicas
-    
-    const roles = await this.getUserRoles();
-    return routePermissions[route].some(role => roles.includes(role));
-  }
-
-  // Método para registrar actividad de usuario (para auditoría)
-  async logUserActivity(action: string, resource: string, details?: any): Promise<void> {
-    const user = this.auth.currentUser;
-    if (!user) return;
-
-    try {
-      const db = getFirestore();
-      const logData = {
-        userId: user.uid,
-        email: user.email,
-        action,
-        resource,
-        details,
-        timestamp: new Date()
-      };
-      
-      // Añadir a una colección de logs
-      const logCollection = collection(db, 'user_activity_logs');
-      await addDoc(logCollection, logData);
-    } catch (error) {
-      console.error('Error registrando actividad:', error);
-    }
   }
 }

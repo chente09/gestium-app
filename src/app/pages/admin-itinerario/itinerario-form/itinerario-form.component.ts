@@ -17,6 +17,7 @@ import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzUploadModule } from 'ng-zorro-antd/upload';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { doc } from '@angular/fire/firestore';
 import { DateUtilsService } from '../../../services/date-utils/date-utils.service';
 
@@ -43,7 +44,8 @@ enum Estado {
     NzRadioModule,
     NzUploadModule,
     NzBreadCrumbModule,
-    NzModalModule
+    NzModalModule,
+    NzAlertModule
   ],
   templateUrl: './itinerario-form.component.html',
   styleUrl: './itinerario-form.component.css'
@@ -53,6 +55,7 @@ export class ItinerarioFormComponent implements OnInit {
   itinerarioForm: FormGroup = new FormGroup({});
   selectedImage: File | null = null;
   selectedPDF: File | null = null;
+  readonly maxPdfSizeMB = 5;
   isLoading = false;
   selectedArea: string | null = null;
   slectedUnidad: string | null = null;
@@ -220,9 +223,19 @@ export class ItinerarioFormComponent implements OnInit {
 
   onPDFSelected(event: any) {
     const file = event.file?.originFileObj;
-    if (file) {
-      this.selectedPDF = file;
+    if (!file) return;
+
+    const maxBytes = this.maxPdfSizeMB * 1024 * 1024;
+    if (file.size > maxBytes) {
+      this.message.error(
+        `El PDF pesa ${(file.size / 1024 / 1024).toFixed(1)}MB, el máximo permitido es ${this.maxPdfSizeMB}MB. Comprímelo antes de subirlo (ej. ilovepdf.com o smallpdf.com) y vuelve a intentarlo.`
+      );
+      this.pdfFileList = [];
+      this.selectedPDF = null;
+      return;
     }
+
+    this.selectedPDF = file;
   }
 
   async submitForm(): Promise<void> {

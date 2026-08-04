@@ -20,6 +20,7 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { UsersService } from '../../../services/users/users.service';
+import { RegistersService } from '../../../services/registers/registers.service';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -81,8 +82,40 @@ export class HistoryItinerarioComponent implements OnInit {
     private message: NzMessageService,
     private cdr: ChangeDetectorRef,
     private usersService: UsersService,
-    private sharedDataService: SharedDataService // ✅ INYECTAR SERVICIO
+    private sharedDataService: SharedDataService, // ✅ INYECTAR SERVICIO
+    private registersService: RegistersService
   ) { }
+
+  isAdmin(): boolean {
+    return this.registersService.isCurrentUserAdmin();
+  }
+
+  // Trámites queda fuera: tiene requisitos de finalización más estrictos
+  // (foto + observación obligatorias), así que no puede reabrir sus propios
+  // completados por esta vía.
+  puedeRevertir(item: Itinerario): boolean {
+    const area = this.registersService.getCurrentRegister()?.areaAsignada;
+    return item.estado === Estado.COMPLETADO && area !== 'TRAMITES';
+  }
+
+  async revertirAPendiente(id: string): Promise<void> {
+    const user = this.usersService.getCurrentUser();
+    if (!user) {
+      this.message.error('No hay un usuario autenticado.');
+      return;
+    }
+    try {
+      await this.itinerarioService.revertirAPendiente(id, {
+        uid: user.uid,
+        email: user.email ?? undefined,
+        nombre: user.displayName ?? undefined,
+      });
+      this.message.success('Itinerario devuelto a pendiente. Se guardó un registro en el historial.');
+    } catch (error) {
+      this.message.error('Error al revertir el itinerario.');
+      console.error(error);
+    }
+  }
 
   private destroy$ = new Subject<void>();
 
@@ -326,6 +359,10 @@ export class HistoryItinerarioComponent implements OnInit {
   }
 
   eliminar(id: string): void {
+    if (!this.isAdmin()) {
+      this.message.error('Solo un administrador puede eliminar itinerarios.');
+      return;
+    }
     this.itinerarioService.deleteItinerario(id).then(() => {
       this.message.success('Itinerario eliminado correctamente.');
       this.itinerarios = this.itinerarios.filter(it => it.id !== id);

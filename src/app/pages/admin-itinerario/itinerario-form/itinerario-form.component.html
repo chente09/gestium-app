@@ -171,6 +171,10 @@
                         [(nzFileList)]="pdfFileList" (nzChange)="onPDFSelected($event)">
                         <div class="upload-button"><i nz-icon nzType="upload"></i> Subir PDF</div>
                     </nz-upload>
+                    <nz-alert nzType="info" nzShowIcon
+                        nzMessage="Máximo {{ maxPdfSizeMB }}MB por PDF. Si es más pesado, comprímelo antes en ilovepdf.com o smallpdf.com."
+                        style="margin-top: 8px;">
+                    </nz-alert>
                 </nz-form-item>
             </nz-col>
         </nz-row>

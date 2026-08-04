@@ -41,6 +41,15 @@ service cloud.firestore {
       return isAuthenticated() && getUserRegister().areaAsignada == area;
     }
 
+    // Mismo patrón que el frontend (RegistersService.loginWithGoogle),
+    // pero exigido acá también porque el chequeo en Angular es
+    // saltable desde devtools llamando al SDK de Firebase directo.
+    function hasAllowedEmail() {
+      return isAuthenticated() &&
+             (request.auth.token.email.matches('^.+[.]gestium@gmail[.]com$') ||
+              request.auth.token.email.matches('^.+@gestium-sli[.]com$'));
+    }
+
     // ============================================
     // 📋 registers — perfiles/roles (fuente de verdad)
     // ============================================
@@ -50,6 +59,7 @@ service cloud.firestore {
 
       // Auto-registro: siempre como 'empleado', nunca con rol elevado.
       allow create: if isAuthenticated() &&
+                       hasAllowedEmail() &&
                        request.auth.uid == userId &&
                        request.resource.data.uid == userId &&
                        request.resource.data.role == 'empleado';
@@ -114,7 +124,8 @@ service cloud.firestore {
     // ============================================
     match /itinerarios/{id} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isActiveUser();
+      allow create, update: if isAuthenticated() && isActiveUser();
+      allow delete: if isAdmin();
     }
 
     match /rutasDiarias/{id} {

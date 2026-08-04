@@ -8,6 +8,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzLayoutComponent } from 'ng-zorro-antd/layout';
 import { AgendaAreaComponent } from "../../components/agenda-area/agenda-area.component";
 import { RegistersService } from '../../services/registers/registers.service';
+import { SharedDataService } from '../../services/sharedData/shared-data.service';
 
 @Component({
   selector: 'app-area-detail-component',
@@ -65,7 +66,8 @@ export class AreaDetailComponentComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private registersService: RegistersService
+    private registersService: RegistersService,
+    private sharedDataService: SharedDataService
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -117,8 +119,8 @@ export class AreaDetailComponentComponent implements OnInit {
     }
 
     // Lógica para determinar si mostrar agenda
-    const currentAreaNormalized = this.normalizeAreaName(this.currentUserArea);
-    const viewingAreaNormalized = this.normalizeAreaName(this.areaId);
+    const currentAreaNormalized = this.sharedDataService.normalizeAreaName(this.currentUserArea);
+    const viewingAreaNormalized = this.sharedDataService.normalizeAreaName(this.areaId);
 
 
     // Verificar si es admin usando el servicio
@@ -127,21 +129,6 @@ export class AreaDetailComponentComponent implements OnInit {
     this.showAgenda = currentAreaNormalized === viewingAreaNormalized ||
       isAdmin ||
       this.currentUserArea === 'sin_asignar';
-  }
-
-  // ✅ Normalizar nombres de áreas
-  private normalizeAreaName(area: string): string {
-    const areaMapping: { [key: string]: string } = {
-      'issfa': 'ISSFA',
-      'produbanco': 'Produbanco',
-      'pichincha': 'Pichincha',
-      'inmobiliaria': 'INMOBILIARIA',
-      'iess': 'IESS',
-      'tramites': 'TRAMITES',
-      'cooprogreso': 'COOPROGRESO'
-    };
-
-    return areaMapping[area.toLowerCase()] || area;
   }
 
   // ✅ Verificar acceso del usuario

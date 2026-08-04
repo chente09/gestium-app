@@ -205,17 +205,27 @@
                                     <nz-icon nzType="edit"></nz-icon>
                                 </button>
 
-                                <button 
-                                    nz-button 
-                                    nzDanger 
-                                    nzSize="small" 
+                                <button
+                                    nz-button
+                                    nzDanger
+                                    nzSize="small"
                                     nz-popconfirm
                                     nzPopconfirmTitle="¿Eliminar asignación de área?"
-                                    (nzOnConfirm)="removeAreaAssignment(user)" 
+                                    (nzOnConfirm)="removeAreaAssignment(user)"
                                     *ngIf="user.areaAsignada !== 'sin_asignar'"
-                                    nzTooltipTitle="Remover asignación" 
+                                    nzTooltipTitle="Remover asignación (el usuario sigue existiendo)"
                                     nz-tooltip>
                                     <nz-icon nzType="delete"></nz-icon>
+                                </button>
+
+                                <button
+                                    nz-button
+                                    nzDanger
+                                    nzSize="small"
+                                    (click)="deleteUserAccount(user)"
+                                    nzTooltipTitle="Eliminar usuario por completo (irreversible)"
+                                    nz-tooltip>
+                                    <nz-icon nzType="user-delete"></nz-icon>
                                 </button>
                             </div>
                         </td>

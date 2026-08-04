@@ -53,6 +53,9 @@ export interface Itinerario {
   imgcompletado?: string; //Guardar la URL de la imagen
   pdfCompletado?: string; //Guardar la URL del PDF de finalización
   historial?: EntradaHistorial[];
+  fechaEdicion?: string; // Sello automático: última vez que se editó el caso
+  horaEdicion?: string;
+  editadoPor?: string;
 }
 
 export interface RutaDiaria {

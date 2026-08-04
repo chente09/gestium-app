@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Firestore, addDoc, collection, collectionData, doc, updateDoc, getDoc, deleteDoc, query, where } from '@angular/fire/firestore';
 import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
+import { getFunctions, httpsCallable } from '@angular/fire/functions';
 import { Observable, map } from 'rxjs';
 
 export interface Documento {
@@ -36,6 +37,16 @@ export class ProcesosService {
   private collectionName = 'procesos';
 
   constructor(private firestore: Firestore, private storage: Storage) { }
+
+  // 🔍 Búsqueda pública (pantalla /consultas, sin login). El filtrado ocurre
+  // server-side en la Cloud Function 'buscarProceso' — nunca se descarga la
+  // colección completa al navegador.
+  async buscarProcesoPublico(tipo: 'cedula' | 'nombre', valor: string): Promise<Proceso[]> {
+    const functions = getFunctions();
+    const buscar = httpsCallable<{ tipo: string; valor: string }, { resultados: Proceso[] }>(functions, 'buscarProceso');
+    const result = await buscar({ tipo, valor });
+    return result.data.resultados || [];
+  }
 
   // 📌 Crear un proceso judicial con materia
 

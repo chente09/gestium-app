@@ -145,7 +145,7 @@ export class LoginComponent {
       const register = await this.registerService.loginWithGoogle();
       
       if (register) {
-        this.message.success(`Bienvenido ${register.displayName}`);
+        this.message.success(`Bienvenido ${register.displayName || register.nickname || register.email}`);
         this.router.navigate(['/welcome']);
       } else {
         this.message.error('No se pudo completar el inicio de sesión');

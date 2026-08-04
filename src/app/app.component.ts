@@ -9,6 +9,7 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { RegistersService } from './services/registers/registers.service';
 import { UsersService } from './services/users/users.service';
 import { filter } from 'rxjs/operators';
@@ -27,7 +28,8 @@ import { filter } from 'rxjs/operators';
     NzDropDownModule,
     NzAvatarModule,
     NzToolTipModule,
-    NzButtonModule
+    NzButtonModule,
+    NzTagModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
@@ -132,7 +134,8 @@ export class AppComponent implements OnInit {
 
   getCurrentUserName(): string | null {
     const currentRegister = this.registersService.getCurrentRegister();
-    return currentRegister ? currentRegister.displayName : null;
+    if (!currentRegister) return null;
+    return currentRegister.displayName || currentRegister.nickname || currentRegister.email || null;
   }
 
   async logout(): Promise<void> {

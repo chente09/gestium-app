@@ -249,6 +249,33 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     }
   }
 
+  // 🗑️ Eliminar usuario por completo (Auth + registers). Irreversible: si
+  // vuelve a loguearse, entra como si fuera nuevo, sin su rol/área actual.
+  deleteUserAccount(user: Register): void {
+    if (user.uid === this.registersService.getCurrentRegister()?.uid) {
+      this.message.error('No puedes eliminar tu propia cuenta desde aquí.');
+      return;
+    }
+
+    this.modal.confirm({
+      nzTitle: 'Eliminar usuario permanentemente',
+      nzContent: `Esto borra la cuenta de <b>${user.displayName || user.nickname || user.email}</b> por completo (login y perfil) y no se puede deshacer. Si vuelve a entrar, será tratado como usuario nuevo, sin su rol ni área actuales. ¿Continuar?`,
+      nzOkText: 'Sí, eliminar',
+      nzOkDanger: true,
+      nzCancelText: 'Cancelar',
+      nzOnOk: async () => {
+        try {
+          await this.registersService.deleteRegister(user);
+          this.message.success(`Usuario ${user.displayName || user.email} eliminado.`);
+          this.refreshData();
+        } catch (error) {
+          console.error('Error eliminando usuario:', error);
+          this.message.error('Error al eliminar el usuario.');
+        }
+      }
+    });
+  }
+
   // 🔄 Toggle estado activo
   async toggleUserStatus(user: Register, active: boolean): Promise<void> {
     try {

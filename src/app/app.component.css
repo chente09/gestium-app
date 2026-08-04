@@ -196,3 +196,12 @@ button.ant-dropdown-trigger.ng-star-inserted {
   border-radius: 50%;
 }
 
+.user-info-block {
+  padding: 8px 12px;
+  cursor: default;
+}
+
+.role-tag-wrapper {
+  margin-top: 6px;
+}
+

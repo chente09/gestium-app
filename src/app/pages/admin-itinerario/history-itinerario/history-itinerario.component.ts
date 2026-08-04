@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { ItinerarioService, Itinerario } from '../../../services/itinerario/itinerario.service';
-import { SharedDataService } from '../../../services/sharedData/shared-data.service';// ✅ NUEVO IMPORT
+import { SharedDataService } from '../../../services/sharedData/shared-data.service';
 import { CommonModule } from '@angular/common';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -19,6 +19,10 @@ import { NzListModule } from 'ng-zorro-antd/list';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzUploadModule } from 'ng-zorro-antd/upload';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { UsersService } from '../../../services/users/users.service';
 import { RegistersService } from '../../../services/registers/registers.service';
 
@@ -47,7 +51,11 @@ enum Estado {
     NzListModule,
     NzBreadCrumbModule,
     NzEmptyModule,
-    NzInputModule
+    NzInputModule,
+    NzUploadModule,
+    NzAlertModule,
+    NzFormModule,
+    NzToolTipModule
   ],
   templateUrl: './history-itinerario.component.html',
   styleUrl: './history-itinerario.component.css'
@@ -55,7 +63,6 @@ enum Estado {
 export class HistoryItinerarioComponent implements OnInit {
 
   itinerarios: Itinerario[] = [];
-  editCache: { [key: string]: { edit: boolean; data: any } } = {};
   filteredItinerarios: Itinerario[] = [];
   selectedArea = new FormControl('');
   selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
@@ -68,7 +75,6 @@ export class HistoryItinerarioComponent implements OnInit {
   pageSize = 10;
   pageIndex = 1;
 
-  // ✅ USAR SERVICIO CENTRALIZADO EN LUGAR DE ARRAYS LOCALES
   areas: string[] = [];
   unidad: string[] = [];
   materia: string[] = [];
@@ -77,13 +83,34 @@ export class HistoryItinerarioComponent implements OnInit {
   estados: string[] = [];
   juecesPorPiso: { [key: string]: string[] } = {};
 
+  // ========== EDICIÓN (modal precargado, mismo layout que itinerario-form) ==========
+  editModalVisible = false;
+  editForm: FormGroup = new FormGroup({});
+  editingItemId: string | null = null;
+  editFechaSolicitud: string = '';
+  editHoraSolicitud: string = '';
+  editSelectedImage: File | null = null;
+  editSelectedPDF: File | null = null;
+  editImageFileList: any[] = [];
+  editPdfFileList: any[] = [];
+  editJueces: string[] = [];
+  readonly maxPdfSizeMB = 5;
+  isSavingEdit = false;
+
+  editShowManualArea = false;
+  editShowManualJuzgado = false;
+  editShowManualPiso = false;
+  editShowManualMateria = false;
+  editShowManualDiligencia = false;
+
   constructor(
     private itinerarioService: ItinerarioService,
     private message: NzMessageService,
     private cdr: ChangeDetectorRef,
     private usersService: UsersService,
-    private sharedDataService: SharedDataService, // ✅ INYECTAR SERVICIO
-    private registersService: RegistersService
+    private sharedDataService: SharedDataService,
+    private registersService: RegistersService,
+    private fb: FormBuilder
   ) { }
 
   isAdmin(): boolean {
@@ -124,11 +151,10 @@ export class HistoryItinerarioComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.initializeData(); // ✅ INICIALIZAR DATOS DESDE EL SERVICIO
+    this.initializeData();
 
     this.itinerarioService.getItinerarios().subscribe((data) => {
       this.itinerarios = data;
-      this.updateEditCache(this.itinerarios);
       this.filterItinerarios();
     });
 
@@ -137,7 +163,6 @@ export class HistoryItinerarioComponent implements OnInit {
     this.selectedEstado.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
   }
 
-  // ✅ NUEVO MÉTODO PARA INICIALIZAR DATOS
   private initializeData(): void {
     this.areas = this.sharedDataService.getAreas();
     this.unidad = this.sharedDataService.getUnidades();
@@ -206,6 +231,7 @@ export class HistoryItinerarioComponent implements OnInit {
     this.selectedArea.setValue('');
     this.selectedDate.setValue([null, null]);
     this.selectedEstado.setValue(null);
+    this.searchTerm = '';
     this.filterItinerarios();
   }
 
@@ -239,63 +265,124 @@ export class HistoryItinerarioComponent implements OnInit {
     return item.id ?? index;
   }
 
+  // ========== EDICIÓN ==========
+
   startEdit(id: string): void {
     const item = this.filteredItinerarios.find(i => i.id === id);
-    const user = this.usersService.getCurrentUser();
 
-    const usuariosRestringidos = [
-      'mmarcillo.gestium@gmail.com',
-      'msaguano.gestium@gmail.com'
-    ];
+    // Antes era una lista de 2 emails hardcodeados; en los datos reales
+    // ambos comparten areaAsignada 'sin_asignar', así que el criterio pasa
+    // a ser "sin área asignada" — igual que con Trámites, reasignar área
+    // desde Admin ya no requiere tocar código.
+    const areaAsignada = this.registersService.getCurrentRegister()?.areaAsignada;
 
-    if (item && !usuariosRestringidos.includes(user?.email ?? '')) {
-      this.editCache[id] = {
-        edit: true,
-        data: {
-          ...item,
-          manualArea: item.manualArea || '',
-          manualJuzgado: item.manualJuzgado || '',
-          manualPiso: item.manualPiso || '',
-          manualMateria: item.manualMateria || '',
-          manualDiligencia: item.manualDiligencia || ''
-        }
-      };
-    } else {
+    if (!item || !areaAsignada || areaAsignada === 'sin_asignar') {
       this.message.error('No tienes permiso para editar este itinerario.');
-    }
-  }
-
-
-  cancelEdit(id: string): void {
-    const index = this.itinerarios.findIndex(item => item.id === id);
-    if (index !== -1) {
-      this.editCache[id] = {
-        data: { ...this.itinerarios[index] },
-        edit: false
-      };
-    }
-  }
-
-  async saveEdit(id: string): Promise<void> {
-    if (!this.editCache[id]) return;
-
-    const editData = this.editCache[id];
-    const updatedItinerario = editData.data;
-    const index = this.itinerarios.findIndex(item => item.id === id);
-    if (index === -1) return;
-
-    // Validaciones básicas
-    if (!updatedItinerario.tramite?.trim()) {
-      this.message.error('El trámite es obligatorio');
       return;
     }
 
-    if (!updatedItinerario.fechaTermino) {
-      this.message.error('La fecha de término es obligatoria');
+    this.editingItemId = id;
+
+    this.editForm = this.fb.group({
+      area: [item.area || '', Validators.required],
+      manualArea: [item.manualArea || ''],
+      tramite: [item.tramite || '', Validators.required],
+      nroProceso: [item.nroProceso || ''],
+      juzgado: [item.juzgado || ''],
+      manualJuzgado: [item.manualJuzgado || ''],
+      piso: [item.piso || ''],
+      manualPiso: [item.manualPiso || ''],
+      juez: [item.juez || ''],
+      materia: [item.materia || ''],
+      manualMateria: [item.manualMateria || ''],
+      diligencia: [item.diligencia || ''],
+      manualDiligencia: [item.manualDiligencia || ''],
+      solicita: [item.solicita || ''],
+      fechaTermino: [item.fechaTermino || '', Validators.required],
+      observaciones: [item.observaciones || ''],
+    });
+
+    // Fecha/hora de solicitud son el momento en que se pidió el trámite —
+    // no se editan, solo se muestran de referencia.
+    this.editFechaSolicitud = item.fechaSolicitud || '';
+    this.editHoraSolicitud = item.horaSolicitud || '';
+
+    this.editShowManualArea = item.area === 'Otro';
+    this.editShowManualJuzgado = item.juzgado === 'Otro';
+    this.editShowManualPiso = item.piso === 'Otro';
+    this.editShowManualMateria = item.materia === 'Otro';
+    this.editShowManualDiligencia = item.diligencia === 'Otro';
+    this.editJueces = this.sharedDataService.getJuecesPorPiso(item.piso || '');
+
+    this.editSelectedImage = null;
+    this.editSelectedPDF = null;
+    this.editImageFileList = [];
+    this.editPdfFileList = [];
+
+    this.editModalVisible = true;
+  }
+
+  onEditAreaChange(area: string): void {
+    this.editShowManualArea = area === 'Otro';
+  }
+
+  onEditJuzgadoChange(juzgado: string): void {
+    this.editShowManualJuzgado = juzgado === 'Otro';
+  }
+
+  onEditPisoChange(piso: string): void {
+    this.editShowManualPiso = piso === 'Otro';
+    this.editJueces = this.sharedDataService.getJuecesPorPiso(piso);
+    this.editForm.patchValue({ juez: '' }, { emitEvent: false });
+  }
+
+  onEditMateriaChange(materia: string): void {
+    this.editShowManualMateria = materia === 'Otro';
+  }
+
+  onEditDiligenciaChange(diligencia: string): void {
+    this.editShowManualDiligencia = diligencia === 'Otro';
+  }
+
+  onEditImageSelected(event: any): void {
+    const file = event.file?.originFileObj;
+    if (file) {
+      this.editSelectedImage = file;
+    }
+  }
+
+  onEditPdfSelected(event: any): void {
+    const file = event.file?.originFileObj;
+    if (!file) return;
+
+    const maxBytes = this.maxPdfSizeMB * 1024 * 1024;
+    if (file.size > maxBytes) {
+      this.message.error(
+        `El PDF pesa ${(file.size / 1024 / 1024).toFixed(1)}MB, el máximo permitido es ${this.maxPdfSizeMB}MB. Comprímelo antes de subirlo (ej. ilovepdf.com o smallpdf.com) y vuelve a intentarlo.`
+      );
+      this.editPdfFileList = [];
+      this.editSelectedPDF = null;
       return;
     }
 
-    // Validar campos "Otro"
+    this.editSelectedPDF = file;
+  }
+
+  closeEditModal(): void {
+    this.editModalVisible = false;
+    this.editingItemId = null;
+  }
+
+  async saveEdit(): Promise<void> {
+    if (!this.editingItemId) return;
+
+    if (this.editForm.invalid) {
+      this.message.error('Completa los campos obligatorios (trámite y fecha de término).');
+      return;
+    }
+
+    const data = this.editForm.value;
+
     const validacionesOtro = [
       { campo: 'area', manual: 'manualArea', nombre: 'área' },
       { campo: 'juzgado', manual: 'manualJuzgado', nombre: 'unidad' },
@@ -305,57 +392,40 @@ export class HistoryItinerarioComponent implements OnInit {
     ];
 
     for (const validacion of validacionesOtro) {
-      if (updatedItinerario[validacion.campo] === 'Otro' &&
-        !updatedItinerario[validacion.manual]?.trim()) {
+      if (data[validacion.campo] === 'Otro' && !data[validacion.manual]?.trim()) {
         this.message.error(`Debe especificar ${validacion.nombre} cuando selecciona "Otro"`);
         return;
       }
     }
 
-    if (JSON.stringify(this.itinerarios[index]) === JSON.stringify(updatedItinerario)) {
-      this.message.info('No se han realizado cambios.');
-      this.editCache[id].edit = false;
-      return;
-    }
+    // Sello automático de edición — no lo pone el usuario, lo pone el sistema.
+    const editor = this.usersService.getCurrentUser();
+    const ahora = new Date();
+    data.fechaEdicion = ahora.toISOString().split('T')[0];
+    data.horaEdicion = ahora.toTimeString().slice(0, 5);
+    data.editadoPor = editor?.displayName || editor?.email || 'Usuario';
 
+    this.isSavingEdit = true;
     try {
-      await this.itinerarioService.updateItinerario(id, updatedItinerario);
-      this.itinerarios[index] = { ...updatedItinerario };
-      this.editCache[id].edit = false;
-      this.filterItinerarios();
+      await this.itinerarioService.updateItinerario(
+        this.editingItemId,
+        data,
+        this.editSelectedImage ?? undefined,
+        this.editSelectedPDF ?? undefined
+      );
       this.message.success('Itinerario actualizado correctamente.');
+      this.closeEditModal();
+      this.filterItinerarios();
     } catch (error) {
       this.message.error('Error al actualizar el itinerario. Intente nuevamente.');
       console.error('Error al actualizar el itinerario', error);
+    } finally {
+      this.isSavingEdit = false;
     }
   }
 
-  // ✅ USAR EL SERVICIO CENTRALIZADO PARA OBTENER JUECES
   getJuecesPorPiso(piso: string): string[] {
     return this.sharedDataService.getJuecesPorPiso(piso);
-  }
-
-  onPisoChangeEdit(itemId: string, nuevoPiso: string): void {
-    if (this.editCache[itemId]) {
-      // Limpiar el juez seleccionado cuando cambia el piso
-      this.editCache[itemId].data.juez = '';
-
-      // Si el piso es "Otro", no hay jueces predefinidos
-      if (nuevoPiso === 'Otro') {
-        this.editCache[itemId].data.juez = '';
-      }
-    }
-  }
-
-  updateEditCache(itinerarios: Itinerario[]): void {
-    itinerarios.forEach(item => {
-      if (!this.editCache[item.id]) {
-        this.editCache[item.id] = {
-          edit: false,
-          data: { ...item }
-        };
-      }
-    });
   }
 
   eliminar(id: string): void {
@@ -386,9 +456,5 @@ export class HistoryItinerarioComponent implements OnInit {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  hasEditingItems(): boolean {
-    return Object.values(this.editCache).some(item => item?.edit === true);
   }
 }

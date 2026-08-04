@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { ProcesosService, Proceso } from '../../services/procesos/procesos.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { CommonModule } from '@angular/common';
-import { finalize, first } from 'rxjs/operators'; // Importa el operador 'first'
 
 // Componentes Hijos
 import { BusquedaFormComponent } from './componentes/busqueda-form/busqueda-form.component';
@@ -41,41 +40,18 @@ export class ConsultasComponent {
     private messageService: NzMessageService
   ) {}
 
-  handleSearch(event: { tipo: string, valor: string }): void {
+  async handleSearch(event: { tipo: string, valor: string }): Promise<void> {
     this.isLoading = true;
     const loadingId = this.messageService.loading('Buscando procesos...', { nzDuration: 0 }).messageId;
 
-    this.procesosService.getProcesos().pipe(
-      first(), // <-- ESTA ES LA CORRECCIÓN: Toma la primera emisión y completa el observable.
-      finalize(() => {
-        this.isLoading = false;
-        this.messageService.remove(loadingId);
-      })
-    ).subscribe(allProcesos => {
-      // Filtrado en el lado del cliente
-      const valor = event.valor.toLowerCase();
-      let resultados: Proceso[] = [];
-
-      if (event.tipo === 'cedula') {
-        resultados = allProcesos.filter(p => p.cedula.toLowerCase() === valor);
-      } else {
-        resultados = allProcesos.filter(p => p.nombre.toLowerCase().includes(valor));
-      }
-
-      // Convertir fechas
-      this.procesos = resultados.map(proceso => {
-        if (proceso.fechaCreacion && typeof (proceso.fechaCreacion as any).toDate === 'function') {
-          proceso.fechaCreacion = (proceso.fechaCreacion as any).toDate();
-        }
-        if (proceso.etapas) {
-          proceso.etapas.forEach(etapa => {
-            if (etapa.fechaRegistro && typeof (etapa.fechaRegistro as any).toDate === 'function') {
-              etapa.fechaRegistro = (etapa.fechaRegistro as any).toDate();
-            }
-          });
-        }
-        return proceso;
-      });
+    try {
+      // Búsqueda server-side (Cloud Function 'buscarProceso'): solo llegan
+      // al navegador los procesos que realmente coinciden, nunca la
+      // colección completa.
+      this.procesos = await this.procesosService.buscarProcesoPublico(
+        event.tipo as 'cedula' | 'nombre',
+        event.valor
+      );
 
       if (this.procesos.length > 0) {
         this.showResults = true;
@@ -83,10 +59,13 @@ export class ConsultasComponent {
       } else {
         this.messageService.info('No se encontraron procesos con los criterios de búsqueda.');
       }
-    }, error => {
+    } catch (error) {
       this.messageService.error('Ocurrió un error al buscar los procesos.');
       console.error(error);
-    });
+    } finally {
+      this.isLoading = false;
+      this.messageService.remove(loadingId);
+    }
   }
 
   handleSelectProceso(proceso: Proceso): void {

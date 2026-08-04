@@ -4,7 +4,7 @@ import { SharedDataService } from '../../../services/sharedData/shared-data.serv
 import { CommonModule } from '@angular/common';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -19,12 +19,10 @@ import { NzListModule } from 'ng-zorro-antd/list';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzUploadModule } from 'ng-zorro-antd/upload';
-import { NzAlertModule } from 'ng-zorro-antd/alert';
-import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { UsersService } from '../../../services/users/users.service';
 import { RegistersService } from '../../../services/registers/registers.service';
+import { ItinerarioEditModalComponent } from '../itinerario-edit-modal/itinerario-edit-modal.component';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -52,10 +50,8 @@ enum Estado {
     NzBreadCrumbModule,
     NzEmptyModule,
     NzInputModule,
-    NzUploadModule,
-    NzAlertModule,
-    NzFormModule,
-    NzToolTipModule
+    NzToolTipModule,
+    ItinerarioEditModalComponent
   ],
   templateUrl: './history-itinerario.component.html',
   styleUrl: './history-itinerario.component.css'
@@ -64,6 +60,8 @@ export class HistoryItinerarioComponent implements OnInit {
 
   itinerarios: Itinerario[] = [];
   filteredItinerarios: Itinerario[] = [];
+  isLoadingItinerarios = false;
+  readonly diasHistorial = 90;
   selectedArea = new FormControl('');
   selectedDate = new FormControl<[Date | null, Date | null]>([null, null]);
   selectedEstado = new FormControl(null);
@@ -83,25 +81,9 @@ export class HistoryItinerarioComponent implements OnInit {
   estados: string[] = [];
   juecesPorPiso: { [key: string]: string[] } = {};
 
-  // ========== EDICIÓN (modal precargado, mismo layout que itinerario-form) ==========
+  // ========== EDICIÓN (modal compartido con Pendientes) ==========
   editModalVisible = false;
-  editForm: FormGroup = new FormGroup({});
-  editingItemId: string | null = null;
-  editFechaSolicitud: string = '';
-  editHoraSolicitud: string = '';
-  editSelectedImage: File | null = null;
-  editSelectedPDF: File | null = null;
-  editImageFileList: any[] = [];
-  editPdfFileList: any[] = [];
-  editJueces: string[] = [];
-  readonly maxPdfSizeMB = 5;
-  isSavingEdit = false;
-
-  editShowManualArea = false;
-  editShowManualJuzgado = false;
-  editShowManualPiso = false;
-  editShowManualMateria = false;
-  editShowManualDiligencia = false;
+  editingItem: Itinerario | null = null;
 
   constructor(
     private itinerarioService: ItinerarioService,
@@ -109,8 +91,7 @@ export class HistoryItinerarioComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private usersService: UsersService,
     private sharedDataService: SharedDataService,
-    private registersService: RegistersService,
-    private fb: FormBuilder
+    private registersService: RegistersService
   ) { }
 
   isAdmin(): boolean {
@@ -138,9 +119,28 @@ export class HistoryItinerarioComponent implements OnInit {
         nombre: user.displayName ?? undefined,
       });
       this.message.success('Itinerario devuelto a pendiente. Se guardó un registro en el historial.');
+      await this.refrescarUnItem(id);
     } catch (error) {
       this.message.error('Error al revertir el itinerario.');
       console.error(error);
+    }
+  }
+
+  // Sin listener en tiempo real, hay que traer y parchar a mano el ítem que
+  // acaba de cambiar en vez de esperar a que Firestore lo empuje solo.
+  private async refrescarUnItem(id: string): Promise<void> {
+    try {
+      const actualizado = await this.itinerarioService.getItinerarioById(id);
+      if (!actualizado) return;
+      const index = this.itinerarios.findIndex(it => it.id === id);
+      if (index !== -1) {
+        this.itinerarios[index] = actualizado;
+      } else {
+        this.itinerarios.push(actualizado);
+      }
+      this.filterItinerarios();
+    } catch (error) {
+      console.error('Error al refrescar el itinerario:', error);
     }
   }
 
@@ -152,11 +152,7 @@ export class HistoryItinerarioComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializeData();
-
-    this.itinerarioService.getItinerarios().subscribe((data) => {
-      this.itinerarios = data;
-      this.filterItinerarios();
-    });
+    this.cargarItinerarios();
 
     this.selectedArea.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
     this.selectedDate.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.filterItinerarios());
@@ -171,6 +167,22 @@ export class HistoryItinerarioComponent implements OnInit {
     this.piso = this.sharedDataService.getPisos();
     this.estados = this.sharedDataService.getEstados();
     this.juecesPorPiso = this.sharedDataService.juecesPorPiso;
+  }
+
+  // Carga única (no en tiempo real) de los últimos `diasHistorial` días —
+  // ver el porqué en ItinerarioService.getItinerariosRecientes. Al no
+  // quedarse escuchando cambios en vivo, hay que refrescar a mano.
+  async cargarItinerarios(): Promise<void> {
+    this.isLoadingItinerarios = true;
+    try {
+      this.itinerarios = await this.itinerarioService.getItinerariosRecientes(this.diasHistorial);
+      this.filterItinerarios();
+    } catch (error) {
+      console.error('Error al cargar el historial:', error);
+      this.message.error('Error al cargar el historial.');
+    } finally {
+      this.isLoadingItinerarios = false;
+    }
   }
 
   onSearch(): void {
@@ -281,147 +293,12 @@ export class HistoryItinerarioComponent implements OnInit {
       return;
     }
 
-    this.editingItemId = id;
-
-    this.editForm = this.fb.group({
-      area: [item.area || '', Validators.required],
-      manualArea: [item.manualArea || ''],
-      tramite: [item.tramite || '', Validators.required],
-      nroProceso: [item.nroProceso || ''],
-      juzgado: [item.juzgado || ''],
-      manualJuzgado: [item.manualJuzgado || ''],
-      piso: [item.piso || ''],
-      manualPiso: [item.manualPiso || ''],
-      juez: [item.juez || ''],
-      materia: [item.materia || ''],
-      manualMateria: [item.manualMateria || ''],
-      diligencia: [item.diligencia || ''],
-      manualDiligencia: [item.manualDiligencia || ''],
-      solicita: [item.solicita || ''],
-      fechaTermino: [item.fechaTermino || '', Validators.required],
-      observaciones: [item.observaciones || ''],
-    });
-
-    // Fecha/hora de solicitud son el momento en que se pidió el trámite —
-    // no se editan, solo se muestran de referencia.
-    this.editFechaSolicitud = item.fechaSolicitud || '';
-    this.editHoraSolicitud = item.horaSolicitud || '';
-
-    this.editShowManualArea = item.area === 'Otro';
-    this.editShowManualJuzgado = item.juzgado === 'Otro';
-    this.editShowManualPiso = item.piso === 'Otro';
-    this.editShowManualMateria = item.materia === 'Otro';
-    this.editShowManualDiligencia = item.diligencia === 'Otro';
-    this.editJueces = this.sharedDataService.getJuecesPorPiso(item.piso || '');
-
-    this.editSelectedImage = null;
-    this.editSelectedPDF = null;
-    this.editImageFileList = [];
-    this.editPdfFileList = [];
-
+    this.editingItem = item;
     this.editModalVisible = true;
   }
 
-  onEditAreaChange(area: string): void {
-    this.editShowManualArea = area === 'Otro';
-  }
-
-  onEditJuzgadoChange(juzgado: string): void {
-    this.editShowManualJuzgado = juzgado === 'Otro';
-  }
-
-  onEditPisoChange(piso: string): void {
-    this.editShowManualPiso = piso === 'Otro';
-    this.editJueces = this.sharedDataService.getJuecesPorPiso(piso);
-    this.editForm.patchValue({ juez: '' }, { emitEvent: false });
-  }
-
-  onEditMateriaChange(materia: string): void {
-    this.editShowManualMateria = materia === 'Otro';
-  }
-
-  onEditDiligenciaChange(diligencia: string): void {
-    this.editShowManualDiligencia = diligencia === 'Otro';
-  }
-
-  onEditImageSelected(event: any): void {
-    const file = event.file?.originFileObj;
-    if (file) {
-      this.editSelectedImage = file;
-    }
-  }
-
-  onEditPdfSelected(event: any): void {
-    const file = event.file?.originFileObj;
-    if (!file) return;
-
-    const maxBytes = this.maxPdfSizeMB * 1024 * 1024;
-    if (file.size > maxBytes) {
-      this.message.error(
-        `El PDF pesa ${(file.size / 1024 / 1024).toFixed(1)}MB, el máximo permitido es ${this.maxPdfSizeMB}MB. Comprímelo antes de subirlo (ej. ilovepdf.com o smallpdf.com) y vuelve a intentarlo.`
-      );
-      this.editPdfFileList = [];
-      this.editSelectedPDF = null;
-      return;
-    }
-
-    this.editSelectedPDF = file;
-  }
-
-  closeEditModal(): void {
-    this.editModalVisible = false;
-    this.editingItemId = null;
-  }
-
-  async saveEdit(): Promise<void> {
-    if (!this.editingItemId) return;
-
-    if (this.editForm.invalid) {
-      this.message.error('Completa los campos obligatorios (trámite y fecha de término).');
-      return;
-    }
-
-    const data = this.editForm.value;
-
-    const validacionesOtro = [
-      { campo: 'area', manual: 'manualArea', nombre: 'área' },
-      { campo: 'juzgado', manual: 'manualJuzgado', nombre: 'unidad' },
-      { campo: 'piso', manual: 'manualPiso', nombre: 'piso' },
-      { campo: 'materia', manual: 'manualMateria', nombre: 'materia' },
-      { campo: 'diligencia', manual: 'manualDiligencia', nombre: 'diligencia' }
-    ];
-
-    for (const validacion of validacionesOtro) {
-      if (data[validacion.campo] === 'Otro' && !data[validacion.manual]?.trim()) {
-        this.message.error(`Debe especificar ${validacion.nombre} cuando selecciona "Otro"`);
-        return;
-      }
-    }
-
-    // Sello automático de edición — no lo pone el usuario, lo pone el sistema.
-    const editor = this.usersService.getCurrentUser();
-    const ahora = new Date();
-    data.fechaEdicion = ahora.toISOString().split('T')[0];
-    data.horaEdicion = ahora.toTimeString().slice(0, 5);
-    data.editadoPor = editor?.displayName || editor?.email || 'Usuario';
-
-    this.isSavingEdit = true;
-    try {
-      await this.itinerarioService.updateItinerario(
-        this.editingItemId,
-        data,
-        this.editSelectedImage ?? undefined,
-        this.editSelectedPDF ?? undefined
-      );
-      this.message.success('Itinerario actualizado correctamente.');
-      this.closeEditModal();
-      this.filterItinerarios();
-    } catch (error) {
-      this.message.error('Error al actualizar el itinerario. Intente nuevamente.');
-      console.error('Error al actualizar el itinerario', error);
-    } finally {
-      this.isSavingEdit = false;
-    }
+  onItemSaved(id: string): void {
+    this.refrescarUnItem(id);
   }
 
   getJuecesPorPiso(piso: string): string[] {

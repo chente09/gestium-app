@@ -43,7 +43,7 @@
 
         <!-- Lista de notificaciones -->
         <div class="notification-list" *ngIf="notificaciones.length > 0">
-            <div *ngFor="let notif of notificaciones" class="notification-item"
+            <div *ngFor="let notif of notificaciones" class="notification-item" (click)="irANotificacion(notif)"
                 [class.priority-high]="notif.prioridad === 'alta'" [class.priority-medium]="notif.prioridad === 'media'"
                 [class.priority-low]="notif.prioridad === 'baja'">
 
@@ -125,6 +125,13 @@
     </ng-template>
     <hr class="divider">
 
+    <nz-alert *ngIf="notificacionFiltroActivo" nzType="info" nzShowIcon nzMessage="Mostrando el registro de la notificación."
+        [nzAction]="verTodosAction" style="margin-bottom: 12px;">
+    </nz-alert>
+    <ng-template #verTodosAction>
+        <button nz-button nzType="link" nzSize="small" (click)="limpiarFiltroNotificacion()">Ver todos</button>
+    </ng-template>
+
     <div class="table-container">
         <nz-table id="tabla-itinerarios" class="itinerario-table" #rowSelectionTable nzBordered
             [nzFrontPagination]="true" [nzShowPagination]="true" [nzPageSize]="pageSize"
@@ -163,6 +170,8 @@
                     </td>
                     <td>
                         <strong>Actividad: </strong> <br> {{ item.tramite }}
+                        <i *ngIf="item.fechaEdicion" nz-icon nzType="edit" nzTheme="outline" class="edited-indicator"
+                            nz-tooltip [nzTooltipTitle]="'Editado por ' + item.editadoPor + ' el ' + item.fechaEdicion + ' ' + item.horaEdicion"></i>
                         <br>
                         <ng-container *ngIf="item && item.nroProceso">
                             <strong>N° Juicio: </strong> <br> {{ item.nroProceso }}
@@ -229,6 +238,10 @@
 
                             <button nz-button class="btn-proceso" (click)="enProcesoItem(item)">
                                 <i nz-icon nzType="hourglass"></i> En Proceso
+                            </button>
+
+                            <button nz-button (click)="startEdit(item)">
+                                <i nz-icon nzType="edit"></i> Editar
                             </button>
                         </ng-container>
                     </td>
@@ -493,4 +506,6 @@
     <div *ngIf="actividadesGuardadas.length === 0" class="alert alert-info mt-3">
         No hay actividades guardadas.
     </div>
+
+<app-itinerario-edit-modal [itinerario]="editingItem" [(visible)]="editModalVisible"></app-itinerario-edit-modal>
 </div>

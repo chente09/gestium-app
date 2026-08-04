@@ -1,0 +1,193 @@
+<nz-modal [nzVisible]="visible" nzTitle="Editar actividad" (nzOnCancel)="close()" [nzWidth]="800"
+    [nzFooter]="editModalFooter">
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="editForm" class="itinerario-form">
+            <nz-row [nzGutter]="16">
+                <nz-col nzSpan="10">
+                    <nz-form-item>
+                        <nz-form-label nzFor="area" nzRequired>Solicita</nz-form-label>
+                        <nz-form-control>
+                            <nz-select formControlName="area" nzShowSearch nzAllowClear
+                                nzPlaceHolder="Seleccione el área" (ngModelChange)="onEditAreaChange($event)">
+                                <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
+                            </nz-select>
+                            <input *ngIf="editShowManualArea" nz-input formControlName="manualArea"
+                                placeholder="Ingrese el área manualmente" style="margin-top: 4px;" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+                <nz-col nzSpan="14">
+                    <nz-form-item>
+                        <nz-form-label nzFor="tramite" nzRequired>Trámite</nz-form-label>
+                        <nz-form-control>
+                            <textarea nz-input formControlName="tramite" rows="2"
+                                placeholder="Ingrese el trámite, número de proceso o actividad puntual a realizar"></textarea>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+            <nz-row [nzGutter]="16">
+                <nz-col nzSpan="10">
+                    <nz-form-item>
+                        <nz-form-label nzFor="nroProceso">N°. Juicio</nz-form-label>
+                        <nz-form-control>
+                            <input nz-input formControlName="nroProceso" placeholder="Ingrese el N° de proceso" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+                <nz-col nzSpan="14">
+                    <nz-form-item>
+                        <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
+                        <nz-form-control>
+                            <textarea nz-input formControlName="observaciones" rows="2"
+                                placeholder="Ingrese observaciones o detalles generales de la actividad"></textarea>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+
+            <nz-row [nzGutter]="16">
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="juzgado">Unidad, Juzgado o Entidad</nz-form-label>
+                        <nz-form-control>
+                            <nz-select formControlName="juzgado" nzShowSearch nzAllowClear
+                                nzPlaceHolder="Seleccione la unidad, juzgado o entidad"
+                                (ngModelChange)="onEditJuzgadoChange($event)">
+                                <nz-option *ngFor="let juzgado of unidad" [nzValue]="juzgado"
+                                    [nzLabel]="juzgado"></nz-option>
+                            </nz-select>
+                            <input *ngIf="editShowManualJuzgado" nz-input formControlName="manualJuzgado"
+                                placeholder="Ingrese la unidad manualmente" style="margin-top: 4px;" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="piso">Selecciona el piso</nz-form-label>
+                        <nz-form-control>
+                            <nz-select formControlName="piso" nzShowSearch nzAllowClear
+                                nzPlaceHolder="Seleccione el piso" (ngModelChange)="onEditPisoChange($event)">
+                                <nz-option *ngFor="let pisoItem of piso" [nzValue]="pisoItem"
+                                    [nzLabel]="pisoItem"></nz-option>
+                            </nz-select>
+                            <input *ngIf="editShowManualPiso" nz-input formControlName="manualPiso"
+                                placeholder="Ingrese el piso manualmente" style="margin-top: 4px;" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+
+            <nz-row [nzGutter]="16" *ngIf="editJueces.length > 0">
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="juez">Puedes asignar un Juez</nz-form-label>
+                        <nz-form-control>
+                            <nz-select formControlName="juez" nzShowSearch nzAllowClear
+                                nzPlaceHolder="Seleccione el juez">
+                                <nz-option *ngFor="let juezItem of editJueces" [nzValue]="juezItem"
+                                    [nzLabel]="juezItem"></nz-option>
+                            </nz-select>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+
+            <nz-row [nzGutter]="16">
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="materia">Selecciona el área</nz-form-label>
+                        <nz-form-control>
+                            <nz-select formControlName="materia" nzShowSearch nzAllowClear
+                                nzPlaceHolder="Seleccione la materia" (ngModelChange)="onEditMateriaChange($event)">
+                                <nz-option *ngFor="let m of materia" [nzValue]="m" [nzLabel]="m"></nz-option>
+                            </nz-select>
+                            <input *ngIf="editShowManualMateria" nz-input formControlName="manualMateria"
+                                placeholder="Ingrese la materia manualmente" style="margin-top: 4px;" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="diligencia">Seleciona la diligencia</nz-form-label>
+                        <nz-form-control>
+                            <nz-select formControlName="diligencia" nzShowSearch nzAllowClear
+                                nzPlaceHolder="Seleccione la diligencia"
+                                (ngModelChange)="onEditDiligenciaChange($event)">
+                                <nz-option *ngFor="let d of diligencia" [nzValue]="d" [nzLabel]="d"></nz-option>
+                            </nz-select>
+                            <input *ngIf="editShowManualDiligencia" nz-input formControlName="manualDiligencia"
+                                placeholder="Ingrese la diligencia manualmente" style="margin-top: 4px;" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+
+            <nz-row [nzGutter]="16">
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="solicita">Recibe</nz-form-label>
+                        <nz-form-control>
+                            <input nz-input formControlName="solicita" placeholder="Especificar quién recibe el trámite" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label nzFor="fechaTermino" nzRequired>Fecha de Término</nz-form-label>
+                        <nz-form-control>
+                            <input nz-input formControlName="fechaTermino" type="date" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+
+            <nz-row [nzGutter]="16">
+                <nz-col nzSpan="24">
+                    <nz-form-item>
+                        <nz-form-label>Solicitado el</nz-form-label>
+                        <nz-form-control>
+                            <span class="readonly-value">{{ editFechaSolicitud }} · {{ editHoraSolicitud }}</span>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+
+            <nz-row [nzGutter]="16">
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label>Imagen (actual)</nz-form-label>
+                        <nz-form-control>
+                            <nz-upload nzListType="picture" nzAccept="image/*" [nzShowUploadList]="true"
+                                [(nzFileList)]="editImageFileList" (nzChange)="onEditImageSelected($event)">
+                                <div class="upload-button"><i nz-icon nzType="upload"></i> Reemplazar Imagen</div>
+                            </nz-upload>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+                <nz-col nzSpan="12">
+                    <nz-form-item>
+                        <nz-form-label>PDF (actual)</nz-form-label>
+                        <nz-form-control>
+                            <nz-upload nzListType="text" nzAccept="application/pdf" [nzShowUploadList]="true"
+                                [(nzFileList)]="editPdfFileList" (nzChange)="onEditPdfSelected($event)">
+                                <div class="upload-button"><i nz-icon nzType="upload"></i> Reemplazar PDF</div>
+                            </nz-upload>
+                            <nz-alert nzType="info" nzShowIcon
+                                nzMessage="Máximo {{ maxPdfSizeMB }}MB. Si es más pesado, comprímelo antes en ilovepdf.com o smallpdf.com."
+                                style="margin-top: 8px;">
+                            </nz-alert>
+                        </nz-form-control>
+                    </nz-form-item>
+                </nz-col>
+            </nz-row>
+        </form>
+    </ng-container>
+</nz-modal>
+
+<ng-template #editModalFooter>
+    <button nz-button (click)="close()">Cancelar</button>
+    <button nz-button nzType="primary" [nzLoading]="isSavingEdit" (click)="save()">
+        <i nz-icon nzType="save"></i> Guardar
+    </button>
+</ng-template>

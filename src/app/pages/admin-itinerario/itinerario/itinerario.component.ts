@@ -21,6 +21,7 @@ import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { Subject, takeUntil } from 'rxjs';
 
 import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
@@ -29,6 +30,7 @@ import { RegistersService } from '../../../services/registers/registers.service'
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { SharedDataService } from '../../../services/sharedData/shared-data.service';
 import { DateUtilsService } from '../../../services/date-utils/date-utils.service';
+import { ItinerarioEditModalComponent } from '../itinerario-edit-modal/itinerario-edit-modal.component';
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -66,7 +68,9 @@ enum Estado {
     NzEmptyModule,
     NzGridModule,
     NzPopconfirmModule,
-    NzAlertModule
+    NzAlertModule,
+    NzToolTipModule,
+    ItinerarioEditModalComponent
   ],
   templateUrl: './itinerario.component.html',
   styleUrl: './itinerario.component.css'
@@ -95,6 +99,11 @@ export class ItinerarioComponent implements OnInit {
   formularioValido = false;
   mostrarNotificaciones = false;
   mostrarTodos = false;
+  notificacionFiltroActivo: string | null = null;
+
+  // ========== EDICIÓN (modal compartido con Historial) ==========
+  editModalVisible = false;
+  editingItem: Itinerario | null = null;
 
   // ========== PROPIEDADES DE MODALES ==========
   isVisible = false;
@@ -190,7 +199,7 @@ export class ItinerarioComponent implements OnInit {
   }
 
   private loadItinerarios(): void {
-    this.itinerarioService.getItinerarios().subscribe(data => {
+    this.itinerarioService.getItinerariosPendientes().subscribe(data => {
       if (!Array.isArray(data)) {
         console.warn("Los datos obtenidos no son un array:", data);
         this.loading = false;
@@ -732,6 +741,44 @@ export class ItinerarioComponent implements OnInit {
       const fechaB = new Date(b.fechaTermino).getTime();
       return fechaB - fechaA;
     });
+  }
+
+  // Al hacer clic en una notificación, la tabla se filtra a ese único
+  // registro en vez de dejar la lista de notificaciones como una vitrina
+  // sin acción.
+  irANotificacion(notif: { id: string }): void {
+    const item = this.itinerarios.find(i => i.id === notif.id);
+    if (!item) {
+      this.message.warning('No se encontró el registro (puede que ya haya cambiado de estado).');
+      return;
+    }
+
+    this.notificacionFiltroActivo = notif.id;
+    this.filteredItinerarios = [item];
+    this.pageIndex = 1;
+    this.mostrarNotificaciones = false;
+    this.cdr.detectChanges();
+
+    document.getElementById('tabla-itinerarios')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  limpiarFiltroNotificacion(): void {
+    this.notificacionFiltroActivo = null;
+    this.filterItinerarios();
+  }
+
+  // Mismo modal de edición que Historial, para no tener que salir de
+  // Pendientes a editar algo que sigue pendiente. La lista se actualiza
+  // sola: esta pantalla mantiene un listener en tiempo real.
+  startEdit(item: Itinerario): void {
+    const areaAsignada = this.registersService.getCurrentRegister()?.areaAsignada;
+    if (!areaAsignada || areaAsignada === 'sin_asignar') {
+      this.message.error('No tienes permiso para editar este itinerario.');
+      return;
+    }
+
+    this.editingItem = item;
+    this.editModalVisible = true;
   }
 
   // ========== MÉTODOS DE HISTORIAL ==========

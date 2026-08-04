@@ -1,3 +1,11 @@
+/* Indicador sutil de "editado" junto al trámite */
+.edited-indicator {
+    margin-left: 6px;
+    color: rgba(0, 0, 0, 0.35);
+    font-size: 12px;
+    cursor: default;
+}
+
 /* ========== ESTILOS GENERALES ========== */
 .divider {
     margin: 20px 0;
@@ -343,6 +351,7 @@ nz-modal-footer {
     padding: 12px;
     border-left: 4px solid #d9d9d9;
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 .notification-item:hover {

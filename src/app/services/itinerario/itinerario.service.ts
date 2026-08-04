@@ -136,9 +136,37 @@ export class ItinerarioService {
   }
 
   // 📌 Obtener todos los itinerarios como Observable
+  // ⚠️ Sin filtro: trae y mantiene en vivo TODA la colección (miles de
+  // documentos y creciendo). Usar solo cuando de verdad se necesita ver
+  // absolutamente todo; para las pantallas normales usar los métodos de
+  // abajo, más baratos.
   getItinerarios(): Observable<Itinerario[]> {
     const itinerariosRef = collection(this.firestore, this.collectionName);
     return collectionData(itinerariosRef, { idField: 'id' }) as Observable<Itinerario[]>;
+  }
+
+  // 📌 "Actividades Pendientes": solo pendiente/incompleto, en tiempo real.
+  // La mayoría de los 4700+ registros ya están completados, así que
+  // filtrar en la consulta (no en el navegador) reduce muchísimo lo que
+  // Firestore factura por lectura.
+  getItinerariosPendientes(): Observable<Itinerario[]> {
+    const itinerariosRef = collection(this.firestore, this.collectionName);
+    const q = query(itinerariosRef, where('estado', 'in', ['pendiente', 'incompleto']));
+    return collectionData(q, { idField: 'id' }) as Observable<Itinerario[]>;
+  }
+
+  // 📌 "Historial": carga única (no queda escuchando cambios en vivo) de
+  // los últimos N días por fecha de solicitud. Para ver algo más viejo,
+  // usar los filtros de fecha existentes para ampliar el rango a mano.
+  async getItinerariosRecientes(dias = 90): Promise<Itinerario[]> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - dias);
+    const cutoffStr = cutoff.toISOString().split('T')[0];
+
+    const itinerariosRef = collection(this.firestore, this.collectionName);
+    const q = query(itinerariosRef, where('fechaSolicitud', '>=', cutoffStr));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Itinerario[];
   }
   // getItinerarios(): Observable<Itinerario[]> {
   //   const itinerariosRef = collection(this.firestore, this.collectionName);

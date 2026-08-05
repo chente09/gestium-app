@@ -8,7 +8,6 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzLayoutComponent } from 'ng-zorro-antd/layout';
 import { AgendaAreaComponent } from "../../components/agenda-area/agenda-area.component";
 import { RegistersService } from '../../services/registers/registers.service';
-import { SharedDataService } from '../../services/sharedData/shared-data.service';
 
 @Component({
   selector: 'app-area-detail-component',
@@ -66,8 +65,7 @@ export class AreaDetailComponentComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private registersService: RegistersService,
-    private sharedDataService: SharedDataService
+    private registersService: RegistersService
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -118,17 +116,20 @@ export class AreaDetailComponentComponent implements OnInit {
       return;
     }
 
-    // Lógica para determinar si mostrar agenda
-    const currentAreaNormalized = this.sharedDataService.normalizeAreaName(this.currentUserArea);
-    const viewingAreaNormalized = this.sharedDataService.normalizeAreaName(this.areaId);
+    // Admin/coordinador ven todo; un usuario sin área asignada no está bloqueado
+    if (this.registersService.hasFullAccess() || this.currentUserArea === 'sin_asignar') {
+      this.showAgenda = true;
+      return;
+    }
 
+    // Resolver ambos identificadores (pueden venir como slug o como nombre)
+    // contra el catálogo real de áreas, en vez de un mapeo hardcodeado.
+    const [userArea, viewingArea] = await Promise.all([
+      this.registersService.findAreaByIdentifier(this.currentUserArea),
+      this.registersService.findAreaByIdentifier(this.areaId)
+    ]);
 
-    // Verificar si es admin usando el servicio
-    const isAdmin = this.registersService.isCurrentUserAdmin();
-
-    this.showAgenda = currentAreaNormalized === viewingAreaNormalized ||
-      isAdmin ||
-      this.currentUserArea === 'sin_asignar';
+    this.showAgenda = !!userArea && !!viewingArea && userArea.slug === viewingArea.slug;
   }
 
   // ✅ Verificar acceso del usuario

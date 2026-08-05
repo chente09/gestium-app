@@ -53,8 +53,8 @@ export class AreaActivitiesService {
       throw new Error('🔒 Usuario desactivado. Contacte al administrador.');
     }
 
-    // ✅ Los admins pueden acceder a cualquier área
-    if (currentRegister.role === 'admin') {
+    // ✅ Admin y coordinador pueden acceder a cualquier área
+    if (this.registersService.hasFullAccess()) {
       return true; // Permitir
     }
 
@@ -92,8 +92,8 @@ export class AreaActivitiesService {
       throw new Error('🔒 Usuario no autenticado');
     }
 
-    // ✅ Los admins pueden modificar todo
-    if (currentRegister.role === 'admin') {
+    // ✅ Admin y coordinador pueden modificar todo
+    if (this.registersService.hasFullAccess()) {
       return true;
     }
 
@@ -145,14 +145,13 @@ export class AreaActivitiesService {
   // ============================================
   // 🔧 CONVERTIR NOMBRE A SLUG
   // ============================================
-  private async getAreaSlugByName(nombreArea: string): Promise<string> {
+  private async getAreaSlugByName(identifier: string): Promise<string> {
     try {
-      const areas = await this.registersService.getAreasOficinaOnce();
-      const area = areas.find(a => a.nombre === nombreArea);
-      return area?.slug || nombreArea.toLowerCase();
+      const area = await this.registersService.findAreaByIdentifier(identifier);
+      return area?.slug || identifier.toLowerCase();
     } catch (error) {
       console.error('Error obteniendo slug del área:', error);
-      return nombreArea.toLowerCase();
+      return identifier.toLowerCase();
     }
   }
 

@@ -73,7 +73,7 @@ export class HistoryItinerarioComponent implements OnInit {
   pageSize = 10;
   pageIndex = 1;
 
-  areas: string[] = [];
+  areas: { nombre: string; slug: string }[] = [];
   unidad: string[] = [];
   materia: string[] = [];
   diligencia: string[] = [];
@@ -160,7 +160,9 @@ export class HistoryItinerarioComponent implements OnInit {
   }
 
   private initializeData(): void {
-    this.areas = this.sharedDataService.getAreas();
+    this.registersService.getActiveAreaEntries().then(entries => {
+      this.areas = [...entries, { nombre: 'Otro', slug: 'Otro' }];
+    });
     this.unidad = this.sharedDataService.getUnidades();
     this.materia = this.sharedDataService.getMaterias();
     this.diligencia = this.sharedDataService.getDiligencias();
@@ -245,6 +247,11 @@ export class HistoryItinerarioComponent implements OnInit {
     this.selectedEstado.setValue(null);
     this.searchTerm = '';
     this.filterItinerarios();
+  }
+
+  // El itinerario guarda el slug del área; esto lo traduce al nombre para mostrar.
+  getAreaDisplayName(slug: string): string {
+    return this.areas.find(area => area.slug === slug)?.nombre || slug;
   }
 
   getEstadoColor(estado: Estado): string {

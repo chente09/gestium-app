@@ -6,15 +6,8 @@ import { Injectable } from '@angular/core';
 export class SharedDataService {
 
   // 📋 Datos centralizados para evitar duplicación
-  readonly areas: string[] = [
-    'ISSFA', 
-    'Bco. Pichincha', 
-    'Bco. Produbanco', 
-    'BNF', 
-    'Inmobiliaria', 
-    'David', 
-    'Otro'
-  ];
+  // Nota: las áreas de oficina viven en Firestore (`areasOficina`), no acá.
+  // Ver RegistersService.getActiveAreaNames() / findAreaByIdentifier().
 
   readonly unidades: string[] = [
     'Ofi. Depositarios',
@@ -181,10 +174,6 @@ export class SharedDataService {
   };
 
   // 🔄 Métodos getter para facilitar el acceso
-  getAreas(): string[] {
-    return [...this.areas];
-  }
-
   getUnidades(): string[] {
     return [...this.unidades];
   }
@@ -227,10 +216,6 @@ export class SharedDataService {
   }
 
   // 🔍 Métodos de utilidad
-  isValidArea(area: string): boolean {
-    return this.areas.includes(area);
-  }
-
   isValidUnidad(unidad: string): boolean {
     return this.unidades.includes(unidad);
   }
@@ -246,25 +231,6 @@ export class SharedDataService {
 
   // 📊 Estadísticas útiles
   getTotalOptions(): number {
-    return this.areas.length + this.unidades.length + this.materias.length + this.diligencias.length;
-  }
-
-  // 🆕 Normaliza un slug/id de área (ej. 'inmobiliaria') al valor exacto
-  // guardado en Register.areaAsignada, para que las consultas a Firestore
-  // que filtran por área encuentren coincidencias reales.
-  private readonly areaNameMap: { [key: string]: string } = {
-    'issfa': 'ISSFA',
-    'produbanco': 'Produbanco',
-    'pichincha': 'Pichincha',
-    'inmobiliaria': 'INMOBILIARIA',
-    'bnf': 'BNF',
-    'david': 'David',
-    'iess': 'IESS',
-    'tramites': 'TRAMITES',
-    'cooprogreso': 'COOPROGRESO'
-  };
-
-  normalizeAreaName(area: string): string {
-    return this.areaNameMap[area.toLowerCase()] || area;
+    return this.unidades.length + this.materias.length + this.diligencias.length;
   }
 }

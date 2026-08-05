@@ -27,6 +27,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { RouterModule } from '@angular/router';
 import { SharedDataService } from '../../../services/sharedData/shared-data.service';
+import { RegistersService } from '../../../services/registers/registers.service';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 
 @Component({
@@ -104,7 +105,8 @@ export class ProcesosComponent implements OnInit, OnDestroy {
     private procesosService: ProcesosService,
     private messageService: NzMessageService,
     private usersService: UsersService,
-    private sharedDataService: SharedDataService
+    private sharedDataService: SharedDataService,
+    private registersService: RegistersService
   ) {
     this.formProceso = this.fb.group({
       nombre: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
@@ -118,7 +120,9 @@ export class ProcesosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.materias = this.sharedDataService.getAreas() as MateriaProceso[];
+    this.registersService.getActiveAreaNames().then(names => {
+      this.materias = [...names, 'Otro'] as MateriaProceso[];
+    });
     this.cargarProcesos();
     
     // 🆕 Suscribirse a los cambios del selector de descripción

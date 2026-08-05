@@ -13,6 +13,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { RegistersService } from './services/registers/registers.service';
 import { UsersService } from './services/users/users.service';
 import { filter } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -39,15 +40,11 @@ export class AppComponent implements OnInit {
   isCollapsed = false;
   activeRoute = '';
   isDrawerOpen = false;
-  currentUserRole: 'admin' | 'coordinador' | 'empleado' | null = null;
+  currentUserRole: 'admin' | 'coordinador' | 'gerente' | 'empleado' | null = null;
 
-  menuItems = [
-    { title: 'ISSFA', route: '/area/issfa' },
-    { title: 'Bco. Pichincha', route: '/area/pichincha' },
-    { title: 'Bco. Produbanco', route: '/area/produbanco' },
-    { title: 'Inmobiliaria', route: '/area/inmobiliaria' },
-    { title: 'IESS', route: '/area/iess' }
-  ];
+  // Se puebla desde las áreas activas de Firestore — ver ngOnInit().
+  menuItems: { title: string; route: string }[] = [];
+  private menuAreasSub?: Subscription;
 
   constructor(
     private router: Router,
@@ -68,9 +65,20 @@ export class AppComponent implements OnInit {
 
       if (user) {
         await this.loadUserRole();
+
+        // Menú lateral desde las áreas activas — solo con sesión, ya que
+        // areasOficina requiere estar autenticado (si no, Firestore lo rechaza).
+        this.menuAreasSub?.unsubscribe();
+        this.menuAreasSub = this.registersService.getActiveAreas().subscribe(areas => {
+          this.menuItems = areas
+            .map(area => ({ title: area.nombre, route: `/area/${area.slug}` }))
+            .sort((a, b) => a.title.localeCompare(b.title));
+        });
       } else {
         this.currentUserRole = null;
         this.registersService.currentRegister = undefined;
+        this.menuAreasSub?.unsubscribe();
+        this.menuItems = [];
       }
     });
   }
@@ -100,12 +108,12 @@ export class AppComponent implements OnInit {
 
   // ✅ Verificar si el usuario es administrador
   isAdmin(): boolean {
-    return this.currentUserRole === 'admin';
+    return this.registersService.isCurrentUserAdmin();
   }
 
   // ✅ Verificar si el usuario es coordinador o admin
   isCoordinatorOrAdmin(): boolean {
-    return this.currentUserRole === 'admin' || this.currentUserRole === 'coordinador';
+    return this.registersService.hasFullAccess();
   }
 
   toggleMenu(): void {

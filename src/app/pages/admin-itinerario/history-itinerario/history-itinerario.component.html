@@ -23,7 +23,7 @@
 </div>
 <div class="filters">
     <nz-select [formControl]="selectedArea" nzPlaceHolder="Filtrar por área">
-        <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
+        <nz-option *ngFor="let area of areas" [nzValue]="area.slug" [nzLabel]="area.nombre"></nz-option>
     </nz-select>
 
     <nz-select [formControl]="selectedEstado" nzPlaceHolder="Filtrar por estado">
@@ -79,7 +79,7 @@
         <tbody>
             <tr *ngFor="let item of itinerarioTable.data; trackBy: trackById">
                 <td>
-                    <strong>Area: </strong> {{ item.manualArea || item.area }}
+                    <strong>Area: </strong> {{ item.manualArea || getAreaDisplayName(item.area) }}
                     <br>
                     <strong>Solicita: </strong> {{ item.creadoPor }}
                 </td>

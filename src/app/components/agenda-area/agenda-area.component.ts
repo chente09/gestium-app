@@ -27,7 +27,6 @@ import { NzBadgeModule } from 'ng-zorro-antd/badge';
 
 import { AreaActivitiesService, AreaActivity } from '../../services/areaActivities/area-activities.service';
 import { RegistersService, Register } from '../../services/registers/registers.service';
-import { SharedDataService } from '../../services/sharedData/shared-data.service';
 import { Subject, takeUntil } from 'rxjs';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 
@@ -107,7 +106,6 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     private registersService: RegistersService,
     private messageService: NzMessageService,
     private fb: FormBuilder,
-    private sharedDataService: SharedDataService
   ) {
     this.createForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(100)]],
@@ -139,11 +137,11 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // 👥 Cargar usuarios del área
+  // 👥 Cargar usuarios del área (Register.areaAsignada guarda el slug)
   private async loadAreaUsers(): Promise<void> {
     try {
-      const normalizedArea = this.sharedDataService.normalizeAreaName(this.area);
-      this.areaUsers = await this.registersService.getUsersByArea(normalizedArea);
+      const resolvedArea = await this.registersService.findAreaByIdentifier(this.area);
+      this.areaUsers = await this.registersService.getUsersByArea(resolvedArea?.slug || this.area);
     } catch (error) {
       this.areaUsers = [];
     }

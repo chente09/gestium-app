@@ -97,7 +97,7 @@
         <!-- Filtros existentes -->
         <nz-select [formControl]="selectedArea" (ngModelChange)="filterItinerarios()"
             nzPlaceHolder="Filtrar por área ofi">
-            <nz-option *ngFor="let area of areas" [nzValue]="area" [nzLabel]="area"></nz-option>
+            <nz-option *ngFor="let area of areas" [nzValue]="area.slug" [nzLabel]="area.nombre"></nz-option>
         </nz-select>
 
         <nz-select [formControl]="selectedEstado" nzPlaceHolder="Filtrar por estado">
@@ -164,7 +164,7 @@
                         </nz-tag>
                     </td>
                     <td>
-                        <strong>Área: </strong> {{ item.manualArea || item.area }}
+                        <strong>Área: </strong> {{ item.manualArea || getAreaDisplayName(item.area) }}
                         <br>
                         <strong>Solicita: </strong> {{ item.creadoPor }}
                     </td>

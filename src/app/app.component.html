@@ -106,9 +106,10 @@
               <li class="user-info-block">
                 <strong>¡Hola, {{ getCurrentUserName() || registersService.currentRegister?.nickname }}!</strong>
                 <div *ngIf="currentUserRole" class="role-tag-wrapper">
-                  <nz-tag [nzColor]="currentUserRole === 'admin' ? 'gold' : currentUserRole === 'coordinador' ? 'blue' : 'default'">
+                  <nz-tag [nzColor]="currentUserRole === 'admin' ? 'gold' : currentUserRole === 'coordinador' ? 'blue' : currentUserRole === 'gerente' ? 'purple' : 'default'">
                     <nz-icon nzType="crown" *ngIf="currentUserRole === 'admin'"></nz-icon>
                     <nz-icon nzType="star" *ngIf="currentUserRole === 'coordinador'"></nz-icon>
+                    <nz-icon nzType="solution" *ngIf="currentUserRole === 'gerente'"></nz-icon>
                     <nz-icon nzType="user" *ngIf="currentUserRole === 'empleado'"></nz-icon>
                     {{ currentUserRole | titlecase }}
                   </nz-tag>

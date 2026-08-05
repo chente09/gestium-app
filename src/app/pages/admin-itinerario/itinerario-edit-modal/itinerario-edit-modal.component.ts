@@ -14,6 +14,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { ItinerarioService, Itinerario } from '../../../services/itinerario/itinerario.service';
 import { SharedDataService } from '../../../services/sharedData/shared-data.service';
 import { UsersService } from '../../../services/users/users.service';
+import { RegistersService } from '../../../services/registers/registers.service';
 
 // Modal de edición reutilizado por "Pendientes" e "Historial" — mismo
 // layout que itinerario-form, precargado con el registro existente.
@@ -73,9 +74,12 @@ export class ItinerarioEditModalComponent implements OnChanges {
     private itinerarioService: ItinerarioService,
     private sharedDataService: SharedDataService,
     private usersService: UsersService,
+    private registersService: RegistersService,
     private message: NzMessageService
   ) {
-    this.areas = this.sharedDataService.getAreas();
+    this.registersService.getActiveAreaNames().then(names => {
+      this.areas = [...names, 'Otro'];
+    });
     this.unidad = this.sharedDataService.getUnidades();
     this.materia = this.sharedDataService.getMaterias();
     this.diligencia = this.sharedDataService.getDiligencias();
@@ -88,9 +92,15 @@ export class ItinerarioEditModalComponent implements OnChanges {
     }
   }
 
-  private buildForm(item: Itinerario): void {
+  private async buildForm(item: Itinerario): Promise<void> {
+    // Firestore guarda el slug del área ("pichincha"); el dropdown muestra
+    // el nombre ("Pichincha"). 'Otro' no es un área real, no se resuelve.
+    const areaNombre = item.area && item.area !== 'Otro'
+      ? (await this.registersService.findAreaByIdentifier(item.area))?.nombre || item.area
+      : item.area;
+
     this.editForm = this.fb.group({
-      area: [item.area || '', Validators.required],
+      area: [areaNombre || '', Validators.required],
       manualArea: [item.manualArea || ''],
       tramite: [item.tramite || '', Validators.required],
       nroProceso: [item.nroProceso || ''],
@@ -200,6 +210,12 @@ export class ItinerarioEditModalComponent implements OnChanges {
         this.message.error(`Debe especificar ${validacion.nombre} cuando selecciona "Otro"`);
         return;
       }
+    }
+
+    // El dropdown trabaja con el nombre del área; Firestore guarda el slug.
+    if (data.area && data.area !== 'Otro') {
+      const resolved = await this.registersService.findAreaByIdentifier(data.area);
+      data.area = resolved?.slug || data.area;
     }
 
     // Sello automático de edición — no lo pone el usuario, lo pone el sistema.

@@ -147,7 +147,7 @@ export class ItinerarioComponent implements OnInit {
   searchTerm: string = '';
 
   // ========== CONFIGURACIONES ==========
-  areas: string[] = [];
+  areas: { nombre: string; slug: string }[] = [];
   estados: string[] = [];
   pageSize = 20;
   pageIndex = 1;
@@ -183,7 +183,9 @@ export class ItinerarioComponent implements OnInit {
 
   // ========== MÉTODOS DE INICIALIZACIÓN ==========
   private initializeComponent(): void {
-    this.areas = this.sharedDataService.getAreas();
+    this.registersService.getActiveAreaEntries().then(entries => {
+      this.areas = [...entries, { nombre: 'Otro', slug: 'Otro' }];
+    });
     this.estados = this.sharedDataService.getEstados();
 
     this.setFechaHoraActual();
@@ -352,6 +354,11 @@ export class ItinerarioComponent implements OnInit {
     this.filterItinerarios();
   }
 
+  // El itinerario guarda el slug del área; esto lo traduce al nombre para mostrar.
+  getAreaDisplayName(slug: string): string {
+    return this.areas.find(area => area.slug === slug)?.nombre || slug;
+  }
+
   // ========== MÉTODOS DE COMPLETAR ITEM ==========
   async completarItem(item: Itinerario): Promise<void> {
     this.selectedItem = { ...item, estado: Estado.COMPLETADO };
@@ -365,7 +372,7 @@ export class ItinerarioComponent implements OnInit {
   validarFormulario(): void {
     const area = this.registersService.getCurrentRegister()?.areaAsignada;
 
-    if (area === 'TRAMITES') {
+    if (area === 'tramites') {
       // Solo válido si tiene observación + imagen
       this.formularioValido = !!(
         this.selectedItem?.obsCompletado?.trim() &&
@@ -876,7 +883,7 @@ export class ItinerarioComponent implements OnInit {
 
     const filas = this.filteredItinerarios.map(itinerario => [
       itinerario.estado || '',
-      `Área: ${itinerario.manualArea || itinerario.area || ''}\nSolicita: ${itinerario.creadoPor || ''}`,
+      `Área: ${itinerario.manualArea || this.getAreaDisplayName(itinerario.area || '')}\nSolicita: ${itinerario.creadoPor || ''}`,
       `Actividad: ${itinerario.tramite || ''}\n${itinerario.nroProceso ? 'N° Juicio: ' + itinerario.nroProceso : ''}`,
       itinerario.manualJuzgado || itinerario.juzgado || '',
       `Piso: ${itinerario.manualPiso || itinerario.piso || ''}\nJuez: ${normalizarTexto(itinerario.juez || '')}`,

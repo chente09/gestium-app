@@ -90,7 +90,7 @@
                     style="width: 200px; margin-right: 8px;">
                     <nz-option nzValue="" nzLabel="Todas las áreas"></nz-option>
                     <nz-option nzValue="sin_asignar" nzLabel="Sin asignar"></nz-option>
-                    <nz-option *ngFor="let area of availableAreas" [nzValue]="area" [nzLabel]="area"></nz-option>
+                    <nz-option *ngFor="let area of availableAreas" [nzValue]="area.slug" [nzLabel]="area.nombre"></nz-option>
                 </nz-select>
 
                 <nz-select 
@@ -102,6 +102,7 @@
                     <nz-option nzValue="" nzLabel="Todos los roles"></nz-option>
                     <nz-option nzValue="admin" nzLabel="Admin"></nz-option>
                     <nz-option nzValue="coordinador" nzLabel="Coordinador"></nz-option>
+                    <nz-option nzValue="gerente" nzLabel="Gerente"></nz-option>
                     <nz-option nzValue="empleado" nzLabel="Empleado"></nz-option>
                 </nz-select>
             </div>
@@ -162,7 +163,7 @@
                             <nz-tag 
                                 *ngIf="user.areaAsignada !== 'sin_asignar'; else noAreaTag"
                                 [nzColor]="getAreaColor(user.areaAsignada)">
-                                {{ user.areaAsignada }}
+                                {{ getAreaDisplayName(user.areaAsignada) }}
                             </nz-tag>
                             <ng-template #noAreaTag>
                                 <span class="no-area-text">Sin asignar</span>
@@ -178,10 +179,10 @@
 
                         <!-- Fecha de asignación -->
                         <td>
-                            <span *ngIf="user.fechaAsignacion">
-                                {{ user.fechaAsignacion | date:'dd/MM/yyyy' }}
+                            <span *ngIf="asDate(user.fechaAsignacion) as fecha; else noDate">
+                                {{ fecha | date:'dd/MM/yyyy' }}
                             </span>
-                            <span *ngIf="!user.fechaAsignacion" class="no-date-text">-</span>
+                            <ng-template #noDate><span class="no-date-text">-</span></ng-template>
                         </td>
 
                         <!-- Switch activo -->
@@ -239,14 +240,14 @@
     <nz-card nzTitle="Áreas Disponibles" class="areas-card" style="margin-top: 20px;">
         <nz-row [nzGutter]="[8, 8]">
             <nz-col *ngFor="let area of availableAreas" [nzSpan]="6">
-                <nz-tag 
-                    [nzColor]="getAreaColor(area)" 
+                <nz-tag
+                    [nzColor]="getAreaColor(area.slug)"
                     style="width: 100%; padding: 8px; font-size: 14px;">
-                    {{ area }}
-                    <nz-icon 
-                        nzType="close" 
-                        style="margin-left: 8px; cursor: pointer;" 
-                        (click)="removeArea(area)"
+                    {{ area.nombre }}
+                    <nz-icon
+                        nzType="close"
+                        style="margin-left: 8px; cursor: pointer;"
+                        (click)="removeArea(area.nombre)"
                         nz-tooltip
                         nzTooltipTitle="Eliminar área">
                     </nz-icon>
@@ -284,10 +285,10 @@
                 <nz-form-label nzRequired>Área</nz-form-label>
                 <nz-form-control nzErrorTip="Debe seleccionar un área">
                     <nz-select formControlName="area" nzPlaceHolder="Seleccionar área">
-                        <nz-option 
-                            *ngFor="let area of availableAreas" 
-                            [nzValue]="area" 
-                            [nzLabel]="area">
+                        <nz-option
+                            *ngFor="let area of availableAreas"
+                            [nzValue]="area.slug"
+                            [nzLabel]="area.nombre">
                         </nz-option>
                     </nz-select>
                 </nz-form-control>
@@ -299,6 +300,7 @@
                     <nz-select formControlName="role" nzPlaceHolder="Seleccionar rol">
                         <nz-option nzValue="empleado" nzLabel="Empleado"></nz-option>
                         <nz-option nzValue="coordinador" nzLabel="Coordinador"></nz-option>
+                        <nz-option nzValue="gerente" nzLabel="Gerente"></nz-option>
                         <nz-option nzValue="admin" nzLabel="Administrador"></nz-option>
                     </nz-select>
                 </nz-form-control>
@@ -337,10 +339,10 @@
                 <nz-form-label nzRequired>Área para todos</nz-form-label>
                 <nz-form-control nzErrorTip="Debe seleccionar un área">
                     <nz-select formControlName="bulkArea" nzPlaceHolder="Seleccionar área para todos">
-                        <nz-option 
-                            *ngFor="let area of availableAreas" 
-                            [nzValue]="area" 
-                            [nzLabel]="area">
+                        <nz-option
+                            *ngFor="let area of availableAreas"
+                            [nzValue]="area.slug"
+                            [nzLabel]="area.nombre">
                         </nz-option>
                     </nz-select>
                 </nz-form-control>

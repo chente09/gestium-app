@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Subscription, takeUntil } from 'rxjs';
 
 // NG-Zorro imports
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -65,6 +65,12 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   allUsers: Register[] = [];
   filteredUsers: Register[] = [];
   allAreas: AreaOficina[] = [];
+  availableAreas: { nombre: string; slug: string }[] = [];
+
+  // Suscripciones vivas — se cancelan antes de volver a suscribirse, para
+  // que llamar loadData() más de una vez no apile listeners de Firestore.
+  private usersSub?: Subscription;
+  private areasSub?: Subscription;
 
   // 🎛️ Estados
   loading = false;
@@ -85,14 +91,6 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   // 🔍 Filtros
   selectedAreaFilter = '';
   selectedRoleFilter = '';
-
-  // 📋 Configuración
-  get availableAreas(): string[] {
-    return this.allAreas
-      .filter(area => area.activo)
-      .map(area => area.nombre)
-      .sort();
-  }
 
   // 📊 Estadísticas
   get totalUsers(): number { return this.allUsers.length; }
@@ -138,12 +136,18 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // 📊 Cargar todos los datos
+  // 📊 Cargar todos los datos (listeners en vivo — se mantienen sincronizados
+  // solos, no hace falta volver a llamar esto tras cada acción)
   private loadData(): void {
     this.loading = true;
 
+    // Cancelar suscripciones previas antes de crear nuevas, así llamar
+    // loadData() más de una vez no deja listeners huérfanos acumulándose.
+    this.usersSub?.unsubscribe();
+    this.areasSub?.unsubscribe();
+
     // ✅ Cargar usuarios
-    this.registersService.getRegisters()
+    this.usersSub = this.registersService.getRegisters()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (registers) => {
@@ -157,11 +161,15 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
       });
 
     // ✅ Cargar áreas desde Firestore
-    this.registersService.getAreasOficina()
+    this.areasSub = this.registersService.getAreasOficina()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (areas) => {
           this.allAreas = areas;
+          this.availableAreas = areas
+            .filter(area => area.activo)
+            .map(area => ({ nombre: area.nombre, slug: area.slug }))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre));
           this.loading = false;
         },
         error: (error) => {
@@ -221,7 +229,7 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
 
       this.message.success(`Área asignada a ${this.selectedUser.displayName}`);
       this.closeAssignModal();
-      this.refreshData();
+      // No hace falta refreshData(): el Observable de loadData() ya lo refleja
 
     } catch (error) {
       console.error('Error asignando área:', error);
@@ -241,7 +249,6 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
       );
 
       this.message.success(`Asignación removida para ${user.displayName}`);
-      this.refreshData();
 
     } catch (error) {
       console.error('Error removiendo asignación:', error);
@@ -267,7 +274,6 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
         try {
           await this.registersService.deleteRegister(user);
           this.message.success(`Usuario ${user.displayName || user.email} eliminado.`);
-          this.refreshData();
         } catch (error) {
           console.error('Error eliminando usuario:', error);
           this.message.error('Error al eliminar el usuario.');
@@ -324,7 +330,6 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
 
       this.message.success(`${usersToAssign.length} usuarios asignados a ${bulkArea}`);
       this.closeBulkModal();
-      this.refreshData();
 
     } catch (error) {
       console.error('Error en asignación masiva:', error);
@@ -392,7 +397,6 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
           await this.registersService.deleteAreaPermanently(area.id!, areaName);
 
           this.message.success(`Área "${areaName}" eliminada exitosamente`);
-          this.refreshData(); // Actualizar usuarios reasignados
 
         } catch (error) {
           console.error('Error eliminando área:', error);
@@ -407,23 +411,38 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
     return user.uid;
   }
 
+  // Firestore devuelve Timestamp, no Date — el pipe `date` del template
+  // revienta (NG02100) si se lo pasás directo. Normaliza antes de mostrar.
+  asDate(value: any): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value?.toDate === 'function') return value.toDate();
+    return null;
+  }
+
+  // Color determinístico por área (hash simple) — no requiere tocar código
+  // cada vez que se crea un área nueva desde Admin > Usuarios.
+  private readonly areaColorPalette = ['blue', 'green', 'orange', 'purple', 'cyan', 'magenta', 'geekblue', 'volcano', 'gold', 'lime'];
+
+  // areaAsignada guarda el slug; esto lo traduce al nombre para mostrar.
+  getAreaDisplayName(slug: string): string {
+    return this.allAreas.find(area => area.slug === slug)?.nombre || slug;
+  }
+
   getAreaColor(area: string): string {
-    const colors: { [key: string]: string } = {
-      'ISSFA': 'blue',
-      ' Pichincha': 'green',
-      'Bco. Produbanco': 'orange',
-      'BNF': 'purple',
-      'Inmobiliaria': 'cyan',
-      'David': 'magenta',
-      'sin_asignar': 'default'
-    };
-    return colors[area] || 'geekblue';
+    if (!area || area === 'sin_asignar') return 'default';
+    let hash = 0;
+    for (let i = 0; i < area.length; i++) {
+      hash = (hash * 31 + area.charCodeAt(i)) >>> 0;
+    }
+    return this.areaColorPalette[hash % this.areaColorPalette.length];
   }
 
   getRoleColor(role: string): string {
     const colors: { [key: string]: string } = {
       'admin': 'red',
       'coordinador': 'orange',
+      'gerente': 'purple',
       'empleado': 'blue'
     };
     return colors[role] || 'default';

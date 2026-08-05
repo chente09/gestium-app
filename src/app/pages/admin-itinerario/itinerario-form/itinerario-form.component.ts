@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractContro
 import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
 import { UsersService } from '../../../services/users/users.service';
 import { SharedDataService } from '../../../services/sharedData/shared-data.service';// ✅ NUEVO IMPORT
+import { RegistersService } from '../../../services/registers/registers.service';
 import { CommonModule } from '@angular/common';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -91,6 +92,7 @@ export class ItinerarioFormComponent implements OnInit {
     private message: NzMessageService,
     private modal: NzModalService,
     private sharedDataService: SharedDataService, // ✅ INYECTAR SERVICIO
+    private registersService: RegistersService,
     private dateUtils: DateUtilsService
   ) {
     this.itinerarioForm = this.fb.group({
@@ -127,7 +129,9 @@ export class ItinerarioFormComponent implements OnInit {
 
   // ✅ NUEVO MÉTODO PARA INICIALIZAR DATOS
   private initializeData(): void {
-    this.areas = this.sharedDataService.getAreas();
+    this.registersService.getActiveAreaNames().then(names => {
+      this.areas = [...names, 'Otro'];
+    });
     this.unidad = this.sharedDataService.getUnidades();
     this.materia = this.sharedDataService.getMaterias();
     this.diligencia = this.sharedDataService.getDiligencias();
@@ -313,8 +317,15 @@ export class ItinerarioFormComponent implements OnInit {
 
       const formData = this.itinerarioForm.value;
 
+      // El dropdown muestra/guarda el nombre del área ("Pichincha"); Firestore
+      // guarda el slug ("pichincha"). 'Otro' no es un área real, queda literal.
+      const resolvedArea = formData.area && formData.area !== 'Otro'
+        ? (await this.registersService.findAreaByIdentifier(formData.area))?.slug || formData.area
+        : formData.area;
+
       const itinerarioData = {
         ...formData,
+        area: resolvedArea,
         createdAtServer: this.dateUtils.getServerTimestamp()
       };
 

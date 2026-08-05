@@ -25,7 +25,7 @@ export interface Register {
   nickname?: string;
   photoURL?: string;
   phoneNumber?: string;
-  role: 'admin' | 'coordinador' | 'empleado';
+  role: 'admin' | 'coordinador' | 'gerente' | 'empleado';
   areaAsignada: string; // Nombre del área o 'sin_asignar'
   fechaCreacion: Date;
   fechaAsignacion?: Date; // Fecha cuando se asignó área/rol específico
@@ -230,7 +230,7 @@ export class RegistersService {
   async assignAreaAndRole(
     uid: string,
     areaAsignada: string,
-    role: 'admin' | 'coordinador' | 'empleado'
+    role: 'admin' | 'coordinador' | 'gerente' | 'empleado'
   ): Promise<void> {
     try {
       const docRef = doc(this.firestore, `${this.collectionName}/${uid}`);
@@ -290,7 +290,7 @@ export class RegistersService {
   }
 
   // 🔍 Obtener usuarios por rol
-  async getUsersByRole(role: 'admin' | 'coordinador' | 'empleado'): Promise<Register[]> {
+  async getUsersByRole(role: 'admin' | 'coordinador' | 'gerente' | 'empleado'): Promise<Register[]> {
     try {
       const registersRef = collection(this.firestore, this.collectionName);
       const q = query(registersRef, where('role', '==', role));
@@ -314,14 +314,22 @@ export class RegistersService {
     return this.currentRegister?.role === 'admin';
   }
 
+  // 🔐 Verificar si usuario actual tiene acceso total (admin o coordinador),
+  // sin restricción de área. Punto único para este check — no repetirlo
+  // comparando `role` a mano en guards/servicios/componentes.
+  hasFullAccess(): boolean {
+    const role = this.currentRegister?.role;
+    return role === 'admin' || role === 'coordinador';
+  }
+
   // 🔐 Verificar si usuario actual tiene acceso a un área
   canAccessArea(area: string): boolean {
     if (!this.currentRegister) return false;
 
-    // Admins tienen acceso a todo
-    if (this.currentRegister.role === 'admin') return true;
+    // Admin y coordinador tienen acceso a todo
+    if (this.hasFullAccess()) return true;
 
-    // Usuarios solo acceden a su área asignada
+    // El resto solo accede a su área asignada
     return this.currentRegister.areaAsignada === area;
   }
 
@@ -447,6 +455,34 @@ export class RegistersService {
         observer.next(activeAreas);
       });
     });
+  }
+
+  // 📋 Nombres de áreas activas, listos para poblar dropdowns (orden alfabético)
+  async getActiveAreaNames(): Promise<string[]> {
+    const areas = await this.getAreasOficinaOnce();
+    return areas.filter(area => area.activo).map(area => area.nombre).sort();
+  }
+
+  // 📋 Pares {nombre, slug} de áreas activas — para dropdowns que deben
+  // guardar el slug (formato canónico en Firestore) pero mostrar el nombre.
+  async getActiveAreaEntries(): Promise<{ nombre: string; slug: string }[]> {
+    const areas = await this.getAreasOficinaOnce();
+    return areas
+      .filter(area => area.activo)
+      .map(area => ({ nombre: area.nombre, slug: area.slug }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+
+  // 🔍 Resuelve un identificador de área (slug o nombre, sin distinguir
+  // mayúsculas) al AreaOficina real. Reemplaza los mapeos de normalización
+  // hardcodeados: un área nueva creada desde Admin > Usuarios funciona sola.
+  async findAreaByIdentifier(identifier: string): Promise<AreaOficina | undefined> {
+    if (!identifier) return undefined;
+    const idLower = identifier.toLowerCase();
+    const areas = await this.getAreasOficinaOnce();
+    return areas.find(area =>
+      area.slug.toLowerCase() === idLower || area.nombre.toLowerCase() === idLower
+    );
   }
 
 }

@@ -34,25 +34,18 @@ export const authAreaGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   }
 
   // 3️⃣ Admin y Coordinador tienen acceso a todas las áreas
-  if (currentRegister.role === 'admin' || currentRegister.role === 'coordinador') {
+  if (registersService.hasFullAccess()) {
     return true;
   }
 
-  // 4️⃣ Empleado solo puede acceder a su área asignada
-  if (currentRegister.role === 'empleado') {
-    const hasAccess = currentRegister.areaAsignada === areaSlug;
+  // 4️⃣ Cualquier otro rol solo puede acceder a su área asignada
+  const hasAccess = currentRegister.areaAsignada === areaSlug;
 
-    if (hasAccess) {
-      return true;
-    } else {
-      console.warn(`🔒 [AuthAreaGuard] Acceso denegado - Empleado de '${currentRegister.areaAsignada}' intentó acceder a '${areaSlug}'`);
-      router.navigate(['/welcome']);
-      return false;
-    }
+  if (hasAccess) {
+    return true;
   }
 
-  // 5️⃣ Rol desconocido - denegar acceso
-  console.warn(`🔒 [AuthAreaGuard] Rol desconocido: ${currentRegister.role}`);
+  console.warn(`🔒 [AuthAreaGuard] Acceso denegado - Usuario de '${currentRegister.areaAsignada}' intentó acceder a '${areaSlug}'`);
   router.navigate(['/welcome']);
   return false;
 };

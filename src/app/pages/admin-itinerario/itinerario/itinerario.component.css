@@ -589,10 +589,64 @@ ul.list-group li {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* ========== TABLA (ESCRITORIO) VS. TARJETAS (MÓVIL) ========== */
+.mobile-card-view {
+    display: none;
+}
+
+.itinerario-card {
+    margin-bottom: 12px;
+}
+
+.itinerario-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.itinerario-card-title {
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.itinerario-card-sub {
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.itinerario-card-row {
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.itinerario-card-details {
+    margin-top: 8px;
+}
+
+.itinerario-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.itinerario-card-actions button {
+    flex: 1;
+    min-width: 100px;
+}
+
 /* ========== RESPONSIVE ========== */
 
 /* Pantallas medianas (tablets, hasta 768px) */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+    .desktop-table-view {
+        display: none;
+    }
+
+    .mobile-card-view {
+        display: block;
+    }
+
     .header-grid {
         grid-template-columns: 1fr;
     }

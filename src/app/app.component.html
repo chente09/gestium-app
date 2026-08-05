@@ -32,6 +32,32 @@
           </li>
         </ul>
       </li>
+      <li nz-submenu nzOpen nzTitle="Administración" nzIcon="setting" *ngIf="isAdmin()">
+        <ul>
+          <li nz-menu-item>
+            <a (click)="goToUserAdmin()">
+              <nz-icon nzType="team"></nz-icon>
+              <span>Gestión de Usuarios</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+      <li nz-submenu nzOpen nzTitle="Roles de Pago" nzIcon="dollar" *ngIf="registersService.canAccessPayroll()">
+        <ul>
+          <li nz-menu-item>
+            <a routerLink="/payroll/roles">
+              <nz-icon nzType="dollar"></nz-icon>
+              <span>Roles de Pago</span>
+            </a>
+          </li>
+          <li nz-menu-item>
+            <a routerLink="/payroll/employees">
+              <nz-icon nzType="team"></nz-icon>
+              <span>Empleados de Nómina</span>
+            </a>
+          </li>
+        </ul>
+      </li>
     </ul>
   </nz-sider>
 
@@ -72,6 +98,22 @@
             </li>
           </ul>
         </li>
+        <li nz-submenu nzOpen nzTitle="Roles de Pago" nzIcon="dollar" *ngIf="registersService.canAccessPayroll()">
+          <ul>
+            <li nz-menu-item (click)="closeDrawer()">
+              <a routerLink="/payroll/roles">
+                <nz-icon nzType="dollar"></nz-icon>
+                <span>Roles de Pago</span>
+              </a>
+            </li>
+            <li nz-menu-item (click)="closeDrawer()">
+              <a routerLink="/payroll/employees">
+                <nz-icon nzType="team"></nz-icon>
+                <span>Empleados de Nómina</span>
+              </a>
+            </li>
+          </ul>
+        </li>
       </ul>
     </ng-container>
   </nz-drawer>
@@ -102,25 +144,22 @@
 
           <nz-dropdown-menu #menu="nzDropdownMenu">
             <ul nz-menu>
-              <!-- Solo informativo: saludo + rol en una etiqueta, sin apariencia de link -->
+              <!-- Solo informativo: saludo, sin apariencia de link -->
               <li class="user-info-block">
                 <strong>¡Hola, {{ getCurrentUserName() || registersService.currentRegister?.nickname }}!</strong>
-                <div *ngIf="currentUserRole" class="role-tag-wrapper">
-                  <nz-tag [nzColor]="currentUserRole === 'admin' ? 'gold' : currentUserRole === 'coordinador' ? 'blue' : currentUserRole === 'gerente' ? 'purple' : 'default'">
-                    <nz-icon nzType="crown" *ngIf="currentUserRole === 'admin'"></nz-icon>
-                    <nz-icon nzType="star" *ngIf="currentUserRole === 'coordinador'"></nz-icon>
-                    <nz-icon nzType="solution" *ngIf="currentUserRole === 'gerente'"></nz-icon>
-                    <nz-icon nzType="user" *ngIf="currentUserRole === 'empleado'"></nz-icon>
-                    {{ currentUserRole | titlecase }}
-                  </nz-tag>
-                </div>
               </li>
               <li nz-menu-divider *ngIf="isAdmin()"></li>
               <!-- Única acción real de administración -->
               <li nz-menu-item *ngIf="isAdmin()">
-                <a routerLink="/admin/users" style="color: #722ed1;">
+                <a routerLink="/admin/users" style="color: #001529;">
                   <nz-icon nzType="setting"></nz-icon>
                   Administración
+                </a>
+              </li>
+              <li nz-menu-item *ngIf="registersService.canAccessPayroll()">
+                <a routerLink="/payroll/roles" style="color: #001529;">
+                  <nz-icon nzType="dollar"></nz-icon>
+                  Roles de Pago
                 </a>
               </li>
               <li nz-menu-divider></li>

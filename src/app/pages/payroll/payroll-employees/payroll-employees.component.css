@@ -1,0 +1,63 @@
+.payroll-container {
+    padding: 24px;
+}
+
+.main-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.control-panel {
+    margin-bottom: 16px;
+}
+
+/* 🎨 Botón "primario" con el navy de marca */
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}
+
+/* 📱 Tabla (escritorio) vs. tarjetas (móvil) */
+.mobile-card-view {
+    display: none;
+}
+
+.employee-card {
+    margin-bottom: 12px;
+}
+
+.employee-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.employee-card-row {
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.employee-card-actions {
+    margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+    .payroll-container {
+        padding: 16px;
+    }
+
+    .desktop-table-view {
+        display: none;
+    }
+
+    .mobile-card-view {
+        display: block;
+    }
+}

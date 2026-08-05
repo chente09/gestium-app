@@ -50,7 +50,7 @@
 
 <!-- Tabla con scroll horizontal -->
 <div class="table-container">
-    <nz-table class="itinerario-table" #itinerarioTable nzBordered [nzData]="filteredItinerarios" nzTableLayout="fixed"
+    <nz-table class="itinerario-table desktop-table-view" #itinerarioTable nzBordered [nzData]="filteredItinerarios" nzTableLayout="fixed"
         [nzScroll]="{ y: 'calc(100vh - 300px)'}" [nzFrontPagination]="true" [nzShowPagination]="true"
         [nzPageSize]="pageSize" [nzTotal]="filteredItinerarios.length" [nzPageIndex]="pageIndex"
         (nzPageIndexChange)="onPageIndexChange($event)">
@@ -166,6 +166,85 @@
             </tr>
         </tbody>
     </nz-table>
+
+    <!-- 📱 Vista en tarjetas (móvil) -->
+    <div class="mobile-card-view">
+        <nz-card
+            *ngFor="let item of itinerarioTable.data; trackBy: trackById"
+            class="itinerario-card">
+            <div class="itinerario-card-header">
+                <nz-tag [nzColor]="getEstadoColor(item.estado)">{{ getEstadoTexto(item.estado) }}</nz-tag>
+                <i *ngIf="item.fechaEdicion" nz-icon nzType="edit" nzTheme="outline" class="edited-indicator"
+                    nz-tooltip [nzTooltipTitle]="'Editado por ' + item.editadoPor + ' el ' + item.fechaEdicion + ' ' + item.horaEdicion"></i>
+            </div>
+
+            <div class="itinerario-card-title">{{ item.tramite }}</div>
+            <div class="itinerario-card-sub" *ngIf="item.nroProceso">N° Proceso: {{ item.nroProceso }}</div>
+
+            <div class="itinerario-card-row">
+                <strong>Área: </strong> {{ item.manualArea || getAreaDisplayName(item.area) }} &middot; <strong>Solicita: </strong> {{ item.creadoPor }}
+            </div>
+
+            <div class="itinerario-card-row" *ngIf="item.fechaTermino">
+                <strong>Fecha de Término: </strong> {{ item.fechaTermino }}
+            </div>
+
+            <div class="itinerario-card-row" *ngIf="item.observaciones">
+                <strong>Observaciones: </strong> {{ item.observaciones }}
+            </div>
+
+            <div class="itinerario-card-row" *ngIf="item.completPor || item.fechaCompletado">
+                <strong>Completado por: </strong> {{ item.completPor }} &middot; {{ item.fechaCompletado }} {{ item.horaCompletado }}
+            </div>
+
+            <nz-collapse [nzBordered]="false" class="itinerario-card-details">
+                <nz-collapse-panel nzHeader="Más detalles" [nzActive]="false">
+                    <div class="itinerario-card-row">{{ item.manualJuzgado || item.juzgado }}</div>
+                    <div class="itinerario-card-row" *ngIf="item.piso || item.juez">
+                        <strong>Piso: </strong> {{ item.manualPiso || item.piso }} &middot; <strong>Juez: </strong> {{ item.juez }}
+                    </div>
+                    <div class="itinerario-card-row">
+                        <strong>Materia: </strong> {{ item.manualMateria || item.materia }} &middot; <strong>Diligencia: </strong> {{ item.manualDiligencia || item.diligencia }}
+                    </div>
+                    <div class="itinerario-card-row" *ngIf="item.solicita"><strong>Recibe: </strong> {{ item.solicita }}</div>
+                    <div class="itinerario-card-row" *ngIf="item.fechaSolicitud">
+                        <strong>Fecha de Solicitud: </strong> {{ item.fechaSolicitud }} {{ item.horaSolicitud }}
+                    </div>
+                    <div class="itinerario-card-row" *ngIf="item.imagen || item.pdf">
+                        <a *ngIf="item.imagen" [href]="item.imagen" target="_blank">Ver imagen</a>
+                        <a *ngIf="item.pdf" [href]="item.pdf" download="documento.pdf" target="_blank" style="margin-left: 8px; color: rgb(190, 31, 31);">
+                            <i nz-icon nzType="download"></i> Descargar PDF
+                        </a>
+                    </div>
+                    <div class="itinerario-card-row" *ngIf="item.imgcompletado">
+                        <a [href]="item.imgcompletado" target="_blank">Ver imagen de completado</a>
+                    </div>
+                    <div class="itinerario-card-row" *ngIf="item.obsCompletado">
+                        <strong>Obs. Completado: </strong> {{ item.obsCompletado }}
+                    </div>
+                    <div class="itinerario-card-row" *ngIf="item.historial && item.historial.length > 0">
+                        <button nz-button nzType="link" style="color: #bf8220; padding-left: 0;" (click)="verHistorial(item)">Ver Historial</button>
+                    </div>
+                </nz-collapse-panel>
+            </nz-collapse>
+
+            <div class="itinerario-card-actions">
+                <button *ngIf="isAdmin()" nz-button nzDanger nzSize="small" nz-popconfirm
+                    nzPopconfirmTitle="¿Seguro que quieres eliminar?" (nzOnConfirm)="eliminar(item.id)">
+                    <nz-icon nzType="delete"></nz-icon> Eliminar
+                </button>
+                <button nz-button nzSize="small" (click)="startEdit(item.id)">
+                    <nz-icon nzType="edit"></nz-icon> Editar
+                </button>
+                <button *ngIf="puedeRevertir(item)" nz-button nzSize="small" nz-popconfirm
+                    nzPopconfirmTitle="¿Volver este ítem a pendiente?" (nzOnConfirm)="revertirAPendiente(item.id)">
+                    <nz-icon nzType="undo"></nz-icon> Reabrir
+                </button>
+            </div>
+        </nz-card>
+
+        <nz-empty *ngIf="!itinerarioTable.data || itinerarioTable.data.length === 0" nzNotFoundContent="No hay registros"></nz-empty>
+    </div>
 </div>
 
 <!-- Modal de Historial -->

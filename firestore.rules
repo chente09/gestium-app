@@ -27,6 +27,14 @@ service cloud.firestore {
       return isAdmin() || isCoordinador();
     }
 
+    function isGerente() {
+      return isAuthenticated() && getUserRegister().role == 'gerente';
+    }
+
+    function isAdminOrGerente() {
+      return isAdmin() || isGerente();
+    }
+
     function isActiveUser() {
       return isAuthenticated() && getUserRegister().activo == true;
     }
@@ -136,6 +144,21 @@ service cloud.firestore {
     match /procesos/{id} {
       allow read: if isAuthenticated();
       allow write: if isAuthenticated() && isActiveUser();
+    }
+
+    // ============================================
+    // 💰 Roles de Pago — solo admin o gerente (RegistersService.canAccessPayroll)
+    // ============================================
+    match /payrollEmployees/{id} {
+      allow read, write: if isAdminOrGerente();
+    }
+
+    match /sbuConfig/{anio} {
+      allow read, write: if isAdminOrGerente();
+    }
+
+    match /rolesPago/{id} {
+      allow read, write: if isAdminOrGerente();
     }
 
     // ============================================

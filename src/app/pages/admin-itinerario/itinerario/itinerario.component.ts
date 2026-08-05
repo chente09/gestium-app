@@ -22,6 +22,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { Subject, takeUntil } from 'rxjs';
 
 import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
@@ -70,6 +71,7 @@ enum Estado {
     NzPopconfirmModule,
     NzAlertModule,
     NzToolTipModule,
+    NzCollapseModule,
     ItinerarioEditModalComponent
   ],
   templateUrl: './itinerario.component.html',

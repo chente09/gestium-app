@@ -1,0 +1,86 @@
+<div class="payroll-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <nz-icon nzType="dollar"></nz-icon> Roles de Pago
+        </nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <div class="header-row">
+        <h1><nz-icon nzType="dollar"></nz-icon> Roles de Pago</h1>
+        <a routerLink="/payroll/employees" class="link">
+            <nz-icon nzType="team"></nz-icon> Gestionar empleados de nómina
+        </a>
+    </div>
+
+    <nz-card class="sbu-card">
+        <div class="card-heading"><nz-icon nzType="tag"></nz-icon> SBU vigente</div>
+        <div class="sbu-row">
+            <span>Año {{ anioSeleccionado }}:</span>
+            <nz-input-number [(ngModel)]="sbuEditable" [nzMin]="0" [nzStep]="1" nzPlaceHolder="Valor del SBU"></nz-input-number>
+            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="guardandoSbu" (click)="guardarSbu()">
+                Guardar
+            </button>
+            <span class="sbu-hint" *ngIf="sbuActual === null">Todavía no hay SBU configurado para este año — hace falta antes de generar un rol.</span>
+        </div>
+    </nz-card>
+
+    <nz-card class="generate-card">
+        <div class="card-heading"><nz-icon nzType="plus-circle"></nz-icon> Generar rol del mes</div>
+        <div class="generate-row">
+            <nz-select [(ngModel)]="mesSeleccionado" style="width: 160px;">
+                <nz-option *ngFor="let mes of meses; let i = index" [nzValue]="i + 1" [nzLabel]="mes"></nz-option>
+            </nz-select>
+            <nz-input-number [(ngModel)]="anioSeleccionado" [nzMin]="2020" [nzMax]="2100" style="width: 120px;"></nz-input-number>
+            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="generando" (click)="generarRol()">
+                <nz-icon nzType="plus"></nz-icon> Generar
+            </button>
+        </div>
+    </nz-card>
+
+    <nz-card class="main-card">
+        <div class="card-heading"><nz-icon nzType="history"></nz-icon> Roles emitidos</div>
+        <nz-table #rolesTable [nzData]="roles" [nzLoading]="loading" [nzBordered]="true" [nzPageSize]="12">
+            <thead>
+                <tr>
+                    <th>Mes</th>
+                    <th>Estado</th>
+                    <th>Trabajadores</th>
+                    <th>Total Líquido</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let rol of rolesTable.data; trackBy: trackById">
+                    <td>{{ meses[rol.mes - 1] }} {{ rol.anio }}</td>
+                    <td>
+                        <nz-tag [nzColor]="rol.estado === 'emitido' ? 'green' : 'gold'">
+                            {{ rol.estado === 'emitido' ? 'Emitido' : 'Borrador' }}
+                        </nz-tag>
+                    </td>
+                    <td>{{ rol.lineas.length }}</td>
+                    <td class="money">${{ totalLiquido(rol).toFixed(2) }}</td>
+                    <td class="acciones-cell">
+                        <a [routerLink]="['/payroll/roles', rol.id]">
+                            <nz-icon nzType="eye"></nz-icon> Ver
+                        </a>
+                        <button
+                            *ngIf="rol.estado === 'borrador'"
+                            nz-button
+                            nzType="link"
+                            nzDanger
+                            nzSize="small"
+                            nz-popconfirm
+                            nzPopconfirmTitle="¿Eliminar este rol en borrador?"
+                            (nzOnConfirm)="eliminarRol(rol)">
+                            <nz-icon nzType="delete"></nz-icon> Eliminar
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </nz-table>
+        <nz-empty *ngIf="!loading && roles.length === 0" nzNotFoundContent="Todavía no se generó ningún rol"></nz-empty>
+    </nz-card>
+</div>

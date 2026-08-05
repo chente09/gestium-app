@@ -1,0 +1,224 @@
+.payroll-container {
+    padding: 24px;
+}
+
+.header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-title h1 {
+    margin: 0;
+    color: #001529;
+    font-size: 24px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.stats-row {
+    margin-bottom: 20px;
+}
+
+.stats-row nz-card {
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-radius: 8px;
+}
+
+.main-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.money-head {
+    text-align: right !important;
+}
+
+.money {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.liquido-col {
+    font-weight: 700;
+    color: #001529;
+    background: #f0f5ff;
+}
+
+.cedula {
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.estado-tag {
+    display: block;
+    margin-top: 4px;
+    width: fit-content;
+}
+
+/* ===== Fila compacta ===== */
+.linea-row {
+    cursor: pointer;
+    transition: background-color 150ms ease-out;
+}
+
+.linea-row:hover {
+    background: #f5f7fa;
+}
+
+.expand-cell {
+    text-align: center;
+    color: #8c8c8c;
+}
+
+/* Celda editable que se lee como texto de tabla hasta que se interactúa con
+   ella — nada de caja de formulario plantada en medio de la tabla. */
+.ghost-input {
+    width: 72px;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    font: inherit;
+    color: inherit;
+    transition: background-color 150ms ease-out, border-color 150ms ease-out;
+}
+
+.ghost-input:hover:not(:disabled) {
+    background: #f5f5f5;
+}
+
+.ghost-input:focus {
+    outline: none;
+    background: #fff;
+    border-color: #001529;
+    box-shadow: 0 0 0 2px rgba(0, 21, 41, 0.1);
+}
+
+.ghost-input:disabled {
+    color: inherit;
+    cursor: default;
+}
+
+/* ===== Panel expandido — mismo lenguaje visual que el recibo ===== */
+.detalle-row td {
+    padding: 0 !important;
+    background: #fbfbfc;
+}
+
+.detalle-panel {
+    display: flex;
+    gap: 32px;
+    padding: 20px 24px;
+    flex-wrap: wrap;
+}
+
+.detalle-col {
+    flex: 1;
+    min-width: 240px;
+}
+
+.detalle-col h4 {
+    font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #001529;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1.5px solid #001529;
+    padding-bottom: 4px;
+    margin: 0 0 8px 0;
+}
+
+.detalle-subtitulo {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8c8c8c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 12px 0 4px 0;
+}
+
+.detalle-linea {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+    color: #262626;
+    border-bottom: 1px solid #ececec;
+    font-variant-numeric: tabular-nums;
+}
+
+.item-linea span:last-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sin-items {
+    font-size: 12px;
+    color: #bfbfbf;
+    font-style: italic;
+    margin: 4px 0;
+}
+
+.remove-item {
+    color: #d3272c;
+    cursor: pointer;
+}
+
+.agregar-item {
+    display: flex;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.agregar-item input {
+    flex: 1;
+}
+
+.detalle-total {
+    font-weight: 700;
+    color: #001529;
+    border-bottom: none;
+    border-top: 1px solid #001529;
+    margin-top: 6px;
+    padding-top: 8px;
+}
+
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}
+
+@media (max-width: 768px) {
+    .payroll-container {
+        padding: 16px;
+    }
+
+    .detalle-panel {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+    }
+}

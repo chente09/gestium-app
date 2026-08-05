@@ -3,7 +3,7 @@
     <ng-container *nzModalContent>
         <form nz-form [formGroup]="editForm" class="itinerario-form">
             <nz-row [nzGutter]="16">
-                <nz-col nzSpan="10">
+                <nz-col [nzXs]="24" [nzSm]="10">
                     <nz-form-item>
                         <nz-form-label nzFor="area" nzRequired>Solicita</nz-form-label>
                         <nz-form-control>
@@ -16,7 +16,7 @@
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
-                <nz-col nzSpan="14">
+                <nz-col [nzXs]="24" [nzSm]="14">
                     <nz-form-item>
                         <nz-form-label nzFor="tramite" nzRequired>Trámite</nz-form-label>
                         <nz-form-control>
@@ -27,7 +27,7 @@
                 </nz-col>
             </nz-row>
             <nz-row [nzGutter]="16">
-                <nz-col nzSpan="10">
+                <nz-col [nzXs]="24" [nzSm]="10">
                     <nz-form-item>
                         <nz-form-label nzFor="nroProceso">N°. Juicio</nz-form-label>
                         <nz-form-control>
@@ -35,7 +35,7 @@
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
-                <nz-col nzSpan="14">
+                <nz-col [nzXs]="24" [nzSm]="14">
                     <nz-form-item>
                         <nz-form-label nzFor="observaciones">Observaciones</nz-form-label>
                         <nz-form-control>
@@ -47,7 +47,7 @@
             </nz-row>
 
             <nz-row [nzGutter]="16">
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="juzgado">Unidad, Juzgado o Entidad</nz-form-label>
                         <nz-form-control>
@@ -62,7 +62,7 @@
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="piso">Selecciona el piso</nz-form-label>
                         <nz-form-control>
@@ -79,7 +79,7 @@
             </nz-row>
 
             <nz-row [nzGutter]="16" *ngIf="editJueces.length > 0">
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="juez">Puedes asignar un Juez</nz-form-label>
                         <nz-form-control>
@@ -94,7 +94,7 @@
             </nz-row>
 
             <nz-row [nzGutter]="16">
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="materia">Selecciona el área</nz-form-label>
                         <nz-form-control>
@@ -107,7 +107,7 @@
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="diligencia">Seleciona la diligencia</nz-form-label>
                         <nz-form-control>
@@ -124,7 +124,7 @@
             </nz-row>
 
             <nz-row [nzGutter]="16">
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="solicita">Recibe</nz-form-label>
                         <nz-form-control>
@@ -132,7 +132,7 @@
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label nzFor="fechaTermino" nzRequired>Fecha de Término</nz-form-label>
                         <nz-form-control>
@@ -154,7 +154,7 @@
             </nz-row>
 
             <nz-row [nzGutter]="16">
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label>Imagen (actual)</nz-form-label>
                         <nz-form-control>
@@ -165,7 +165,7 @@
                         </nz-form-control>
                     </nz-form-item>
                 </nz-col>
-                <nz-col nzSpan="12">
+                <nz-col [nzXs]="24" [nzSm]="12">
                     <nz-form-item>
                         <nz-form-label>PDF (actual)</nz-form-label>
                         <nz-form-control>

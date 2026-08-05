@@ -20,6 +20,8 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { UsersService } from '../../../services/users/users.service';
 import { RegistersService } from '../../../services/registers/registers.service';
 import { ItinerarioEditModalComponent } from '../itinerario-edit-modal/itinerario-edit-modal.component';
@@ -51,6 +53,8 @@ enum Estado {
     NzEmptyModule,
     NzInputModule,
     NzToolTipModule,
+    NzCardModule,
+    NzCollapseModule,
     ItinerarioEditModalComponent
   ],
   templateUrl: './history-itinerario.component.html',

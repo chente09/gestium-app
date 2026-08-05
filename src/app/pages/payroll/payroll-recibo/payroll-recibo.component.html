@@ -1,0 +1,92 @@
+<div class="payroll-container" *ngIf="rol && linea && employee">
+    <nz-breadcrumb class="no-print">
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/payroll/roles"><nz-icon nzType="dollar"></nz-icon> Roles de Pago</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a [routerLink]="['/payroll/roles', rol.id]">{{ meses[rol.mes - 1] }} {{ rol.anio }}</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Recibo</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <div class="no-print toolbar">
+        <button nz-button nzType="primary" class="brand-btn" [nzLoading]="generandoPdf" (click)="descargarPdf()">
+            <nz-icon nzType="download"></nz-icon> Descargar PDF
+        </button>
+    </div>
+
+    <div class="recibo-card">
+        <div class="recibo-membrete">
+            <img src="https://i.postimg.cc/qM5m65P4/image.png" alt="Gestium" class="recibo-logo">
+            <div class="recibo-membrete-texto">
+                <h1>GESTIUM</h1>
+                <p>SERVICIOS LEGALES INTEGRALES</p>
+                <p class="recibo-ruc">RUC: {{ employee.empleadorRuc }} — {{ employee.empleadorNombre }}</p>
+            </div>
+        </div>
+        <div class="recibo-gold-rule"></div>
+
+        <div class="recibo-body">
+            <h2 class="recibo-titulo">ROL DE PAGOS — {{ meses[rol.mes - 1] }} {{ rol.anio }}</h2>
+
+            <div class="recibo-datos">
+                <div><span class="recibo-label">Nombre</span> {{ linea.nombre }}</div>
+                <div><span class="recibo-label">Cédula</span> {{ linea.cedula }}</div>
+                <div><span class="recibo-label">Días trabajados</span> {{ linea.diasTrabajados }}</div>
+            </div>
+
+            <div class="recibo-seccion">
+                <h3>Ingresos</h3>
+                <div class="recibo-linea"><span>Remuneración</span><span>${{ linea.remuneracion.toFixed(2) }}</span></div>
+                <div class="recibo-linea" *ngIf="linea.elegibleDecimos">
+                    <span>Décimo Tercero</span><span>${{ linea.decimoTercero.toFixed(2) }}</span>
+                </div>
+                <div class="recibo-linea" *ngIf="linea.elegibleDecimos">
+                    <span>Décimo Cuarto</span><span>${{ linea.decimoCuarto.toFixed(2) }}</span>
+                </div>
+                <div class="recibo-linea" *ngIf="linea.elegibleFondosReserva">
+                    <span>Fondos de Reserva</span><span>${{ linea.fondosReserva.toFixed(2) }}</span>
+                </div>
+                <div class="recibo-linea" *ngFor="let b of linea.bonosVarios">
+                    <span>{{ b.concepto }}</span><span>${{ b.monto.toFixed(2) }}</span>
+                </div>
+                <div class="recibo-linea recibo-total"><span>Total Ingresos</span><span>${{ linea.totalIngresos.toFixed(2) }}</span></div>
+            </div>
+
+            <div class="recibo-seccion">
+                <h3>Descuentos</h3>
+                <div class="recibo-linea" *ngIf="linea.descuentoIESS > 0">
+                    <span>IESS (9.45%)</span><span>${{ linea.descuentoIESS.toFixed(2) }}</span>
+                </div>
+                <div class="recibo-linea" *ngFor="let d of linea.descuentosVarios">
+                    <span>{{ d.concepto }}</span><span>${{ d.monto.toFixed(2) }}</span>
+                </div>
+                <div class="recibo-linea recibo-total"><span>Total Descuentos</span><span>${{ linea.totalDescuentos.toFixed(2) }}</span></div>
+            </div>
+
+            <div class="recibo-liquido">
+                <span>Líquido a Recibir</span>
+                <span>${{ linea.liquidoARecibir.toFixed(2) }}</span>
+            </div>
+
+            <div class="recibo-firmas">
+                <p class="recibo-conforme">Recibí conforme</p>
+                <div class="recibo-firma-columnas">
+                    <div class="recibo-firma-col">
+                        <div class="recibo-firma-linea"></div>
+                        <strong>{{ linea.nombre }}</strong>
+                        <span>TRABAJADOR</span>
+                    </div>
+                    <div class="recibo-firma-col">
+                        <div class="recibo-firma-linea"></div>
+                        <strong>David Maldonado</strong>
+                        <span>EMPLEADOR</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

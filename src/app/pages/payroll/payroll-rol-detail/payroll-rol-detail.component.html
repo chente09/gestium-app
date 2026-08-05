@@ -1,0 +1,171 @@
+<div class="payroll-container" *ngIf="rol">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/payroll/roles"><nz-icon nzType="dollar"></nz-icon> Roles de Pago</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>{{ meses[rol.mes - 1] }} {{ rol.anio }}</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <div class="header-row">
+        <div class="header-title">
+            <h1>{{ meses[rol.mes - 1] }} {{ rol.anio }}</h1>
+            <nz-tag [nzColor]="rol.estado === 'emitido' ? 'green' : 'gold'">
+                {{ rol.estado === 'emitido' ? 'Emitido' : 'Borrador' }}
+            </nz-tag>
+        </div>
+        <div class="header-actions" *ngIf="esBorrador">
+            <button nz-button [nzLoading]="regenerando" (click)="regenerarRol()">
+                <nz-icon nzType="reload"></nz-icon> Regenerar
+            </button>
+            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="emitiendo" (click)="emitirRol()">
+                <nz-icon nzType="check-circle"></nz-icon> Emitir Rol
+            </button>
+        </div>
+    </div>
+
+    <!-- 📊 Resumen del rol -->
+    <nz-row [nzGutter]="16" class="stats-row">
+        <nz-col [nzXs]="12" [nzSm]="6">
+            <nz-card>
+                <nz-statistic nzTitle="Trabajadores" [nzValue]="totalTrabajadores" [nzPrefix]="trabajadoresIcon">
+                    <ng-template #trabajadoresIcon><nz-icon nzType="team"></nz-icon></ng-template>
+                </nz-statistic>
+            </nz-card>
+        </nz-col>
+        <nz-col [nzXs]="12" [nzSm]="6">
+            <nz-card>
+                <nz-statistic nzTitle="Total Ingresos" [nzValue]="totalIngresos.toFixed(2)" nzPrefix="$" [nzValueStyle]="{ color: '#52c41a' }"></nz-statistic>
+            </nz-card>
+        </nz-col>
+        <nz-col [nzXs]="12" [nzSm]="6">
+            <nz-card>
+                <nz-statistic nzTitle="Total Descuentos" [nzValue]="totalDescuentos.toFixed(2)" nzPrefix="$" [nzValueStyle]="{ color: '#d3272c' }"></nz-statistic>
+            </nz-card>
+        </nz-col>
+        <nz-col [nzXs]="12" [nzSm]="6">
+            <nz-card>
+                <nz-statistic nzTitle="Líquido a Pagar" [nzValue]="totalLiquido.toFixed(2)" nzPrefix="$" [nzValueStyle]="{ color: '#001529', fontWeight: 700 }"></nz-statistic>
+            </nz-card>
+        </nz-col>
+    </nz-row>
+
+    <nz-card class="main-card">
+        <nz-table [nzData]="rol.lineas" [nzBordered]="true" [nzShowPagination]="false">
+            <thead>
+                <tr>
+                    <th [nzWidth]="'40px'"></th>
+                    <th [nzWidth]="'220px'">Trabajador</th>
+                    <th [nzWidth]="'90px'">Días</th>
+                    <th class="money-head">Total Ingresos</th>
+                    <th class="money-head">Total Descuentos</th>
+                    <th class="money-head">Líquido a Recibir</th>
+                    <th [nzWidth]="'70px'">Recibo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <ng-container *ngFor="let linea of rol.lineas; trackBy: trackByEmployeeId">
+                    <tr class="linea-row" (click)="toggleExpand(linea.payrollEmployeeId)">
+                        <td class="expand-cell">
+                            <nz-icon [nzType]="isExpanded(linea.payrollEmployeeId) ? 'down' : 'right'"></nz-icon>
+                        </td>
+                        <td>
+                            <strong>{{ linea.nombre }}</strong>
+                            <br>
+                            <span class="cedula">{{ linea.cedula }}</span>
+                            <nz-tag *ngIf="!linea.elegibleFondosReserva" nzColor="default" class="estado-tag">Sin fondos de reserva aún</nz-tag>
+                        </td>
+                        <td (click)="$event.stopPropagation()">
+                            <input
+                                class="ghost-input"
+                                [ngModel]="linea.diasTrabajados"
+                                [disabled]="!esBorrador"
+                                (ngModelChange)="actualizarDiasTrabajados(linea, $event)" />
+                        </td>
+                        <td class="money">${{ linea.totalIngresos.toFixed(2) }}</td>
+                        <td class="money">${{ linea.totalDescuentos.toFixed(2) }}</td>
+                        <td class="money liquido-col"><strong>${{ linea.liquidoARecibir.toFixed(2) }}</strong></td>
+                        <td (click)="$event.stopPropagation()">
+                            <a [routerLink]="['/payroll/recibo', rol.id, linea.payrollEmployeeId]">
+                                <nz-icon nzType="file-text"></nz-icon>
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr *ngIf="isExpanded(linea.payrollEmployeeId)" class="detalle-row">
+                        <td colspan="7">
+                            <div class="detalle-panel">
+                                <div class="detalle-col">
+                                    <h4>Ingresos</h4>
+                                    <div class="detalle-linea">
+                                        <span>Remuneración</span><span>${{ linea.remuneracion.toFixed(2) }}</span>
+                                    </div>
+                                    <div class="detalle-linea" *ngIf="linea.elegibleDecimos">
+                                        <span>Décimo Tercero</span><span>${{ linea.decimoTercero.toFixed(2) }}</span>
+                                    </div>
+                                    <div class="detalle-linea" *ngIf="linea.elegibleDecimos">
+                                        <span>Décimo Cuarto</span><span>${{ linea.decimoCuarto.toFixed(2) }}</span>
+                                    </div>
+                                    <div class="detalle-linea" *ngIf="linea.elegibleFondosReserva">
+                                        <span>Fondos de Reserva</span><span>${{ linea.fondosReserva.toFixed(2) }}</span>
+                                    </div>
+
+                                    <div class="detalle-subtitulo">Bonos</div>
+                                    <div class="detalle-linea item-linea" *ngFor="let b of linea.bonosVarios; let i = index">
+                                        <span>{{ b.concepto }}</span>
+                                        <span>
+                                            ${{ b.monto.toFixed(2) }}
+                                            <nz-icon *ngIf="esBorrador" nzType="close-circle" class="remove-item" (click)="quitarBono(linea, i)"></nz-icon>
+                                        </span>
+                                    </div>
+                                    <p class="sin-items" *ngIf="linea.bonosVarios.length === 0">Sin bonos este mes.</p>
+                                    <div class="agregar-item" *ngIf="esBorrador">
+                                        <input nz-input #bonoConcepto placeholder="Concepto (ej. Celular)" />
+                                        <input nz-input #bonoMonto placeholder="Monto" type="number" min="0" style="width: 90px;" />
+                                        <button nz-button nzSize="small" (click)="agregarBono(linea, bonoConcepto.value, bonoMonto.value); bonoConcepto.value=''; bonoMonto.value=''">
+                                            <nz-icon nzType="plus"></nz-icon>
+                                        </button>
+                                    </div>
+
+                                    <div class="detalle-linea detalle-total">
+                                        <span>Total Ingresos</span><span>${{ linea.totalIngresos.toFixed(2) }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="detalle-col">
+                                    <h4>Descuentos</h4>
+                                    <div class="detalle-linea" *ngIf="linea.descuentoIESS > 0">
+                                        <span>IESS (9.45%)</span><span>${{ linea.descuentoIESS.toFixed(2) }}</span>
+                                    </div>
+
+                                    <div class="detalle-subtitulo">Varios</div>
+                                    <div class="detalle-linea item-linea" *ngFor="let d of linea.descuentosVarios; let i = index">
+                                        <span>{{ d.concepto }}</span>
+                                        <span>
+                                            ${{ d.monto.toFixed(2) }}
+                                            <nz-icon *ngIf="esBorrador" nzType="close-circle" class="remove-item" (click)="quitarDescuento(linea, i)"></nz-icon>
+                                        </span>
+                                    </div>
+                                    <p class="sin-items" *ngIf="linea.descuentosVarios.length === 0">Sin descuentos varios este mes.</p>
+                                    <div class="agregar-item" *ngIf="esBorrador">
+                                        <input nz-input #descConcepto placeholder="Concepto (ej. Quirografario)" />
+                                        <input nz-input #descMonto placeholder="Monto" type="number" min="0" style="width: 90px;" />
+                                        <button nz-button nzSize="small" (click)="agregarDescuento(linea, descConcepto.value, descMonto.value); descConcepto.value=''; descMonto.value=''">
+                                            <nz-icon nzType="plus"></nz-icon>
+                                        </button>
+                                    </div>
+
+                                    <div class="detalle-linea detalle-total">
+                                        <span>Total Descuentos</span><span>${{ linea.totalDescuentos.toFixed(2) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </ng-container>
+            </tbody>
+        </nz-table>
+    </nz-card>
+</div>

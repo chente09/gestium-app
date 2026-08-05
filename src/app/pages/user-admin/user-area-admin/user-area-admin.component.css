@@ -106,6 +106,71 @@
     color: #8c8c8c;
 }
 
+/* 🎨 Botones "primarios" con el navy de marca (no el azul por defecto de ng-zorro) */
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}
+
+/* 📱 Tabla (escritorio) vs. tarjetas (móvil) */
+.mobile-card-view {
+    display: none;
+}
+
+.user-card {
+    margin-bottom: 12px;
+}
+
+.user-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-card-identity {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.user-card-identity strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.user-card-meta {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.user-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.user-card-actions button {
+    flex: 1;
+    min-width: 100px;
+}
+
 /* 📱 Responsive Design */
 @media (max-width: 1200px) {
     .stats-row nz-col {
@@ -113,7 +178,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .user-admin-container {
         padding: 16px;
     }
@@ -138,20 +203,13 @@
         margin: 4px 0 !important;
     }
 
-    /* Ocultar algunas columnas en móvil */
-    .mobile-hidden {
-        display: none !important;
+    /* Tabla -> tarjetas */
+    .desktop-table-view {
+        display: none;
     }
 
-    /* Ajustar botones de acción */
-    .action-buttons {
-        flex-direction: column;
-        gap: 2px;
-    }
-
-    .action-buttons button {
-        width: 100%;
-        font-size: 11px;
+    .mobile-card-view {
+        display: block;
     }
 }
 

@@ -16,7 +16,7 @@
 
     <!-- 📊 Estadísticas generales -->
     <nz-row [nzGutter]="16" class="stats-row">
-        <nz-col [nzSpan]="6">
+        <nz-col [nzXs]="12" [nzSm]="12" [nzMd]="6">
             <nz-card>
                 <nz-statistic 
                     nzTitle="Total Usuarios" 
@@ -26,7 +26,7 @@
                 </nz-statistic>
             </nz-card>
         </nz-col>
-        <nz-col [nzSpan]="6">
+        <nz-col [nzXs]="12" [nzSm]="12" [nzMd]="6">
             <nz-card>
                 <nz-statistic 
                     nzTitle="Con Área Asignada" 
@@ -37,7 +37,7 @@
                 </nz-statistic>
             </nz-card>
         </nz-col>
-        <nz-col [nzSpan]="6">
+        <nz-col [nzXs]="12" [nzSm]="12" [nzMd]="6">
             <nz-card>
                 <nz-statistic 
                     nzTitle="Sin Asignar" 
@@ -48,12 +48,12 @@
                 </nz-statistic>
             </nz-card>
         </nz-col>
-        <nz-col [nzSpan]="6">
+        <nz-col [nzXs]="12" [nzSm]="12" [nzMd]="6">
             <nz-card>
                 <nz-statistic 
                     nzTitle="Administradores" 
                     [nzValue]="adminUsers"
-                    [nzValueStyle]="{ color: '#1890ff' }"
+                    [nzValueStyle]="{ color: '#001529' }"
                     [nzPrefix]="adminUsersIcon">
                     <ng-template #adminUsersIcon><nz-icon nzType="crown"></nz-icon></ng-template>
                 </nz-statistic>
@@ -65,7 +65,7 @@
     <nz-card nzTitle="Gestión de Usuarios y Áreas" class="main-card">
         <div class="control-panel">
             <div class="control-actions">
-                <button nz-button nzType="primary" (click)="refreshData()">
+                <button nz-button nzType="primary" class="brand-btn" (click)="refreshData()">
                     <nz-icon nzType="reload"></nz-icon>
                     Actualizar
                 </button>
@@ -108,15 +108,17 @@
             </div>
         </div>
 
-        <!-- 📋 Tabla de usuarios -->
+        <!-- 📋 Tabla de usuarios (escritorio/tablet ancho) -->
         <nz-spin [nzSpinning]="loading">
-            <nz-table 
-                #userTable 
-                [nzData]="filteredUsers" 
-                [nzBordered]="true" 
+            <nz-table
+                class="desktop-table-view"
+                #userTable
+                [nzData]="filteredUsers"
+                [nzBordered]="true"
                 [nzSize]="'middle'"
-                [nzShowPagination]="true" 
-                [nzPageSize]="10" 
+                [nzShowPagination]="true"
+                [nzPageSize]="10"
+                [nzScroll]="{ x: '1000px' }"
                 nzShowSizeChanger>
 
                 <thead>
@@ -198,7 +200,7 @@
                             <div class="action-buttons">
                                 <button 
                                     nz-button 
-                                    nzType="primary" 
+                                    nzType="primary" class="brand-btn" 
                                     nzSize="small" 
                                     (click)="assignArea(user)"
                                     nzTooltipTitle="Asignar área y rol" 
@@ -233,13 +235,81 @@
                     </tr>
                 </tbody>
             </nz-table>
+
+            <!-- 📱 Vista en tarjetas (móvil) -->
+            <div class="mobile-card-view">
+                <nz-card
+                    *ngFor="let user of filteredUsers; trackBy: trackByUserId"
+                    class="user-card"
+                    [ngClass]="{ 'user-inactive': !user.activo }">
+                    <div class="user-card-header">
+                        <nz-avatar [nzSrc]="user.photoURL" [nzIcon]="'user'" [nzSize]="40"></nz-avatar>
+                        <div class="user-card-identity">
+                            <strong>{{ user.displayName || user.nickname || 'Sin nombre' }}</strong>
+                            <span class="user-email">{{ user.email }}</span>
+                        </div>
+                        <nz-switch
+                            [ngModel]="user.activo"
+                            (ngModelChange)="toggleUserStatus(user, $event)">
+                        </nz-switch>
+                    </div>
+
+                    <div class="user-card-tags">
+                        <nz-tag [nzColor]="getStatusColor(user)">{{ getStatusText(user) }}</nz-tag>
+                        <nz-tag
+                            *ngIf="user.areaAsignada !== 'sin_asignar'; else noAreaTagMobile"
+                            [nzColor]="getAreaColor(user.areaAsignada)">
+                            {{ getAreaDisplayName(user.areaAsignada) }}
+                        </nz-tag>
+                        <ng-template #noAreaTagMobile>
+                            <span class="no-area-text">Sin área</span>
+                        </ng-template>
+                        <nz-tag [nzColor]="getRoleColor(user.role)">{{ user.role | titlecase }}</nz-tag>
+                    </div>
+
+                    <div class="user-card-meta" *ngIf="asDate(user.fechaAsignacion) as fecha">
+                        Asignado el {{ fecha | date:'dd/MM/yyyy' }}
+                    </div>
+
+                    <div class="user-card-actions">
+                        <button
+                            nz-button
+                            nzType="primary" class="brand-btn"
+                            nzSize="small"
+                            (click)="assignArea(user)">
+                            <nz-icon nzType="edit"></nz-icon> Asignar
+                        </button>
+
+                        <button
+                            nz-button
+                            nzDanger
+                            nzSize="small"
+                            nz-popconfirm
+                            nzPopconfirmTitle="¿Eliminar asignación de área?"
+                            (nzOnConfirm)="removeAreaAssignment(user)"
+                            *ngIf="user.areaAsignada !== 'sin_asignar'">
+                            <nz-icon nzType="delete"></nz-icon> Quitar área
+                        </button>
+
+                        <button
+                            nz-button
+                            nzDanger
+                            nzSize="small"
+                            (click)="deleteUserAccount(user)">
+                            <nz-icon nzType="user-delete"></nz-icon> Eliminar
+                        </button>
+                    </div>
+                </nz-card>
+
+                <nz-empty *ngIf="filteredUsers.length === 0" nzNotFoundContent="No hay usuarios que coincidan con el filtro"></nz-empty>
+            </div>
         </nz-spin>
     </nz-card>
 
     <!-- 📋 Gestión de Áreas -->
     <nz-card nzTitle="Áreas Disponibles" class="areas-card" style="margin-top: 20px;">
         <nz-row [nzGutter]="[8, 8]">
-            <nz-col *ngFor="let area of availableAreas" [nzSpan]="6">
+            <nz-col *ngFor="let area of availableAreas" [nzXs]="12" [nzSm]="8" [nzMd]="6">
                 <nz-tag
                     [nzColor]="getAreaColor(area.slug)"
                     style="width: 100%; padding: 8px; font-size: 14px;">
@@ -312,7 +382,7 @@
         <button nz-button nzType="default" (click)="closeAssignModal()">
             Cancelar
         </button>
-        <button nz-button nzType="primary" [nzLoading]="assigningUser" (click)="saveAssignment()">
+        <button nz-button nzType="primary" class="brand-btn" [nzLoading]="assigningUser" (click)="saveAssignment()">
             Asignar
         </button>
     </ng-template>
@@ -364,7 +434,7 @@
         <button nz-button nzType="default" (click)="closeBulkModal()">
             Cancelar
         </button>
-        <button nz-button nzType="primary" [nzLoading]="processingBulk" (click)="processBulkAssignment()">
+        <button nz-button nzType="primary" class="brand-btn" [nzLoading]="processingBulk" (click)="processBulkAssignment()">
             Asignar a Todos
         </button>
     </ng-template>
@@ -403,7 +473,7 @@
         <button nz-button nzType="default" (click)="closeAreaModal()">
             Cancelar
         </button>
-        <button nz-button nzType="primary" (click)="addNewArea()" [disabled]="areaForm.invalid">
+        <button nz-button nzType="primary" class="brand-btn" (click)="addNewArea()" [disabled]="areaForm.invalid">
             Agregar Área
         </button>
     </ng-template>

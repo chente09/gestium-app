@@ -1,0 +1,156 @@
+<div class="payroll-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/payroll/roles"><nz-icon nzType="dollar"></nz-icon> Roles de Pago</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Empleados</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <nz-card nzTitle="Empleados de Nómina" class="main-card">
+        <div class="control-panel">
+            <button nz-button nzType="primary" class="brand-btn" (click)="openCreateModal()">
+                <nz-icon nzType="user-add"></nz-icon> Agregar Empleado
+            </button>
+        </div>
+
+        <!-- Tabla (escritorio) -->
+        <nz-table
+            class="desktop-table-view"
+            #employeeTable
+            [nzData]="employees"
+            [nzBordered]="true"
+            [nzLoading]="loading"
+            [nzPageSize]="20">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Cédula</th>
+                    <th>Fecha Ingreso</th>
+                    <th>Afiliación IESS</th>
+                    <th>Empleador</th>
+                    <th>Activo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let employee of employeeTable.data; trackBy: trackById">
+                    <td>{{ employee.nombreCompleto }}</td>
+                    <td>{{ employee.cedula }}</td>
+                    <td>{{ employee.fechaIngreso }}</td>
+                    <td>
+                        <nz-tag *ngIf="employee.fechaAfiliacionIESS; else pasanteTag" nzColor="green">
+                            {{ employee.fechaAfiliacionIESS }}
+                        </nz-tag>
+                        <ng-template #pasanteTag>
+                            <nz-tag nzColor="gold">Pasante</nz-tag>
+                        </ng-template>
+                    </td>
+                    <td>{{ employee.empleadorNombre }}</td>
+                    <td>
+                        <nz-switch [ngModel]="employee.activo" (ngModelChange)="toggleActivo(employee, $event)"></nz-switch>
+                    </td>
+                    <td>
+                        <button nz-button nzSize="small" (click)="openEditModal(employee)">
+                            <nz-icon nzType="edit"></nz-icon> Editar
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </nz-table>
+
+        <!-- Tarjetas (móvil) -->
+        <div class="mobile-card-view">
+            <nz-card *ngFor="let employee of employees; trackBy: trackById" class="employee-card">
+                <div class="employee-card-header">
+                    <strong>{{ employee.nombreCompleto }}</strong>
+                    <nz-switch [ngModel]="employee.activo" (ngModelChange)="toggleActivo(employee, $event)"></nz-switch>
+                </div>
+                <div class="employee-card-row">Cédula: {{ employee.cedula }}</div>
+                <div class="employee-card-row">Ingreso: {{ employee.fechaIngreso }}</div>
+                <div class="employee-card-row">
+                    <nz-tag *ngIf="employee.fechaAfiliacionIESS; else pasanteTagMobile" nzColor="green">
+                        Afiliado {{ employee.fechaAfiliacionIESS }}
+                    </nz-tag>
+                    <ng-template #pasanteTagMobile>
+                        <nz-tag nzColor="gold">Pasante</nz-tag>
+                    </ng-template>
+                </div>
+                <div class="employee-card-row">{{ employee.empleadorNombre }}</div>
+                <div class="employee-card-actions">
+                    <button nz-button nzSize="small" (click)="openEditModal(employee)">
+                        <nz-icon nzType="edit"></nz-icon> Editar
+                    </button>
+                </div>
+            </nz-card>
+        </div>
+    </nz-card>
+</div>
+
+<nz-modal
+    [(nzVisible)]="showModal"
+    [nzTitle]="editingId ? 'Editar Empleado' : 'Agregar Empleado'"
+    [nzFooter]="modalFooter"
+    (nzOnCancel)="closeModal()">
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="form" nzLayout="vertical">
+            <nz-form-item>
+                <nz-form-label nzRequired>Nombre completo</nz-form-label>
+                <nz-form-control>
+                    <input nz-input formControlName="nombreCompleto" placeholder="Nombre y apellido completos" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Cédula</nz-form-label>
+                <nz-form-control>
+                    <input nz-input formControlName="cedula" placeholder="10 dígitos" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Fecha de ingreso</nz-form-label>
+                <nz-form-control>
+                    <input nz-input type="date" formControlName="fechaIngreso" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label>¿Es pasante (sin afiliación IESS)?</nz-form-label>
+                <nz-form-control>
+                    <nz-switch [ngModel]="esPasante" [ngModelOptions]="{standalone: true}" (ngModelChange)="onEsPasanteChange($event)"></nz-switch>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item *ngIf="!esPasante">
+                <nz-form-label>Fecha de afiliación IESS</nz-form-label>
+                <nz-form-control>
+                    <input nz-input type="date" formControlName="fechaAfiliacionIESS" />
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label nzRequired>Empleador</nz-form-label>
+                <nz-form-control>
+                    <nz-select formControlName="empleadorRuc">
+                        <nz-option *ngFor="let emp of empleadores" [nzValue]="emp.ruc" [nzLabel]="emp.nombre + ' — ' + emp.ruc"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label>Activo</nz-form-label>
+                <nz-form-control>
+                    <nz-switch formControlName="activo"></nz-switch>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+
+    <ng-template #modalFooter>
+        <button nz-button nzType="default" (click)="closeModal()">Cancelar</button>
+        <button nz-button nzType="primary" class="brand-btn" (click)="save()">Guardar</button>
+    </ng-template>
+</nz-modal>

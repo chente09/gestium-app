@@ -322,6 +322,14 @@ export class RegistersService {
     return role === 'admin' || role === 'coordinador';
   }
 
+  // 🔐 Acceso al módulo de Roles de Pago: admin o gerente únicamente.
+  // Deliberadamente separado de hasFullAccess() — coordinador NO entra acá,
+  // y gerente NO tiene hasFullAccess() en el resto de la app.
+  canAccessPayroll(): boolean {
+    const role = this.currentRegister?.role;
+    return role === 'admin' || role === 'gerente';
+  }
+
   // 🔐 Verificar si usuario actual tiene acceso a un área
   canAccessArea(area: string): boolean {
     if (!this.currentRegister) return false;

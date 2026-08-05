@@ -421,8 +421,9 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   }
 
   // Color determinístico por área (hash simple) — no requiere tocar código
-  // cada vez que se crea un área nueva desde Admin > Usuarios.
-  private readonly areaColorPalette = ['blue', 'green', 'orange', 'purple', 'cyan', 'magenta', 'geekblue', 'volcano', 'gold', 'lime'];
+  // cada vez que se crea un área nueva desde Admin > Usuarios. Paleta acotada
+  // a la familia navy/rojo/dorado de la marca (nada de azul, verde, púrpura o cyan).
+  private readonly areaColorPalette = ['red', 'volcano', 'orange', 'gold', 'geekblue', 'default'];
 
   // areaAsignada guarda el slug; esto lo traduce al nombre para mostrar.
   getAreaDisplayName(slug: string): string {
@@ -439,11 +440,13 @@ export class UserAreaAdminComponent implements OnInit, OnDestroy {
   }
 
   getRoleColor(role: string): string {
+    // Colores alineados a la paleta de marca (navy/rojo/dorado) en vez del
+    // azul/púrpura por defecto de ng-zorro, que no aparecen en el resto de la app.
     const colors: { [key: string]: string } = {
       'admin': 'red',
-      'coordinador': 'orange',
-      'gerente': 'purple',
-      'empleado': 'blue'
+      'coordinador': 'gold',
+      'gerente': 'volcano',
+      'empleado': 'default'
     };
     return colors[role] || 'default';
   }

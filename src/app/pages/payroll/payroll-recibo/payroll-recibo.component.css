@@ -1,0 +1,225 @@
+.payroll-container {
+    padding: 24px;
+    background: #eef1f4;
+    min-height: 100%;
+}
+
+.toolbar {
+    max-width: 640px;
+    margin: 0 auto 16px auto;
+}
+
+/* ===== Documento ===== */
+.recibo-card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #fdfcfa;
+    box-shadow: 0 4px 24px rgba(0, 21, 41, 0.12);
+    overflow: hidden;
+}
+
+.recibo-membrete {
+    background: #001529;
+    color: #fff;
+    padding: 18px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.recibo-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.recibo-membrete-texto h1 {
+    margin: 0;
+    font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.recibo-membrete-texto p {
+    margin: 2px 0 0 0;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.recibo-ruc {
+    letter-spacing: 0 !important;
+}
+
+.recibo-gold-rule {
+    height: 3px;
+    background: #e0c10f;
+}
+
+.recibo-body {
+    padding: 28px 32px 24px 32px;
+}
+
+.recibo-titulo {
+    text-align: center;
+    font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #001529;
+    margin: 0 0 20px 0;
+}
+
+.recibo-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 22px;
+    font-size: 14px;
+    color: #262626;
+}
+
+.recibo-label {
+    display: inline-block;
+    width: 130px;
+    font-weight: 600;
+    color: #001529;
+}
+
+.recibo-seccion {
+    margin-bottom: 18px;
+}
+
+.recibo-seccion h3 {
+    font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #001529;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1.5px solid #001529;
+    padding-bottom: 4px;
+    margin: 0 0 8px 0;
+}
+
+.recibo-linea {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 13.5px;
+    color: #262626;
+    border-bottom: 1px solid #ececec;
+    font-variant-numeric: tabular-nums;
+}
+
+.recibo-total {
+    font-weight: 700;
+    color: #001529;
+    border-bottom: none;
+    border-top: 1px solid #001529;
+    margin-top: 2px;
+    padding-top: 8px;
+}
+
+.recibo-liquido {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background: #001529;
+    color: #fff;
+    padding: 14px 18px;
+    margin-top: 24px;
+    font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+}
+
+.recibo-liquido span:first-child {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.recibo-liquido span:last-child {
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.recibo-firmas {
+    margin-top: 44px;
+}
+
+.recibo-conforme {
+    text-align: center;
+    font-style: italic;
+    font-size: 12px;
+    color: #5c6570;
+    margin-bottom: 32px;
+}
+
+.recibo-firma-columnas {
+    display: flex;
+    justify-content: space-around;
+    gap: 24px;
+    text-align: center;
+}
+
+.recibo-firma-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+}
+
+.recibo-firma-linea {
+    width: 100%;
+    border-top: 1px solid #262626;
+    margin-bottom: 6px;
+}
+
+.recibo-firma-col span {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: #5c6570;
+    margin-top: 2px;
+}
+
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    .payroll-container {
+        background: #fff;
+        padding: 0;
+    }
+
+    .recibo-card {
+        box-shadow: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .recibo-membrete {
+        padding: 14px 18px;
+    }
+
+    .recibo-body {
+        padding: 20px 18px;
+    }
+
+    .recibo-label {
+        width: 110px;
+    }
+}

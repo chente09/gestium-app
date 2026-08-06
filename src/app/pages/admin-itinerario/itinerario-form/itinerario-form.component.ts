@@ -21,6 +21,7 @@ import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { doc } from '@angular/fire/firestore';
 import { DateUtilsService } from '../../../services/date-utils/date-utils.service';
+import { Router } from '@angular/router';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -93,7 +94,8 @@ export class ItinerarioFormComponent implements OnInit {
     private modal: NzModalService,
     private sharedDataService: SharedDataService, // ✅ INYECTAR SERVICIO
     private registersService: RegistersService,
-    private dateUtils: DateUtilsService
+    private dateUtils: DateUtilsService,
+    private router: Router
   ) {
     this.itinerarioForm = this.fb.group({
       fileType: [''],
@@ -266,46 +268,127 @@ export class ItinerarioFormComponent implements OnInit {
 
       if (nroProceso) {
         const existingItinerario = await this.itinerarioService.getItinerarioByNroProceso(nroProceso);
+        const allDocs = existingItinerario.docs.map(d => ({ id: d.id, data: d.data() as Itinerario }));
+        const activos = allDocs.filter(d => d.data.estado !== Estado.COMPLETADO);
+        const completados = allDocs.filter(d => d.data.estado === Estado.COMPLETADO);
 
-        if (!existingItinerario.empty) {
-          const existingDocs = existingItinerario.docs
-            .map(doc => doc.data() as Itinerario)
-            .filter(doc => doc.estado !== Estado.COMPLETADO);
-
-          // ✅ PROTECCIÓN #3: Desactivar loading antes del modal
+        // Ya hay un trámite activo (pendiente/incompleto) con ese número:
+        // no se crea uno nuevo, hay que editar el que ya existe.
+        if (activos.length > 0) {
           this.isLoading = false;
 
-          const userConfirmed = await new Promise<boolean>((resolve) => {
-            this.modal.confirm({
-              nzTitle: 'Número de proceso duplicado',
-              nzContent: `
+          // Con un solo match activo podemos llevar directo a editarlo; con
+          // más de uno (caso raro) solo informamos, sin adivinar cuál.
+          const irAEditar = activos.length === 1;
+          const listaHtml = `
               <div style="max-height: 300px; overflow-y: auto;">
-                <p>⚠️ El número de proceso "<b>${nroProceso}</b>" ya está registrado en los siguientes trámites:</p>
+                <p>⚠️ El número de proceso "<b>${nroProceso}</b>" ya está pendiente/incompleto en los siguientes trámites:</p>
                 <ul style="padding-left: 20px;">
-                  ${existingDocs.map((doc, index) => `
+                  ${activos.map((d, index) => `
                     <li>
-                      <b>#${index + 1}</b> - <b>Trámite:</b> ${doc.tramite} <br>
-                      📅 <b>Fecha de Solicitud:</b> ${doc.fechaSolicitud} <br>
-                      📝 <b>Observaciones:</b> ${doc.observaciones || 'Sin observaciones'}
+                      <b>#${index + 1}</b> - <b>Trámite:</b> ${d.data.tramite} <br>
+                      📅 <b>Fecha de Solicitud:</b> ${d.data.fechaSolicitud} <br>
+                      📝 <b>Observaciones:</b> ${d.data.observaciones || 'Sin observaciones'}
                     </li>
                   `).join('')}
                 </ul>
-                <p>¿Desea continuar con el guardado?</p>
+              </div>`;
+
+          if (irAEditar) {
+            const quiereEditar = await new Promise<boolean>((resolve) => {
+              this.modal.confirm({
+                nzTitle: 'Número de proceso ya activo',
+                nzContent: listaHtml + '<p>Edítalo en vez de crear uno nuevo.</p>',
+                nzOkText: 'Ir a editar',
+                nzCancelText: 'Cerrar',
+                nzOnOk: () => resolve(true),
+                nzOnCancel: () => resolve(false),
+              });
+            });
+
+            if (quiereEditar) {
+              this.router.navigate(['/itinerario'], { queryParams: { editId: activos[0].id } });
+            }
+          } else {
+            await new Promise<void>((resolve) => {
+              this.modal.warning({
+                nzTitle: 'Número de proceso ya activo',
+                nzContent: listaHtml + '<p>Edítalo desde la lista de Itinerarios en vez de crear uno nuevo.</p>',
+                nzOkText: 'Entendido',
+                nzOnOk: () => resolve(),
+              });
+            });
+          }
+
+          return;
+        }
+
+        // Solo hay coincidencias ya completadas: no es un duplicado real,
+        // pero se ofrece reabrir el más reciente con la nueva solicitud
+        // en vez de dejar crear un registro suelto aparte.
+        if (completados.length > 0) {
+          this.isLoading = false;
+
+          const masReciente = [...completados].sort((a, b) =>
+            (b.data.fechaCompletado || '').localeCompare(a.data.fechaCompletado || '')
+          )[0];
+
+          const quiereReabrir = await new Promise<boolean>((resolve) => {
+            this.modal.confirm({
+              nzTitle: 'Trámite ya completado con este número',
+              nzContent: `
+              <div style="max-height: 300px; overflow-y: auto;">
+                <p>El número de proceso "<b>${nroProceso}</b>" ya se completó antes:</p>
+                <ul style="padding-left: 20px;">
+                  <li>
+                    <b>Trámite:</b> ${masReciente.data.tramite} <br>
+                    📅 <b>Completado el:</b> ${masReciente.data.fechaCompletado || '—'} <br>
+                    📝 <b>Observación de cierre:</b> ${masReciente.data.obsCompletado || 'Sin observaciones'}
+                  </li>
+                </ul>
+                <p>¿Querés <b>reabrirlo</b> con esta nueva solicitud (se actualizan las fechas y queda registrado en el historial), en vez de crear un registro aparte?</p>
               </div>
             `,
-              nzOkText: 'Sí, continuar',
-              nzCancelText: 'No, cancelar',
-              nzOkLoading: false, // ✅ PROTECCIÓN #4: Deshabilitar loading del botón OK
+              nzOkText: 'Sí, reabrir',
+              nzCancelText: 'Crear uno nuevo',
+              nzOkLoading: false,
               nzOnOk: () => resolve(true),
               nzOnCancel: () => resolve(false),
             });
           });
 
-          if (!userConfirmed) {
-            return; // ✅ isLoading ya está en false
+          if (quiereReabrir) {
+            const user = this.usersService.getCurrentUser();
+            const formData = this.itinerarioForm.value;
+            try {
+              await this.itinerarioService.revertirAPendiente(
+                masReciente.id,
+                {
+                  uid: user?.uid || '',
+                  email: user?.email ?? undefined,
+                  nombre: user?.displayName ?? undefined,
+                },
+                {
+                  fechaSolicitud: formData.fechaSolicitud,
+                  horaSolicitud: formData.horaSolicitud,
+                  fechaTermino: formData.fechaTermino,
+                  tramite: formData.tramite,
+                  solicita: formData.solicita,
+                  observaciones: formData.observaciones,
+                }
+              );
+              this.message.success('Trámite reabierto con la nueva solicitud 🔄');
+              this.resetForm();
+            } catch (error) {
+              console.error('Error al reabrir el itinerario:', error);
+              this.message.error('Hubo un error al reabrir el trámite.');
+            } finally {
+              this.isLoading = false;
+            }
+            return;
           }
 
-          // ✅ PROTECCIÓN #5: Reactivar loading después de confirmar
+          // El usuario prefiere crear uno nuevo aparte: sigue el flujo normal.
           this.isLoading = true;
         }
       }

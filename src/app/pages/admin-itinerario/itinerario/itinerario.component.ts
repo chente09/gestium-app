@@ -24,6 +24,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { Subject, takeUntil } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { ItinerarioService, Itinerario, RutaDiaria } from '../../../services/itinerario/itinerario.service';
 import { UsersService } from '../../../services/users/users.service';
@@ -169,11 +170,19 @@ export class ItinerarioComponent implements OnInit {
     private message: NzMessageService,
     private cdr: ChangeDetectorRef,
     private sharedDataService: SharedDataService,
-    private dateUtils: DateUtilsService
+    private dateUtils: DateUtilsService,
+    private route: ActivatedRoute,
+    private router: Router
   ) { }
+
+  // ID a abrir en edición apenas cargue la lista, cuando se llega acá vía
+  // /itinerario?editId=... (por ejemplo desde el aviso de proceso duplicado
+  // activo en el formulario de creación).
+  private editIdPendiente: string | null = null;
 
   // ========== MÉTODOS DE CICLO DE VIDA ==========
   ngOnInit(): void {
+    this.editIdPendiente = this.route.snapshot.queryParamMap.get('editId');
     this.initializeComponent();
     this.setupSubscriptions();
   }
@@ -221,7 +230,20 @@ export class ItinerarioComponent implements OnInit {
       });
 
       this.loading = false;
+      this.abrirEdicionPendienteSiCorresponde();
     });
+  }
+
+  private abrirEdicionPendienteSiCorresponde(): void {
+    if (!this.editIdPendiente) return;
+    const item = this.itinerarios.find(i => i.id === this.editIdPendiente);
+    this.editIdPendiente = null;
+    this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+    if (item) {
+      this.startEdit(item);
+    } else {
+      this.message.warning('El itinerario ya no está disponible para editar (puede que ya no esté pendiente/incompleto).');
+    }
   }
 
   // ========== MÉTODOS DE FILTRADO Y BÚSQUEDA ==========

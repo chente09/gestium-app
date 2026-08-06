@@ -359,7 +359,11 @@ export class ItinerarioService {
   // mismo trámite vuelve a surgir en vez de crear uno nuevo. Limpia la
   // evidencia de la finalización anterior (Storage + campos) ya que deja de
   // ser válida.
-  async revertirAPendiente(id: string, revertidoPor: { uid: string; email?: string; nombre?: string }): Promise<void> {
+  async revertirAPendiente(
+    id: string,
+    revertidoPor: { uid: string; email?: string; nombre?: string },
+    nuevaSolicitud?: Partial<Pick<Itinerario, 'fechaSolicitud' | 'horaSolicitud' | 'fechaTermino' | 'tramite' | 'solicita' | 'observaciones'>>
+  ): Promise<void> {
     const docRef = doc(this.firestore, `${this.collectionName}/${id}`);
 
     try {
@@ -374,11 +378,14 @@ export class ItinerarioService {
       // No se borra nada de Storage ni se pierde el dato: la finalización
       // anterior (quién, cuándo, observación, evidencia) queda registrada
       // como una entrada más en el historial antes de limpiar los campos
-      // activos.
+      // activos. Si viene nuevaSolicitud es una reapertura por duplicado
+      // desde el formulario de creación; si no, es un "Reabrir" manual
+      // desde Historial.
+      const prefijo = nuevaSolicitud ? 'Reabierto con nueva solicitud' : 'Revertido a pendiente';
       const entradaReversion: EntradaHistorial = {
         observacion: itinerarioData.completPor || itinerarioData.obsCompletado
-          ? `Revertido a pendiente. Completado antes por ${itinerarioData.completPor || 'desconocido'}${itinerarioData.fechaCompletado ? ` el ${itinerarioData.fechaCompletado} ${itinerarioData.horaCompletado || ''}` : ''}${itinerarioData.obsCompletado ? `. Observación: "${itinerarioData.obsCompletado}"` : ''}.`
-          : 'Revertido a pendiente.',
+          ? `${prefijo}. Completado antes por ${itinerarioData.completPor || 'desconocido'}${itinerarioData.fechaCompletado ? ` el ${itinerarioData.fechaCompletado} ${itinerarioData.horaCompletado || ''}` : ''}${itinerarioData.obsCompletado ? `. Observación: "${itinerarioData.obsCompletado}"` : ''}.`
+          : `${prefijo}.`,
         fecha: ahora.toISOString().split('T')[0],
         hora: ahora.toTimeString().slice(0, 5),
         uid: revertidoPor.uid,
@@ -399,6 +406,7 @@ export class ItinerarioService {
         obsCompletado: deleteField(),
         imgcompletado: deleteField(),
         pdfCompletado: deleteField(),
+        ...(nuevaSolicitud || {}),
       });
     } catch (error: any) {
       throw new Error(`Error al revertir el itinerario ${id}: ${error.message}`);

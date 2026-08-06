@@ -76,6 +76,7 @@ export class HistoryItinerarioComponent implements OnInit {
   searchTerm: string = '';
   pageSize = 10;
   pageIndex = 1;
+  buscandoSinLimite = false;
 
   areas: { nombre: string; slug: string }[] = [];
   unidad: string[] = [];
@@ -193,6 +194,50 @@ export class HistoryItinerarioComponent implements OnInit {
 
   onSearch(): void {
     this.filterItinerarios();
+  }
+
+  // cargarItinerarios() solo trae los últimos `diasHistorial` días por
+  // fecha de solicitud (por rendimiento, ver ItinerarioService.getItinerariosRecientes).
+  // Un caso más viejo nunca se descarga, así que el buscador local nunca lo
+  // va a encontrar por más que se limpien los filtros. Esto hace una
+  // consulta puntual sin límite de fecha, por número de proceso exacto.
+  async buscarSinLimiteFecha(): Promise<void> {
+    const termino = this.searchTerm.trim();
+    if (!termino) return;
+
+    this.buscandoSinLimite = true;
+    try {
+      const snap = await this.itinerarioService.getItinerarioByNroProceso(termino);
+      const encontrados = snap.docs.map(d => ({ id: d.id, ...d.data() } as Itinerario));
+
+      if (encontrados.length === 0) {
+        this.message.info(`No se encontró ningún caso con el número de proceso "${termino}" en toda la base.`);
+        return;
+      }
+
+      encontrados.forEach(item => {
+        const index = this.itinerarios.findIndex(i => i.id === item.id);
+        if (index === -1) {
+          this.itinerarios.push(item);
+        } else {
+          this.itinerarios[index] = item;
+        }
+      });
+
+      // Los filtros de área/fecha/estado activos podrían seguir ocultando
+      // lo que se acaba de encontrar; se limpian para garantizar que se vea.
+      this.selectedArea.setValue('', { emitEvent: false });
+      this.selectedDate.setValue([null, null], { emitEvent: false });
+      this.selectedEstado.setValue(null, { emitEvent: false });
+
+      this.filterItinerarios();
+      this.message.success(`Se encontraron ${encontrados.length} caso(s) fuera de los últimos ${this.diasHistorial} días.`);
+    } catch (error) {
+      console.error('Error en búsqueda ampliada de historial:', error);
+      this.message.error('Error al buscar en todo el historial.');
+    } finally {
+      this.buscandoSinLimite = false;
+    }
   }
 
   filterItinerarios(): void {

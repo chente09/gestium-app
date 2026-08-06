@@ -46,6 +46,14 @@
 <ng-template #suffixIconSearch>
     <span nz-icon nzType="search"></span>
 </ng-template>
+
+<div *ngIf="searchTerm.trim()" class="wide-search-hint">
+    <span>Este buscador solo revisa los últimos {{ diasHistorial }} días. Si el número de proceso es más antiguo, no va a aparecer acá.</span>
+    <button nz-button nzSize="small" nzType="primary" [nzLoading]="buscandoSinLimite" (click)="buscarSinLimiteFecha()">
+        <nz-icon nzType="search"></nz-icon> Buscar "{{ searchTerm }}" en todo el historial
+    </button>
+</div>
+
 <hr class="divider">
 
 <!-- Tabla con scroll horizontal -->

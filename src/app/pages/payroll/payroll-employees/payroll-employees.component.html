@@ -11,6 +11,10 @@
 
     <nz-card nzTitle="Empleados de Nómina" class="main-card">
         <div class="control-panel">
+            <nz-input-group [nzSuffix]="suffixIconSearch" class="search-input">
+                <input nz-input placeholder="Buscar por nombre o cédula..." [(ngModel)]="searchTerm" (ngModelChange)="filterEmployees()" />
+            </nz-input-group>
+            <ng-template #suffixIconSearch><nz-icon nzType="search"></nz-icon></ng-template>
             <button nz-button nzType="primary" class="brand-btn" (click)="openCreateModal()">
                 <nz-icon nzType="user-add"></nz-icon> Agregar Empleado
             </button>
@@ -20,7 +24,7 @@
         <nz-table
             class="desktop-table-view"
             #employeeTable
-            [nzData]="employees"
+            [nzData]="filteredEmployees"
             [nzBordered]="true"
             [nzLoading]="loading"
             [nzPageSize]="20">
@@ -63,7 +67,7 @@
 
         <!-- Tarjetas (móvil) -->
         <div class="mobile-card-view">
-            <nz-card *ngFor="let employee of employees; trackBy: trackById" class="employee-card">
+            <nz-card *ngFor="let employee of filteredEmployees; trackBy: trackById" class="employee-card">
                 <div class="employee-card-header">
                     <strong>{{ employee.nombreCompleto }}</strong>
                     <nz-switch [ngModel]="employee.activo" (ngModelChange)="toggleActivo(employee, $event)"></nz-switch>
@@ -85,6 +89,7 @@
                     </button>
                 </div>
             </nz-card>
+            <nz-empty *ngIf="!loading && filteredEmployees.length === 0" nzNotFoundContent="Sin resultados"></nz-empty>
         </div>
     </nz-card>
 </div>

@@ -256,11 +256,35 @@ export class PayrollService {
     await updateDoc(ref, { lineas });
   }
 
-  async eliminarRolPago(rolId: string): Promise<void> {
+  // Agrega al borrador solo los empleados activos que todavía no tienen
+  // línea (ej. se dieron de alta después de generar el rol) — sin tocar
+  // días trabajados ni bonos/descuentos ya cargados en el resto. Devuelve
+  // cuántos se agregaron.
+  async agregarEmpleadosFaltantes(rolId: string): Promise<number> {
     const rol = await this.getRolPago(rolId);
-    if (rol?.estado === 'emitido') {
-      throw new Error('No se puede eliminar un rol ya emitido');
-    }
+    if (!rol) throw new Error('Rol no encontrado');
+    if (rol.estado !== 'borrador') throw new Error('Solo se puede modificar un rol en borrador');
+
+    const sbu = await this.getSbuVigente(rol.anio);
+    if (!sbu) throw new Error(`No hay SBU configurado para el año ${rol.anio}`);
+
+    const empleadosActivos = await this.getActivePayrollEmployeesOnce();
+    const idsExistentes = new Set(rol.lineas.map(l => l.payrollEmployeeId));
+    const faltantes = empleadosActivos.filter(e => e.id && !idsExistentes.has(e.id));
+
+    if (faltantes.length === 0) return 0;
+
+    const fechaCorte = new Date(rol.anio, rol.mes - 1, 1);
+    const nuevasLineas = faltantes.map(emp => this.calcularLinea(emp, sbu, fechaCorte, 'TODOS', [], []));
+    const lineas = [...rol.lineas, ...nuevasLineas];
+
+    const ref = doc(this.firestore, `${this.rolesCollection}/${rolId}`);
+    await updateDoc(ref, { lineas });
+
+    return faltantes.length;
+  }
+
+  async eliminarRolPago(rolId: string): Promise<void> {
     const ref = doc(this.firestore, `${this.rolesCollection}/${rolId}`);
     await deleteDoc(ref);
   }

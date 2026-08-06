@@ -67,7 +67,7 @@
                             <nz-icon nzType="eye"></nz-icon> Ver
                         </a>
                         <button
-                            *ngIf="rol.estado === 'borrador'"
+                            *ngIf="rol.estado === 'borrador' && registersService.isCurrentUserAdmin()"
                             nz-button
                             nzType="link"
                             nzDanger
@@ -77,6 +77,15 @@
                             (nzOnConfirm)="eliminarRol(rol)">
                             <nz-icon nzType="delete"></nz-icon> Eliminar
                         </button>
+                        <button
+                            *ngIf="rol.estado === 'emitido' && registersService.isCurrentUserAdmin()"
+                            nz-button
+                            nzType="link"
+                            nzDanger
+                            nzSize="small"
+                            (click)="abrirConfirmacionEliminarEmitido(rol)">
+                            <nz-icon nzType="delete"></nz-icon> Eliminar
+                        </button>
                     </td>
                 </tr>
             </tbody>
@@ -84,3 +93,27 @@
         <nz-empty *ngIf="!loading && roles.length === 0" nzNotFoundContent="Todavía no se generó ningún rol"></nz-empty>
     </nz-card>
 </div>
+
+<nz-modal
+    [(nzVisible)]="showDeleteEmitidoModal"
+    nzTitle="Eliminar rol emitido"
+    (nzOnCancel)="cerrarConfirmacionEliminarEmitido()"
+    [nzFooter]="deleteEmitidoFooter">
+    <ng-container *nzModalContent>
+        <p>Este rol ya fue <strong>emitido</strong> y sus recibos pudieron haber sido entregados. Eliminarlo es <strong>permanente</strong> y no se puede deshacer.</p>
+        <p>Para confirmar, escribe <strong>{{ textoConfirmacionEsperado }}</strong>:</p>
+        <input nz-input [(ngModel)]="confirmacionTexto" [placeholder]="textoConfirmacionEsperado" />
+    </ng-container>
+    <ng-template #deleteEmitidoFooter>
+        <button nz-button nzType="default" (click)="cerrarConfirmacionEliminarEmitido()">Cancelar</button>
+        <button
+            nz-button
+            nzType="primary"
+            nzDanger
+            [disabled]="confirmacionTexto.trim() !== textoConfirmacionEsperado"
+            [nzLoading]="eliminandoEmitido"
+            (click)="confirmarEliminarEmitido()">
+            Eliminar definitivamente
+        </button>
+    </ng-template>
+</nz-modal>

@@ -15,8 +15,11 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzInputModule } from 'ng-zorro-antd/input';
 
 import { PayrollService, RolPago } from '../../../services/payroll/payroll.service';
+import { RegistersService } from '../../../services/registers/registers.service';
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -39,7 +42,9 @@ const MESES = [
     NzInputNumberModule,
     NzBreadCrumbModule,
     NzEmptyModule,
-    NzPopconfirmModule
+    NzPopconfirmModule,
+    NzModalModule,
+    NzInputModule
   ],
   templateUrl: './payroll-roles.component.html',
   styleUrl: './payroll-roles.component.css'
@@ -57,13 +62,19 @@ export class PayrollRolesComponent implements OnInit, OnDestroy {
   sbuEditable: number | null = null;
   guardandoSbu = false;
 
+  rolAEliminarEmitido: RolPago | null = null;
+  showDeleteEmitidoModal = false;
+  confirmacionTexto = '';
+  eliminandoEmitido = false;
+
   private destroy$ = new Subject<void>();
   private sub?: Subscription;
 
   constructor(
     private payrollService: PayrollService,
     private message: NzMessageService,
-    private router: Router
+    private router: Router,
+    public registersService: RegistersService
   ) { }
 
   ngOnInit(): void {
@@ -139,6 +150,10 @@ export class PayrollRolesComponent implements OnInit, OnDestroy {
 
   async eliminarRol(rol: RolPago): Promise<void> {
     if (!rol.id) return;
+    if (!this.registersService.isCurrentUserAdmin()) {
+      this.message.error('Solo un administrador puede eliminar un rol de pago');
+      return;
+    }
     try {
       await this.payrollService.eliminarRolPago(rol.id);
       this.message.success('Rol eliminado');
@@ -150,5 +165,35 @@ export class PayrollRolesComponent implements OnInit, OnDestroy {
 
   trackById(index: number, rol: RolPago): string | undefined {
     return rol.id;
+  }
+
+  get textoConfirmacionEsperado(): string {
+    if (!this.rolAEliminarEmitido) return '';
+    return `${this.meses[this.rolAEliminarEmitido.mes - 1]} ${this.rolAEliminarEmitido.anio}`;
+  }
+
+  abrirConfirmacionEliminarEmitido(rol: RolPago): void {
+    this.rolAEliminarEmitido = rol;
+    this.confirmacionTexto = '';
+    this.showDeleteEmitidoModal = true;
+  }
+
+  cerrarConfirmacionEliminarEmitido(): void {
+    this.showDeleteEmitidoModal = false;
+    this.rolAEliminarEmitido = null;
+    this.confirmacionTexto = '';
+  }
+
+  async confirmarEliminarEmitido(): Promise<void> {
+    if (!this.rolAEliminarEmitido || this.confirmacionTexto.trim() !== this.textoConfirmacionEsperado) {
+      return;
+    }
+    this.eliminandoEmitido = true;
+    try {
+      await this.eliminarRol(this.rolAEliminarEmitido);
+      this.cerrarConfirmacionEliminarEmitido();
+    } finally {
+      this.eliminandoEmitido = false;
+    }
   }
 }

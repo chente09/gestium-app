@@ -16,6 +16,7 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { RouterModule } from '@angular/router';
 
 import { PayrollService, PayrollEmployee } from '../../../services/payroll/payroll.service';
@@ -44,13 +45,16 @@ const EMPLEADORES = [
     NzSelectModule,
     NzSwitchModule,
     NzDatePickerModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    NzEmptyModule
   ],
   templateUrl: './payroll-employees.component.html',
   styleUrl: './payroll-employees.component.css'
 })
 export class PayrollEmployeesComponent implements OnInit, OnDestroy {
   employees: PayrollEmployee[] = [];
+  filteredEmployees: PayrollEmployee[] = [];
+  searchTerm = '';
   loading = false;
 
   showModal = false;
@@ -85,6 +89,7 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (employees) => {
           this.employees = employees;
+          this.filterEmployees();
           this.loading = false;
         },
         error: (error) => {
@@ -98,6 +103,15 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  filterEmployees(): void {
+    const term = this.searchTerm.trim().toLowerCase();
+    this.filteredEmployees = !term
+      ? this.employees
+      : this.employees.filter(e =>
+          e.nombreCompleto.toLowerCase().includes(term) || e.cedula.includes(term)
+        );
   }
 
   openCreateModal(): void {

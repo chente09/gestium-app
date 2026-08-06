@@ -158,7 +158,11 @@ service cloud.firestore {
     }
 
     match /rolesPago/{id} {
-      allow read, write: if isAdminOrGerente();
+      allow read, create, update: if isAdminOrGerente();
+      // Borrar un rol ya generado (aunque sea borrador) queda solo para
+      // admin — puede haber una corrección y darse cuenta después de
+      // haberlo impreso, no queremos que cualquiera con acceso lo borre.
+      allow delete: if isAdmin();
     }
 
     // ============================================

@@ -15,8 +15,12 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+
+import jsPDF from 'jspdf';
 
 import { PayrollService, RolPago, LineaRolPago, ConceptoMonto } from '../../../services/payroll/payroll.service';
+import { LOGO_URL, loadImageAsDataUrl, dibujarRecibo } from '../../../services/payroll/payroll-pdf.util';
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -40,7 +44,8 @@ const MESES = [
     NzModalModule,
     NzBreadCrumbModule,
     NzGridModule,
-    NzStatisticModule
+    NzStatisticModule,
+    NzToolTipModule
   ],
   templateUrl: './payroll-rol-detail.component.html',
   styleUrl: './payroll-rol-detail.component.css'
@@ -52,6 +57,8 @@ export class PayrollRolDetailComponent implements OnInit {
   guardando = false;
   emitiendo = false;
   regenerando = false;
+  generandoPdfs = false;
+  agregandoFaltantes = false;
 
   private expandedIds = new Set<string>();
 
@@ -103,6 +110,26 @@ export class PayrollRolDetailComponent implements OnInit {
         }
       }
     });
+  }
+
+  async agregarEmpleadosFaltantes(): Promise<void> {
+    if (!this.rol?.id) return;
+
+    this.agregandoFaltantes = true;
+    try {
+      const agregados = await this.payrollService.agregarEmpleadosFaltantes(this.rol.id);
+      await this.cargarRol(this.rol.id);
+      if (agregados === 0) {
+        this.message.info('No hay empleados nuevos para agregar — ya están todos.');
+      } else {
+        this.message.success(`Se agregaron ${agregados} empleado(s) nuevo(s) al rol.`);
+      }
+    } catch (error: any) {
+      console.error('Error agregando empleados faltantes:', error);
+      this.message.error(error?.message || 'Error al agregar los empleados nuevos');
+    } finally {
+      this.agregandoFaltantes = false;
+    }
   }
 
   get esBorrador(): boolean {
@@ -218,6 +245,33 @@ export class PayrollRolDetailComponent implements OnInit {
         }
       }
     });
+  }
+
+  async descargarTodosLosRecibos(): Promise<void> {
+    if (!this.rol || this.rol.lineas.length === 0) return;
+
+    this.generandoPdfs = true;
+    try {
+      const [logo, empleados] = await Promise.all([
+        loadImageAsDataUrl(LOGO_URL),
+        Promise.all(this.rol.lineas.map(l => this.payrollService.getPayrollEmployeeById(l.payrollEmployeeId)))
+      ]);
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      this.rol.lineas.forEach((linea, i) => {
+        const employee = empleados[i];
+        if (!employee) return; // empleado eliminado después de generar el rol
+        if (i > 0) pdf.addPage();
+        dibujarRecibo(pdf, this.rol!, linea, employee, logo);
+      });
+
+      pdf.save(`Roles de Pago - ${this.meses[this.rol.mes - 1]} ${this.rol.anio}.pdf`);
+    } catch (error) {
+      console.error('Error generando los PDFs:', error);
+      this.message.error('Error al generar los recibos');
+    } finally {
+      this.generandoPdfs = false;
+    }
   }
 
   trackByEmployeeId(index: number, linea: LineaRolPago): string {

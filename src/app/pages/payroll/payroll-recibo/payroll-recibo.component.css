@@ -16,12 +16,37 @@
     background: #fdfcfa;
     box-shadow: 0 4px 24px rgba(0, 21, 41, 0.12);
     overflow: hidden;
+    position: relative;
 }
 
+/* Marca de agua — mismo tratamiento que el PDF: logo grande y casi
+   invisible, detrás del contenido. */
+.recibo-watermark {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 340px;
+    height: 340px;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.recibo-membrete,
+.recibo-gold-rule,
+.recibo-body {
+    position: relative;
+    z-index: 1;
+}
+
+/* Membrete sobre papel blanco: sin relleno sólido, para no gastar tinta de
+   más cada vez que se imprime un recibo. La identidad va en la tipografía,
+   el logo y la línea dorada, no en una banda de color. */
 .recibo-membrete {
-    background: #001529;
-    color: #fff;
-    padding: 18px 28px;
+    background: transparent;
+    color: #001529;
+    padding: 16px 28px 14px 28px;
     display: flex;
     align-items: center;
     gap: 16px;
@@ -46,7 +71,7 @@
     margin: 2px 0 0 0;
     font-size: 11px;
     letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.75);
+    color: #5c6570;
 }
 
 .recibo-ruc {
@@ -54,8 +79,9 @@
 }
 
 .recibo-gold-rule {
-    height: 3px;
+    height: 2px;
     background: #e0c10f;
+    margin: 0 28px;
 }
 
 .recibo-body {
@@ -122,12 +148,15 @@
     padding-top: 8px;
 }
 
+/* Caja con borde en vez de relleno sólido — se destaca por la tipografía y
+   el borde, no por cobertura de tinta. */
 .recibo-liquido {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    background: #001529;
-    color: #fff;
+    background: transparent;
+    color: #001529;
+    border: 1.5px solid #001529;
     padding: 14px 18px;
     margin-top: 24px;
     font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;

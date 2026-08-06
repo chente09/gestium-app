@@ -16,13 +16,22 @@
                 {{ rol.estado === 'emitido' ? 'Emitido' : 'Borrador' }}
             </nz-tag>
         </div>
-        <div class="header-actions" *ngIf="esBorrador">
-            <button nz-button [nzLoading]="regenerando" (click)="regenerarRol()">
-                <nz-icon nzType="reload"></nz-icon> Regenerar
+        <div class="header-actions">
+            <button nz-button [nzLoading]="generandoPdfs" (click)="descargarTodosLosRecibos()">
+                <nz-icon nzType="download"></nz-icon> Descargar Todos los Recibos
             </button>
-            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="emitiendo" (click)="emitirRol()">
-                <nz-icon nzType="check-circle"></nz-icon> Emitir Rol
-            </button>
+            <ng-container *ngIf="esBorrador">
+                <button nz-button [nzLoading]="agregandoFaltantes" (click)="agregarEmpleadosFaltantes()"
+                    nz-tooltip nzTooltipTitle="Agrega solo los empleados nuevos que todavía no están en este rol, sin tocar lo que ya cargaste para el resto">
+                    <nz-icon nzType="user-add"></nz-icon> Agregar Empleados Nuevos
+                </button>
+                <button nz-button [nzLoading]="regenerando" (click)="regenerarRol()">
+                    <nz-icon nzType="reload"></nz-icon> Regenerar
+                </button>
+                <button nz-button nzType="primary" class="brand-btn" [nzLoading]="emitiendo" (click)="emitirRol()">
+                    <nz-icon nzType="check-circle"></nz-icon> Emitir Rol
+                </button>
+            </ng-container>
         </div>
     </div>
 

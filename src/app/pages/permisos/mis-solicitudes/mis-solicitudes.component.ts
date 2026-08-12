@@ -23,8 +23,7 @@ import {
   SolicitudesPermisoService,
   SolicitudPermiso,
   TipoSolicitud,
-  TIPOS_SOLICITUD,
-  DIAS_VACACIONES_DESCONTABLES
+  TIPOS_SOLICITUD
 } from '../../../services/solicitudesPermiso/solicitudes-permiso.service';
 
 @Component({
@@ -49,7 +48,6 @@ import {
   styleUrl: './mis-solicitudes.component.css'
 })
 export class MisSolicitudesComponent implements OnInit, OnDestroy {
-  readonly diasVacacionesDescontables = DIAS_VACACIONES_DESCONTABLES;
   readonly tiposSolicitud = TIPOS_SOLICITUD;
 
   payrollEmployee: PayrollEmployee | null = null;

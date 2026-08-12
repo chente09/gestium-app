@@ -73,6 +73,17 @@
                     <nz-icon nzType="undo"></nz-icon> Reabrir para justificativo tardío
                 </button>
             </div>
+
+            <div class="acciones" *ngIf="registersService.isCurrentUserAdmin()">
+                <button
+                    nz-button nzType="link" nzDanger nzSize="small"
+                    nz-popconfirm
+                    nzPopconfirmTitle="¿Eliminar esta solicitud? No se puede deshacer."
+                    (nzOnConfirm)="eliminar(s)"
+                    [nzLoading]="procesandoId === s.id">
+                    <nz-icon nzType="delete"></nz-icon> Eliminar
+                </button>
+            </div>
         </div>
     </nz-card>
 </div>

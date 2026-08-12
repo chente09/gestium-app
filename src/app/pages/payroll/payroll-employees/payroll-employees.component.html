@@ -171,8 +171,8 @@
 
             <nz-form-item *ngIf="!esPasante">
                 <nz-form-label>Saldo de vacaciones disponible</nz-form-label>
-                <nz-form-control nzExtra="Días descontables por permisos no justificados (de los 15 legales, 11 son descontables).">
-                    <nz-input-number formControlName="saldoVacacionesDisponible" [nzMin]="0" [nzMax]="11" [nzStep]="1" nzPlaceHolder="0"></nz-input-number>
+                <nz-form-control nzExtra="Acumulado histórico de días de vacaciones. Puede superar 11 (años sin usarlas) o quedar en negativo (si debe días).">
+                    <nz-input-number formControlName="saldoVacacionesDisponible" [nzStep]="1" nzPlaceHolder="0"></nz-input-number>
                 </nz-form-control>
             </nz-form-item>
 

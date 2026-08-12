@@ -4,6 +4,7 @@ import {
   addDoc,
   collection,
   collectionData,
+  deleteDoc,
   doc,
   getDoc,
   query,
@@ -15,15 +16,13 @@ import { Observable } from 'rxjs';
 import { PayrollService } from '../payroll/payroll.service';
 import { RegistersService } from '../registers/registers.service';
 
-export type TipoSolicitud = 'vacaciones' | 'medico' | 'con_sueldo' | 'sin_sueldo' | 'calamidad_domestica';
+export type TipoSolicitud = 'vacaciones' | 'medico' | 'con_descuento_vacaciones';
 export type EstadoSolicitud = 'pendiente' | 'aprobado' | 'rechazado' | 'vencido_sin_justificativo';
 
-export const TIPOS_SOLICITUD: Record<TipoSolicitud, { label: string; requiereJustificativo: boolean }> = {
-  vacaciones: { label: 'Vacaciones', requiereJustificativo: false },
-  medico: { label: 'Permiso médico', requiereJustificativo: true },
-  con_sueldo: { label: 'Permiso con sueldo', requiereJustificativo: true },
-  sin_sueldo: { label: 'Permiso sin sueldo', requiereJustificativo: true },
-  calamidad_domestica: { label: 'Calamidad doméstica', requiereJustificativo: true }
+export const TIPOS_SOLICITUD: Record<TipoSolicitud, { label: string; requiereJustificativo: boolean; descuentaAlAprobar: boolean }> = {
+  vacaciones: { label: 'Vacaciones', requiereJustificativo: false, descuentaAlAprobar: true },
+  medico: { label: 'Permiso médico', requiereJustificativo: true, descuentaAlAprobar: false },
+  con_descuento_vacaciones: { label: 'Permiso con descuento de vacaciones', requiereJustificativo: false, descuentaAlAprobar: true }
 };
 
 // Plazo para subir el justificativo una vez aprobado el permiso. Pasado
@@ -123,18 +122,39 @@ export class SolicitudesPermisoService {
       fechaAprobacion: new Date().toISOString()
     });
 
+    const solicitud = await this.getSolicitudById(id);
+    if (!solicitud) return;
+
+    // Vacaciones y "con descuento de vacaciones" restan del saldo apenas se
+    // aprueban; Médico en cambio solo descuenta si vence sin justificativo.
+    if (TIPOS_SOLICITUD[solicitud.tipo].descuentaAlAprobar) {
+      await this.descontarDiasDeVacaciones(solicitud);
+    }
+
     // El envío del correo es un efecto secundario, no la aprobación en sí:
     // si falla (extensión mal configurada, sin permisos, etc.) no debe
     // hacer que la app reporte la aprobación como fallida. Se loguea aparte.
     try {
-      const solicitud = await this.getSolicitudById(id);
-      if (solicitud) {
-        await this.enviarAvisoAprobacion(solicitud, aprobador);
-        console.log('[Permisos] Aviso de aprobación encolado en la colección mail.');
-      }
+      await this.enviarAvisoAprobacion(solicitud, aprobador);
+      console.log('[Permisos] Aviso de aprobación encolado en la colección mail.');
     } catch (error) {
       console.error('[Permisos] No se pudo encolar el aviso de aprobación:', error);
     }
+  }
+
+  private async descontarDiasDeVacaciones(solicitud: SolicitudPermiso): Promise<void> {
+    const empleado = await this.payrollService.getPayrollEmployeeById(solicitud.payrollEmployeeId);
+    if (!empleado?.id) return;
+
+    const dias = diffDiasCalendario(solicitud.fechaInicio, solicitud.fechaFin);
+    const saldoActual = empleado.saldoVacacionesDisponible ?? 0;
+    const nuevoSaldo = Math.max(0, saldoActual - dias);
+    await this.payrollService.updatePayrollEmployee(empleado.id, { saldoVacacionesDisponible: nuevoSaldo });
+  }
+
+  async eliminarSolicitud(id: string): Promise<void> {
+    const ref2 = doc(this.firestore, `${this.collectionName}/${id}`);
+    await deleteDoc(ref2);
   }
 
   // Escribe un doc en la colección `mail`, que despacha la extensión de

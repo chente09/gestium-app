@@ -20,7 +20,7 @@
         <nz-card nzTitle="Nueva solicitud" class="form-card">
             <div *ngIf="elegibleVacaciones" class="saldo-info">
                 <nz-icon nzType="info-circle"></nz-icon>
-                Saldo de vacaciones disponible: <b>{{ payrollEmployee.saldoVacacionesDisponible ?? 0 }} / {{ diasVacacionesDescontables }}</b> días
+                Saldo de vacaciones disponible: <b>{{ payrollEmployee.saldoVacacionesDisponible ?? 0 }}</b> días
             </div>
             <div *ngIf="!elegibleVacaciones" class="saldo-info">
                 <nz-icon nzType="info-circle"></nz-icon>

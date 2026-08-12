@@ -161,6 +161,20 @@ export class SolicitudesAprobarComponent implements OnInit, OnDestroy {
     }
   }
 
+  async eliminar(s: SolicitudPermiso): Promise<void> {
+    if (!s.id || !this.registersService.isCurrentUserAdmin()) return;
+    this.procesandoId = s.id;
+    try {
+      await this.solicitudesService.eliminarSolicitud(s.id);
+      this.message.success('Solicitud eliminada.');
+    } catch (error) {
+      console.error('Error eliminando solicitud:', error);
+      this.message.error('No se pudo eliminar la solicitud.');
+    } finally {
+      this.procesandoId = null;
+    }
+  }
+
   diasRestantes(s: SolicitudPermiso): number {
     return this.solicitudesService.diasRestantesJustificativo(s);
   }

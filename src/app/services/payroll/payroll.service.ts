@@ -40,10 +40,12 @@ export interface PayrollEmployee {
   empleadorNombre: string;
   empleadorRuc: string;
   activo: boolean;
-  // Saldo de días de vacaciones disponibles para descuento por permisos no
-  // justificados (de los 15 días legales, 11 son descontables — los otros 4
-  // corresponden a fines de semana dentro del bloque y no se gastan sueltos).
-  // Lo carga y ajusta el admin a mano; no hay migración de saldos anteriores.
+  // Acumulado histórico de días de vacaciones disponibles: sube al aprobar
+  // Vacaciones/permisos con descuento (ver SolicitudesPermisoService), no
+  // está limitado a los 11 descontables de un solo año (se van sumando año
+  // a año si no se usan) y puede quedar en negativo si la persona debe
+  // días. Lo carga y ajusta el admin a mano; no hay migración de saldos
+  // previos a la puesta en marcha del módulo de Permisos.
   saldoVacacionesDisponible?: number | null;
 }
 

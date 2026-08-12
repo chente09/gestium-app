@@ -150,7 +150,12 @@ service cloud.firestore {
     // 💰 Roles de Pago — solo admin o gerente (RegistersService.canAccessPayroll)
     // ============================================
     match /payrollEmployees/{id} {
-      allow read, write: if isAdminOrGerente();
+      // Además de admin/gerente, cada usuario puede leer su propio registro
+      // (vinculado por uid) — lo necesita el módulo de Permisos y
+      // Vacaciones para saber su fecha de afiliación IESS y su saldo.
+      allow read: if isAdminOrGerente() ||
+                     (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow write: if isAdminOrGerente();
     }
 
     match /sbuConfig/{anio} {
@@ -163,6 +168,51 @@ service cloud.firestore {
       // admin — puede haber una corrección y darse cuenta después de
       // haberlo impreso, no queremos que cualquiera con acceso lo borre.
       allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // 🌴 Solicitudes de Permiso y Vacaciones
+    // Coordinador aprueba y controla TODAS las áreas (rol general para este
+    // módulo, no restringido a la suya); admin/gerente igual.
+    // ============================================
+    function puedeAprobarSolicitudes() {
+      return isAdminOrGerente() || isCoordinador();
+    }
+
+    match /solicitudesPermiso/{id} {
+      allow read: if isAuthenticated() && (
+        resource.data.uid == request.auth.uid || puedeAprobarSolicitudes()
+      );
+
+      // Cada quien solo puede crear su propia solicitud, y siempre arranca 'pendiente'.
+      allow create: if isAuthenticated() && isActiveUser() &&
+                       request.resource.data.uid == request.auth.uid &&
+                       request.resource.data.estado == 'pendiente';
+
+      // Aprobar/rechazar/reabrir: cualquiera de los tres roles habilitados.
+      // El dueño de la solicitud solo puede tocar el justificativo (subirlo
+      // o corregirlo), nada más — no se autoaprueba ni cambia sus fechas.
+      allow update: if isAuthenticated() && (
+        puedeAprobarSolicitudes() ||
+        (
+          resource.data.uid == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['justificativoUrl', 'justificativoSubidoEn'])
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // 📧 mail — cola de la extensión "Trigger Email" de Firebase.
+    // Solo quien puede aprobar solicitudes puede disparar un correo; nadie
+    // necesita leer/editar/borrar estos docs desde el cliente (la propia
+    // extensión los procesa con Admin SDK, que ignora estas reglas).
+    // ============================================
+    match /mail/{id} {
+      allow create: if isAuthenticated() && isActiveUser() &&
+                       (isAdminOrGerente() || isCoordinador());
+      allow read, update, delete: if false;
     }
 
     // ============================================

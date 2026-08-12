@@ -17,6 +17,9 @@ import { PayrollEmployeesComponent } from './pages/payroll/payroll-employees/pay
 import { PayrollRolesComponent } from './pages/payroll/payroll-roles/payroll-roles.component';
 import { PayrollRolDetailComponent } from './pages/payroll/payroll-rol-detail/payroll-rol-detail.component';
 import { PayrollReciboComponent } from './pages/payroll/payroll-recibo/payroll-recibo.component';
+import { solicitudesAprobarGuard } from './guards/solicitudesPermiso/solicitudes-aprobar.guard';
+import { MisSolicitudesComponent } from './pages/permisos/mis-solicitudes/mis-solicitudes.component';
+import { SolicitudesAprobarComponent } from './pages/permisos/solicitudes-aprobar/solicitudes-aprobar.component';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
 
@@ -36,6 +39,7 @@ const publicRoutes: Routes = [
 const basicProtectedRoutes: Routes = [
   { path: 'welcome', component: WelcomeComponent },
   { path: 'area/:id', component: AreaDetailComponentComponent },
+  { path: 'permisos', component: MisSolicitudesComponent },
 ].map(route => ({
   ...route,
   ...canActivate(redirectUnauthorizedToLogin)
@@ -76,6 +80,10 @@ const payrollRoutes: Routes = [
   { path: 'payroll/recibo/:rolId/:employeeId', component: PayrollReciboComponent },
 ].map(withAuthAnd([payrollGuard]));
 
+const solicitudesAprobarRoutes: Routes = [
+  { path: 'permisos/aprobar', component: SolicitudesAprobarComponent },
+].map(withAuthAnd([solicitudesAprobarGuard]));
+
 const errorRoutes: Routes = [
   { path: 'unauthorized', component: UnauthorizedComponent }, 
   { path: 'not-found', component: NotFoundComponent }, 
@@ -89,5 +97,6 @@ export const routes: Routes = [
   ...adminRoutes,
   ...superAdminRoutes,
   ...payrollRoutes,
+  ...solicitudesAprobarRoutes,
   ...errorRoutes
 ];

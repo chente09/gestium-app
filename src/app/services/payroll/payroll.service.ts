@@ -32,7 +32,7 @@ import { Observable } from 'rxjs';
 
 export interface PayrollEmployee {
   id?: string;
-  uid?: string; // link opcional al Register, si la persona tiene cuenta en el sistema
+  uid?: string | null; // link opcional al Register, si la persona tiene cuenta en el sistema
   nombreCompleto: string;
   cedula: string;
   fechaIngreso: string; // YYYY-MM-DD
@@ -40,6 +40,11 @@ export interface PayrollEmployee {
   empleadorNombre: string;
   empleadorRuc: string;
   activo: boolean;
+  // Saldo de días de vacaciones disponibles para descuento por permisos no
+  // justificados (de los 15 días legales, 11 son descontables — los otros 4
+  // corresponden a fines de semana dentro del bloque y no se gastan sueltos).
+  // Lo carga y ajusta el admin a mano; no hay migración de saldos anteriores.
+  saldoVacacionesDisponible?: number | null;
 }
 
 // Mismo shape para bonos (ingreso extra) y descuentos (ej. quirografario) —
@@ -120,6 +125,18 @@ export class PayrollService {
     return { id: snap.id, ...snap.data() } as PayrollEmployee;
   }
 
+  // Para que un empleado encuentre su propio registro de nómina desde su
+  // perfil (ej. módulo de Permisos y Vacaciones) — requiere que admin lo
+  // haya vinculado antes desde Empleados de Nómina (campo uid).
+  async getPayrollEmployeeByUid(uid: string): Promise<PayrollEmployee | null> {
+    const ref = collection(this.firestore, this.employeesCollection);
+    const q = query(ref, where('uid', '==', uid));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { id: d.id, ...d.data() } as PayrollEmployee;
+  }
+
   async createPayrollEmployee(employee: Omit<PayrollEmployee, 'id'>): Promise<string> {
     const ref = collection(this.firestore, this.employeesCollection);
     const docRef = await addDoc(ref, employee);
@@ -145,6 +162,17 @@ export class PayrollService {
     await setDoc(ref, { anio, valor });
   }
 
+  // Vacaciones (Art. 69) exigen, igual que Fondos de Reserva (Art. 196),
+  // 1 año completo de afiliación continua — a diferencia de los décimos,
+  // que son proporcionales desde el día 1. Pasantes (sin fechaAfiliacionIESS)
+  // no tienen acceso, solo a permisos.
+  esElegibleVacaciones(employee: PayrollEmployee, fecha: Date = new Date()): boolean {
+    if (!employee.fechaAfiliacionIESS) return false;
+    const [y, m, d] = employee.fechaAfiliacionIESS.split('-').map(Number);
+    const unAnioDespues = new Date(y + 1, m - 1, d);
+    return fecha >= unAnioDespues;
+  }
+
   // ============================================
   // 🧮 Cálculo de una línea de rol
   // ============================================
@@ -162,13 +190,9 @@ export class PayrollService {
     // Décimos: proporcionales desde el primer mes de afiliación, sin espera de 1 año.
     const elegibleDecimos = !esPasante;
 
-    // Fondos de reserva: sí exige 1 año completo de afiliación continua.
-    let elegibleFondosReserva = false;
-    if (!esPasante && employee.fechaAfiliacionIESS) {
-      const [y, m, d] = employee.fechaAfiliacionIESS.split('-').map(Number);
-      const unAnioDespues = new Date(y + 1, m - 1, d);
-      elegibleFondosReserva = fechaCorte >= unAnioDespues;
-    }
+    // Fondos de reserva: sí exige 1 año completo de afiliación continua
+    // (misma regla que Vacaciones, Art. 196 y Art. 69 respectivamente).
+    const elegibleFondosReserva = this.esElegibleVacaciones(employee, fechaCorte);
 
     const decimoTercero = elegibleDecimos ? round2(remuneracion / 12) : 0;
     const decimoCuarto = elegibleDecimos ? round2(sbu / 12) : 0;

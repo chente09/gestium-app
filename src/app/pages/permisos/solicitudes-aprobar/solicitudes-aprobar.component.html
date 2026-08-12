@@ -1,0 +1,99 @@
+<div class="permisos-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/permisos"><nz-icon nzType="calendar"></nz-icon> Permisos y Vacaciones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Por Aprobar</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <div class="header-row">
+        <h1><nz-icon nzType="audit"></nz-icon> Solicitudes por Aprobar</h1>
+    </div>
+
+    <div class="filtro-row">
+        <nz-select [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltro()" style="width: 220px;">
+            <nz-option nzValue="pendiente" nzLabel="Pendientes"></nz-option>
+            <nz-option nzValue="aprobado" nzLabel="Aprobadas"></nz-option>
+            <nz-option nzValue="rechazado" nzLabel="Rechazadas"></nz-option>
+            <nz-option nzValue="vencido_sin_justificativo" nzLabel="Vencidas sin justificativo"></nz-option>
+            <nz-option nzValue="todas" nzLabel="Todas"></nz-option>
+        </nz-select>
+    </div>
+
+    <nz-card [nzLoading]="loading" class="list-card">
+        <nz-empty *ngIf="!loading && filtradas.length === 0" nzNotFoundContent="No hay solicitudes en este filtro"></nz-empty>
+
+        <div class="solicitud-item" *ngFor="let s of filtradas; trackBy: trackById">
+            <div class="solicitud-header">
+                <div>
+                    <b>{{ s.nombreEmpleado }}</b>
+                    <span class="detalle">{{ tipoLabel(s.tipo) }} · {{ s.fechaInicio }} → {{ s.fechaFin }} · {{ s.area }}</span>
+                </div>
+                <nz-tag [nzColor]="estadoColor(s.estado)">{{ estadoLabel(s.estado) }}</nz-tag>
+            </div>
+            <p class="motivo">{{ s.motivo }}</p>
+
+            <div *ngIf="s.estado === 'rechazado' && s.motivoRechazo" class="rechazo-motivo">
+                <nz-icon nzType="close-circle"></nz-icon> Motivo del rechazo: {{ s.motivoRechazo }}
+            </div>
+
+            <div *ngIf="s.estado === 'aprobado' && s.requiereJustificativo && !s.justificativoUrl" class="justificativo-pendiente">
+                <nz-icon nzType="clock-circle"></nz-icon>
+                Quedan {{ diasRestantes(s) }} día(s) para que suba el justificativo.
+            </div>
+
+            <a *ngIf="s.justificativoUrl" [href]="s.justificativoUrl" target="_blank" class="ver-justificativo">
+                <nz-icon nzType="file-pdf"></nz-icon> Ver justificativo
+            </a>
+
+            <div *ngIf="s.estado === 'vencido_sin_justificativo'" class="vencido-info">
+                <nz-icon nzType="warning"></nz-icon>
+                Venció sin justificativo — se descontó de su saldo de vacaciones.
+            </div>
+
+            <div class="acciones" *ngIf="s.estado === 'pendiente'">
+                <button nz-button nzType="primary" nzSize="small" class="brand-btn" [nzLoading]="procesandoId === s.id" (click)="aprobar(s)">
+                    <nz-icon nzType="check"></nz-icon> Aprobar
+                </button>
+                <button nz-button nzType="default" nzDanger nzSize="small" [disabled]="procesandoId === s.id" (click)="abrirRechazo(s)">
+                    <nz-icon nzType="close"></nz-icon> Rechazar
+                </button>
+            </div>
+
+            <div class="acciones" *ngIf="s.estado === 'vencido_sin_justificativo' && registersService.isCurrentUserAdmin()">
+                <button
+                    nz-button nzSize="small"
+                    nz-popconfirm
+                    nzPopconfirmTitle="¿Reabrir para que pueda subir el justificativo tarde? No revierte el descuento ya aplicado."
+                    (nzOnConfirm)="reabrir(s)"
+                    [nzLoading]="procesandoId === s.id">
+                    <nz-icon nzType="undo"></nz-icon> Reabrir para justificativo tardío
+                </button>
+            </div>
+        </div>
+    </nz-card>
+</div>
+
+<nz-modal
+    [(nzVisible)]="showRechazoModal"
+    nzTitle="Rechazar solicitud"
+    (nzOnCancel)="cerrarRechazo()"
+    [nzFooter]="rechazoFooter">
+    <ng-container *nzModalContent>
+        <p>Motivo del rechazo para <b>{{ solicitudARechazar?.nombreEmpleado }}</b>:</p>
+        <input nz-input [(ngModel)]="motivoRechazoTexto" placeholder="Explicá brevemente por qué se rechaza" />
+    </ng-container>
+    <ng-template #rechazoFooter>
+        <button nz-button nzType="default" (click)="cerrarRechazo()">Cancelar</button>
+        <button
+            nz-button nzType="primary" nzDanger
+            [disabled]="!motivoRechazoTexto.trim()"
+            [nzLoading]="procesandoId === solicitudARechazar?.id"
+            (click)="confirmarRechazo()">
+            Rechazar
+        </button>
+    </ng-template>
+</nz-modal>

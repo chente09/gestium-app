@@ -21,6 +21,12 @@
     max-width: 360px;
 }
 
+.linked-user-hint {
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+}
+
 /* 🎨 Botón "primario" con el navy de marca */
 .brand-btn.ant-btn-primary {
     background-color: #001529;

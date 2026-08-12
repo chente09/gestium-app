@@ -30,7 +30,16 @@
           <li nz-menu-item>
             <a routerLink="/itinerario">Itinerario</a>
           </li>
+          <li nz-menu-item>
+            <a routerLink="/permisos">Permisos y Vacaciones</a>
+          </li>
         </ul>
+      </li>
+      <li nz-menu-item *ngIf="registersService.canApproveSolicitudes()">
+        <a routerLink="/permisos/aprobar">
+          <nz-icon nzType="audit"></nz-icon>
+          <span>Solicitudes por Aprobar</span>
+        </a>
       </li>
       <li nz-submenu nzOpen nzTitle="Administración" nzIcon="setting" *ngIf="isAdmin()">
         <ul>
@@ -87,7 +96,16 @@
             <li nz-menu-item (click)="closeDrawer()">
               <a routerLink="/itinerario">Itinerario</a>
             </li>
+            <li nz-menu-item (click)="closeDrawer()">
+              <a routerLink="/permisos">Permisos y Vacaciones</a>
+            </li>
           </ul>
+        </li>
+        <li nz-menu-item *ngIf="registersService.canApproveSolicitudes()" (click)="closeDrawer()">
+          <a routerLink="/permisos/aprobar">
+            <nz-icon nzType="audit"></nz-icon>
+            <span>Solicitudes por Aprobar</span>
+          </a>
         </li>
         <!-- ✅ NUEVO: Menú de Administración en drawer (solo para admins) -->
         <li nz-submenu nzOpen nzTitle="Administración" nzIcon="setting" *ngIf="isAdmin()">
@@ -160,6 +178,18 @@
                 <a routerLink="/payroll/roles" style="color: #001529;">
                   <nz-icon nzType="dollar"></nz-icon>
                   Roles de Pago
+                </a>
+              </li>
+              <li nz-menu-item>
+                <a routerLink="/permisos" style="color: #001529;">
+                  <nz-icon nzType="calendar"></nz-icon>
+                  Permisos y Vacaciones
+                </a>
+              </li>
+              <li nz-menu-item *ngIf="registersService.canApproveSolicitudes()">
+                <a routerLink="/permisos/aprobar" style="color: #001529;">
+                  <nz-icon nzType="audit"></nz-icon>
+                  Solicitudes por Aprobar
                 </a>
               </li>
               <li nz-menu-divider></li>

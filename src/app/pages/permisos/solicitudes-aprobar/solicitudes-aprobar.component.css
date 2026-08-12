@@ -1,0 +1,112 @@
+.permisos-container {
+    padding: 24px;
+    max-width: 860px;
+    margin: 0 auto;
+}
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 16px;
+}
+
+.header-row h1 {
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.scope-hint {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.filtro-row {
+    margin-bottom: 16px;
+}
+
+.list-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+}
+
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}
+
+.solicitud-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.solicitud-item:last-child {
+    border-bottom: none;
+}
+
+.solicitud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.detalle {
+    display: block;
+    margin-top: 2px;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 13px;
+}
+
+.motivo {
+    margin: 6px 0 0;
+    color: rgba(0, 0, 0, 0.65);
+    font-size: 13px;
+}
+
+.rechazo-motivo, .justificativo-pendiente, .vencido-info {
+    margin-top: 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.rechazo-motivo {
+    color: #cf1322;
+}
+
+.justificativo-pendiente {
+    color: #d46b08;
+}
+
+.vencido-info {
+    color: #ad2102;
+}
+
+.ver-justificativo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.acciones {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}

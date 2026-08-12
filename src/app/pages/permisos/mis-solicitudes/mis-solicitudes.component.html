@@ -1,0 +1,106 @@
+<div class="permisos-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Mis Solicitudes</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <h1 class="page-title"><nz-icon nzType="calendar"></nz-icon> Permisos y Vacaciones</h1>
+
+    <nz-alert
+        *ngIf="!cargandoPerfil && !payrollEmployee"
+        nzType="warning"
+        nzShowIcon
+        nzMessage="Tu cuenta no está vinculada a un registro de nómina"
+        nzDescription="Pedile a un administrador que te vincule desde Empleados de Nómina para poder solicitar permisos y vacaciones.">
+    </nz-alert>
+
+    <ng-container *ngIf="payrollEmployee">
+        <nz-card nzTitle="Nueva solicitud" class="form-card">
+            <div *ngIf="elegibleVacaciones" class="saldo-info">
+                <nz-icon nzType="info-circle"></nz-icon>
+                Saldo de vacaciones disponible: <b>{{ payrollEmployee.saldoVacacionesDisponible ?? 0 }} / {{ diasVacacionesDescontables }}</b> días
+            </div>
+            <div *ngIf="!elegibleVacaciones" class="saldo-info">
+                <nz-icon nzType="info-circle"></nz-icon>
+                Todavía no cumplís 1 año de afiliación al IESS, así que por ahora solo podés pedir permisos (no vacaciones).
+            </div>
+
+            <form nz-form [formGroup]="form" nzLayout="vertical" (ngSubmit)="crearSolicitud()">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Tipo</nz-form-label>
+                    <nz-form-control>
+                        <nz-select formControlName="tipo">
+                            <nz-option *ngFor="let tipo of tiposParaSeleccionar()" [nzValue]="tipo.value" [nzLabel]="tipo.label"></nz-option>
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <div class="fechas-row">
+                    <nz-form-item>
+                        <nz-form-label nzRequired>Fecha inicio</nz-form-label>
+                        <nz-form-control>
+                            <input nz-input type="date" formControlName="fechaInicio" />
+                        </nz-form-control>
+                    </nz-form-item>
+
+                    <nz-form-item>
+                        <nz-form-label nzRequired>Fecha fin</nz-form-label>
+                        <nz-form-control>
+                            <input nz-input type="date" formControlName="fechaFin" />
+                        </nz-form-control>
+                    </nz-form-item>
+                </div>
+
+                <nz-form-item>
+                    <nz-form-label nzRequired>Motivo</nz-form-label>
+                    <nz-form-control>
+                        <textarea nz-input formControlName="motivo" rows="2" placeholder="Detalle breve del motivo"></textarea>
+                    </nz-form-control>
+                </nz-form-item>
+
+                <button nz-button nzType="primary" class="brand-btn" [nzLoading]="creando" type="submit">
+                    <nz-icon nzType="send"></nz-icon> Enviar solicitud
+                </button>
+            </form>
+        </nz-card>
+
+        <nz-card nzTitle="Mis solicitudes" [nzLoading]="loading" class="list-card">
+            <nz-empty *ngIf="!loading && solicitudes.length === 0" nzNotFoundContent="Todavía no enviaste ninguna solicitud"></nz-empty>
+
+            <div class="solicitud-item" *ngFor="let s of solicitudes; trackBy: trackById">
+                <div class="solicitud-header">
+                    <div>
+                        <b>{{ tipoLabel(s.tipo) }}</b>
+                        <span class="fechas">{{ s.fechaInicio }} → {{ s.fechaFin }}</span>
+                    </div>
+                    <nz-tag [nzColor]="estadoColor(s.estado)">{{ estadoLabel(s.estado) }}</nz-tag>
+                </div>
+                <p class="motivo">{{ s.motivo }}</p>
+
+                <div *ngIf="s.estado === 'rechazado' && s.motivoRechazo" class="rechazo-motivo">
+                    <nz-icon nzType="close-circle"></nz-icon> Motivo del rechazo: {{ s.motivoRechazo }}
+                </div>
+
+                <div *ngIf="s.estado === 'aprobado' && s.requiereJustificativo && !s.justificativoUrl" class="justificativo-pendiente">
+                    <nz-icon nzType="clock-circle"></nz-icon>
+                    Te quedan <b>{{ diasRestantes(s) }} día(s)</b> para subir el justificativo.
+                    <label class="upload-btn" nz-button nzSize="small">
+                        <nz-icon nzType="upload"></nz-icon> Subir justificativo
+                        <input type="file" hidden (change)="onJustificativoSelected($event, s)" [disabled]="uploadingId === s.id" />
+                    </label>
+                </div>
+
+                <a *ngIf="s.justificativoUrl" [href]="s.justificativoUrl" target="_blank" class="ver-justificativo">
+                    <nz-icon nzType="file-pdf"></nz-icon> Ver justificativo subido
+                </a>
+
+                <div *ngIf="s.estado === 'vencido_sin_justificativo'" class="vencido-info">
+                    <nz-icon nzType="warning"></nz-icon>
+                    Venció el plazo sin justificativo — se descontó de tu saldo de vacaciones. Si fue un error, contactá a un administrador.
+                </div>
+            </div>
+        </nz-card>
+    </ng-container>
+</div>

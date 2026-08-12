@@ -10,5 +10,12 @@
         ]
       }
     }
+  },
+  "etags": {
+    "gestium-intranet": {
+      "extensionInstances": {
+        "firestore-send-email": "e3286e75183001339a5f0e733d194fddc33c7fb197845f428711fd4560d57543"
+      }
+    }
   }
 }

@@ -38,6 +38,7 @@ export class WelcomeComponent {
   sections2 = [
     { title: 'Itinerario', description: 'Control de actividades del tramitador', icon: 'schedule', route: '/itinerario' },
     { title: 'Control de Gastos', description: 'Control de gastos por área', icon: 'credit-card', route: '/area/gastos' },
+    { title: 'Permisos y Vacaciones', description: 'Solicitar permisos y vacaciones', icon: 'calendar', route: '/permisos' },
   ];
 
   

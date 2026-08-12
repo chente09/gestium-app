@@ -41,7 +41,13 @@
             </thead>
             <tbody>
                 <tr *ngFor="let employee of employeeTable.data; trackBy: trackById">
-                    <td>{{ employee.nombreCompleto }}</td>
+                    <td>
+                        {{ employee.nombreCompleto }}
+                        <div class="linked-user-hint">
+                            <nz-icon nzType="link"></nz-icon>
+                            {{ getNombreUsuarioVinculado(employee.uid) || 'Sin vincular a usuario' }}
+                        </div>
+                    </td>
                     <td>{{ employee.cedula }}</td>
                     <td>{{ employee.fechaIngreso }}</td>
                     <td>
@@ -83,6 +89,10 @@
                     </ng-template>
                 </div>
                 <div class="employee-card-row">{{ employee.empleadorNombre }}</div>
+                <div class="employee-card-row linked-user-hint">
+                    <nz-icon nzType="link"></nz-icon>
+                    {{ getNombreUsuarioVinculado(employee.uid) || 'Sin vincular a usuario' }}
+                </div>
                 <div class="employee-card-actions">
                     <button nz-button nzSize="small" (click)="openEditModal(employee)">
                         <nz-icon nzType="edit"></nz-icon> Editar
@@ -142,6 +152,27 @@
                     <nz-select formControlName="empleadorRuc">
                         <nz-option *ngFor="let emp of empleadores" [nzValue]="emp.ruc" [nzLabel]="emp.nombre + ' — ' + emp.ruc"></nz-option>
                     </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item>
+                <nz-form-label>Vincular a usuario del sistema</nz-form-label>
+                <nz-form-control nzExtra="Necesario para que la persona pueda pedir sus propios permisos y vacaciones desde su perfil.">
+                    <nz-select formControlName="uid" nzAllowClear nzPlaceHolder="Sin vincular">
+                        <nz-option
+                            *ngFor="let register of registers"
+                            [nzDisabled]="!registerDisponible(register)"
+                            [nzValue]="register.uid"
+                            [nzLabel]="register.displayName + ' — ' + register.email + (registerDisponible(register) ? '' : ' (ya vinculado)')">
+                        </nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+
+            <nz-form-item *ngIf="!esPasante">
+                <nz-form-label>Saldo de vacaciones disponible</nz-form-label>
+                <nz-form-control nzExtra="Días descontables por permisos no justificados (de los 15 legales, 11 son descontables).">
+                    <nz-input-number formControlName="saldoVacacionesDisponible" [nzMin]="0" [nzMax]="11" [nzStep]="1" nzPlaceHolder="0"></nz-input-number>
                 </nz-form-control>
             </nz-form-item>
 

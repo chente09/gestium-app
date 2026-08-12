@@ -17,9 +17,11 @@ import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
+import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { RouterModule } from '@angular/router';
 
 import { PayrollService, PayrollEmployee } from '../../../services/payroll/payroll.service';
+import { RegistersService, Register } from '../../../services/registers/registers.service';
 
 const EMPLEADORES = [
   { nombre: 'MALDONADO VITERI GUILLERMO DAVID', ruc: '1711716819001' },
@@ -46,7 +48,8 @@ const EMPLEADORES = [
     NzSwitchModule,
     NzDatePickerModule,
     NzBreadCrumbModule,
-    NzEmptyModule
+    NzEmptyModule,
+    NzInputNumberModule
   ],
   templateUrl: './payroll-employees.component.html',
   styleUrl: './payroll-employees.component.css'
@@ -56,6 +59,8 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
   filteredEmployees: PayrollEmployee[] = [];
   searchTerm = '';
   loading = false;
+
+  registers: Register[] = [];
 
   showModal = false;
   editingId: string | null = null;
@@ -69,6 +74,7 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
 
   constructor(
     private payrollService: PayrollService,
+    private registersService: RegistersService,
     private fb: FormBuilder,
     private message: NzMessageService
   ) {
@@ -78,7 +84,9 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       fechaIngreso: ['', Validators.required],
       fechaAfiliacionIESS: [''],
       empleadorRuc: [EMPLEADORES[0].ruc, Validators.required],
-      activo: [true]
+      activo: [true],
+      uid: [null],
+      saldoVacacionesDisponible: [null]
     });
   }
 
@@ -98,6 +106,28 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
           this.loading = false;
         }
       });
+
+    this.registersService.getRegisters()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(registers => {
+        this.registers = registers
+          .filter(r => r.activo)
+          .sort((a, b) => a.displayName.localeCompare(b.displayName));
+      });
+  }
+
+  // El mismo Register puede quedar vinculado a un solo PayrollEmployee.
+  registerDisponible(register: Register): boolean {
+    return register.uid === this.editingUid || !this.employees.some(e => e.uid === register.uid);
+  }
+
+  private get editingUid(): string | null {
+    return this.editingId ? this.employees.find(e => e.id === this.editingId)?.uid ?? null : null;
+  }
+
+  getNombreUsuarioVinculado(uid?: string | null): string | null {
+    if (!uid) return null;
+    return this.registers.find(r => r.uid === uid)?.displayName ?? null;
   }
 
   ngOnDestroy(): void {
@@ -117,7 +147,7 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
   openCreateModal(): void {
     this.editingId = null;
     this.esPasante = false;
-    this.form.reset({ empleadorRuc: EMPLEADORES[0].ruc, activo: true });
+    this.form.reset({ empleadorRuc: EMPLEADORES[0].ruc, activo: true, uid: null, saldoVacacionesDisponible: null });
     this.showModal = true;
   }
 
@@ -130,7 +160,9 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       fechaIngreso: employee.fechaIngreso,
       fechaAfiliacionIESS: employee.fechaAfiliacionIESS || '',
       empleadorRuc: employee.empleadorRuc,
-      activo: employee.activo
+      activo: employee.activo,
+      uid: employee.uid || null,
+      saldoVacacionesDisponible: employee.saldoVacacionesDisponible ?? null
     });
     this.showModal = true;
   }
@@ -163,7 +195,9 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       fechaAfiliacionIESS: this.esPasante ? null : (value.fechaAfiliacionIESS || null),
       empleadorNombre: empleador.nombre,
       empleadorRuc: empleador.ruc,
-      activo: value.activo
+      activo: value.activo,
+      uid: value.uid || null,
+      saldoVacacionesDisponible: value.saldoVacacionesDisponible ?? null
     };
 
     try {

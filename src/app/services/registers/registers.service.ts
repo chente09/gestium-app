@@ -330,6 +330,15 @@ export class RegistersService {
     return role === 'admin' || role === 'gerente';
   }
 
+  // 🔐 Permisos y Vacaciones: quién puede entrar a aprobar solicitudes —
+  // admin, gerente y coordinador, sin restricción de área para ninguno de
+  // los tres (a diferencia de hasFullAccess()/canAccessArea(), acá el
+  // coordinador aprueba de todas las áreas, no solo la suya).
+  canApproveSolicitudes(): boolean {
+    const role = this.currentRegister?.role;
+    return role === 'admin' || role === 'gerente' || role === 'coordinador';
+  }
+
   // 🔐 Verificar si usuario actual tiene acceso a un área
   canAccessArea(area: string): boolean {
     if (!this.currentRegister) return false;

@@ -52,6 +52,7 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
 
   payrollEmployee: PayrollEmployee | null = null;
   elegibleVacaciones = false;
+  esPasante = false;
   cargandoPerfil = true;
 
   solicitudes: SolicitudPermiso[] = [];
@@ -91,9 +92,11 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
 
     this.payrollEmployee = await this.payrollService.getPayrollEmployeeByUid(user.uid);
     this.elegibleVacaciones = this.payrollEmployee ? this.payrollService.esElegibleVacaciones(this.payrollEmployee) : false;
+    this.esPasante = this.payrollEmployee ? this.payrollService.esPasante(this.payrollEmployee) : false;
     this.cargandoPerfil = false;
 
-    if (!this.elegibleVacaciones && this.form.get('tipo')?.value === 'vacaciones') {
+    const tipoActual = this.form.get('tipo')?.value;
+    if ((!this.elegibleVacaciones && tipoActual === 'vacaciones') || (this.esPasante && tipoActual === 'con_descuento_vacaciones')) {
       this.form.patchValue({ tipo: 'medico' });
     }
 
@@ -119,6 +122,7 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
   tiposParaSeleccionar(): { value: TipoSolicitud; label: string }[] {
     return (Object.keys(TIPOS_SOLICITUD) as TipoSolicitud[])
       .filter(tipo => tipo !== 'vacaciones' || this.elegibleVacaciones)
+      .filter(tipo => tipo !== 'con_descuento_vacaciones' || !this.esPasante)
       .map(tipo => ({ value: tipo, label: TIPOS_SOLICITUD[tipo].label }));
   }
 

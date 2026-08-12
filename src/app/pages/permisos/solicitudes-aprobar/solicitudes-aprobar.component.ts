@@ -134,7 +134,7 @@ export class SolicitudesAprobarComponent implements OnInit, OnDestroy {
     try {
       await this.solicitudesService.rechazarSolicitud(
         this.solicitudARechazar.id,
-        { uid: user.uid, nombre: user.displayName || user.email || 'Desconocido' },
+        { uid: user.uid, nombre: user.displayName || user.email || 'Desconocido', email: user.email || '' },
         this.motivoRechazoTexto.trim()
       );
       this.message.success('Solicitud rechazada.');

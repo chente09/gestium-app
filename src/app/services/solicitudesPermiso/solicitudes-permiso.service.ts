@@ -127,8 +127,15 @@ export class SolicitudesPermisoService {
 
     // Vacaciones y "con descuento de vacaciones" restan del saldo apenas se
     // aprueban; Médico en cambio solo descuenta si vence sin justificativo.
+    // Aparte de la app en sí (el saldo no debería cambiar), esto puede
+    // fallar por permisos si quien aprueba es coordinador — no debe tumbar
+    // la aprobación (que ya se guardó arriba) ni el correo de aviso.
     if (TIPOS_SOLICITUD[solicitud.tipo].descuentaAlAprobar) {
-      await this.descontarDiasDeVacaciones(solicitud);
+      try {
+        await this.descontarDiasDeVacaciones(solicitud);
+      } catch (error) {
+        console.error('[Permisos] No se pudo descontar el saldo de vacaciones:', error);
+      }
     }
 
     // El envío del correo es un efecto secundario, no la aprobación en sí:
@@ -144,7 +151,9 @@ export class SolicitudesPermisoService {
 
   private async descontarDiasDeVacaciones(solicitud: SolicitudPermiso): Promise<void> {
     const empleado = await this.payrollService.getPayrollEmployeeById(solicitud.payrollEmployeeId);
-    if (!empleado?.id) return;
+    // Un pasante no tiene saldo de vacaciones que descontar — no debería
+    // llegar acá porque la UI no le ofrece estos tipos, pero por las dudas.
+    if (!empleado?.id || this.payrollService.esPasante(empleado)) return;
 
     const dias = diffDiasCalendario(solicitud.fechaInicio, solicitud.fechaFin);
     const saldoActual = empleado.saldoVacacionesDisponible ?? 0;
@@ -206,7 +215,7 @@ export class SolicitudesPermisoService {
     await addDoc(mailRef, mailDoc);
   }
 
-  async rechazarSolicitud(id: string, aprobador: { uid: string; nombre: string }, motivoRechazo: string): Promise<void> {
+  async rechazarSolicitud(id: string, aprobador: { uid: string; nombre: string; email: string }, motivoRechazo: string): Promise<void> {
     const ref2 = doc(this.firestore, `${this.collectionName}/${id}`);
     await updateDoc(ref2, {
       estado: 'rechazado',
@@ -215,6 +224,57 @@ export class SolicitudesPermisoService {
       fechaAprobacion: new Date().toISOString(),
       motivoRechazo
     });
+
+    try {
+      const solicitud = await this.getSolicitudById(id);
+      if (solicitud) {
+        await this.enviarAvisoRechazo(solicitud, aprobador, motivoRechazo);
+        console.log('[Permisos] Aviso de rechazo encolado en la colección mail.');
+      }
+    } catch (error) {
+      console.error('[Permisos] No se pudo encolar el aviso de rechazo:', error);
+    }
+  }
+
+  private async enviarAvisoRechazo(
+    solicitud: SolicitudPermiso,
+    aprobador: { nombre: string; email: string },
+    motivoRechazo: string
+  ): Promise<void> {
+    const [empleado, gerentes, admins] = await Promise.all([
+      this.registersService.getRegisterByUid(solicitud.uid),
+      this.registersService.getUsersByRole('gerente'),
+      this.registersService.getUsersByRole('admin')
+    ]);
+
+    const to = [...new Set([empleado?.email, aprobador.email].filter((e): e is string => !!e))];
+    const cc = [...new Set(gerentes.map(g => g.email).filter(e => !!e && !to.includes(e)))];
+    const bcc = [...new Set(admins.map(a => a.email).filter(e => !!e && !to.includes(e) && !cc.includes(e)))];
+
+    const tipoLabel = TIPOS_SOLICITUD[solicitud.tipo].label;
+    const mailDoc: Record<string, unknown> = {
+      to,
+      message: {
+        subject: `Solicitud de ${tipoLabel} rechazada — ${solicitud.nombreEmpleado}`,
+        html: `
+          <p>Se rechazó la siguiente solicitud en Gestium SLI:</p>
+          <ul>
+            <li><b>Empleado:</b> ${solicitud.nombreEmpleado}</li>
+            <li><b>Tipo:</b> ${tipoLabel}</li>
+            <li><b>Fechas:</b> ${solicitud.fechaInicio} al ${solicitud.fechaFin}</li>
+            <li><b>Motivo de la solicitud:</b> ${solicitud.motivo}</li>
+            <li><b>Rechazado por:</b> ${aprobador.nombre}</li>
+            <li><b>Motivo del rechazo:</b> ${motivoRechazo}</li>
+          </ul>
+          <p>— Sistema Gestium SLI</p>
+        `
+      }
+    };
+    if (cc.length) mailDoc['cc'] = cc;
+    if (bcc.length) mailDoc['bcc'] = bcc;
+
+    const mailRef = collection(this.firestore, 'mail');
+    await addDoc(mailRef, mailDoc);
   }
 
   async subirJustificativo(id: string, file: File): Promise<string> {
@@ -258,19 +318,26 @@ export class SolicitudesPermisoService {
   async verificarYVencerSiCorresponde(solicitud: SolicitudPermiso): Promise<void> {
     if (solicitud.estado !== 'aprobado' || !this.plazoVencido(solicitud)) return;
 
-    const dias = diffDiasCalendario(solicitud.fechaInicio, solicitud.fechaFin);
     const empleado = await this.payrollService.getPayrollEmployeeById(solicitud.payrollEmployeeId);
-    const saldoActual = empleado?.saldoVacacionesDisponible ?? 0;
-    const nuevoSaldo = Math.max(0, saldoActual - dias);
+    // Un pasante no tiene saldo de vacaciones que perder — queda vencido
+    // igual (para que se vea que no se justificó), pero sin descuento.
+    const esPasante = empleado ? this.payrollService.esPasante(empleado) : false;
 
-    if (empleado?.id) {
-      await this.payrollService.updatePayrollEmployee(empleado.id, { saldoVacacionesDisponible: nuevoSaldo });
+    if (empleado?.id && !esPasante) {
+      try {
+        const dias = diffDiasCalendario(solicitud.fechaInicio, solicitud.fechaFin);
+        const saldoActual = empleado.saldoVacacionesDisponible ?? 0;
+        const nuevoSaldo = Math.max(0, saldoActual - dias);
+        await this.payrollService.updatePayrollEmployee(empleado.id, { saldoVacacionesDisponible: nuevoSaldo });
+      } catch (error) {
+        console.error('[Permisos] No se pudo descontar el saldo de vacaciones al vencer:', error);
+      }
     }
 
     const ref2 = doc(this.firestore, `${this.collectionName}/${solicitud.id}`);
     await updateDoc(ref2, {
       estado: 'vencido_sin_justificativo',
-      descontadoDeVacaciones: true
+      descontadoDeVacaciones: !esPasante
     });
   }
 

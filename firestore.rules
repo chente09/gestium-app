@@ -155,7 +155,15 @@ service cloud.firestore {
       // Vacaciones para saber su fecha de afiliación IESS y su saldo.
       allow read: if isAdminOrGerente() ||
                      (isAuthenticated() && resource.data.uid == request.auth.uid);
-      allow write: if isAdminOrGerente();
+
+      // Coordinador aprueba Vacaciones/permisos-con-descuento y eso resta
+      // del saldo (SolicitudesPermisoService.descontarDiasDeVacaciones) —
+      // se le deja tocar únicamente ese campo, nada más del empleado.
+      allow write: if isAdminOrGerente() ||
+                      (
+                        isCoordinador() &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['saldoVacacionesDisponible'])
+                      );
     }
 
     match /sbuConfig/{anio} {
@@ -190,13 +198,23 @@ service cloud.firestore {
                        request.resource.data.estado == 'pendiente';
 
       // Aprobar/rechazar/reabrir: cualquiera de los tres roles habilitados.
-      // El dueño de la solicitud solo puede tocar el justificativo (subirlo
-      // o corregirlo), nada más — no se autoaprueba ni cambia sus fechas.
+      // El dueño de la solicitud puede: subir/corregir su justificativo, o
+      // (SolicitudesPermisoService.verificarYVencerSiCorresponde, que corre
+      // sola al listar sus propias solicitudes) marcar como vencida una que
+      // ya estaba aprobada y se pasó del plazo — nada más, no se autoaprueba
+      // ni cambia fechas/motivo.
       allow update: if isAuthenticated() && (
         puedeAprobarSolicitudes() ||
         (
           resource.data.uid == request.auth.uid &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['justificativoUrl', 'justificativoSubidoEn'])
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['justificativoUrl', 'justificativoSubidoEn']) ||
+            (
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'descontadoDeVacaciones']) &&
+              resource.data.estado == 'aprobado' &&
+              request.resource.data.estado == 'vencido_sin_justificativo'
+            )
+          )
         )
       );
 

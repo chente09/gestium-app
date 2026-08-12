@@ -164,6 +164,10 @@ export class PayrollService {
     await setDoc(ref, { anio, valor });
   }
 
+  esPasante(employee: PayrollEmployee): boolean {
+    return !employee.fechaAfiliacionIESS;
+  }
+
   // Vacaciones (Art. 69) exigen, igual que Fondos de Reserva (Art. 196),
   // 1 año completo de afiliación continua — a diferencia de los décimos,
   // que son proporcionales desde el día 1. Pasantes (sin fechaAfiliacionIESS)

@@ -153,7 +153,9 @@ service cloud.firestore {
       // Además de admin/gerente, cada usuario puede leer su propio registro
       // (vinculado por uid) — lo necesita el módulo de Permisos y
       // Vacaciones para saber su fecha de afiliación IESS y su saldo.
-      allow read: if isAdminOrGerente() ||
+      // Coordinador lee la lista completa para el resumen de saldos de
+      // vacaciones por empleado (control de Permisos y Vacaciones).
+      allow read: if isAdminOrGerente() || isCoordinador() ||
                      (isAuthenticated() && resource.data.uid == request.auth.uid);
 
       // Coordinador aprueba Vacaciones/permisos-con-descuento y eso resta

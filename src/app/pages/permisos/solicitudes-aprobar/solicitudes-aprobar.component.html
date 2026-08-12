@@ -11,14 +11,18 @@
 
     <div class="header-row">
         <h1><nz-icon nzType="audit"></nz-icon> Solicitudes por Aprobar</h1>
+        <a routerLink="/permisos/saldos" class="link">
+            <nz-icon nzType="bar-chart"></nz-icon> Saldo de Vacaciones por Empleado
+        </a>
     </div>
 
     <div class="filtro-row">
-        <nz-select [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltro()" style="width: 220px;">
+        <nz-select [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltro()" style="width: 260px;">
             <nz-option nzValue="pendiente" nzLabel="Pendientes"></nz-option>
             <nz-option nzValue="aprobado" nzLabel="Aprobadas"></nz-option>
             <nz-option nzValue="rechazado" nzLabel="Rechazadas"></nz-option>
             <nz-option nzValue="vencido_sin_justificativo" nzLabel="Vencidas sin justificativo"></nz-option>
+            <nz-option nzValue="certificados_pendientes" nzLabel="Certificados por validar"></nz-option>
             <nz-option nzValue="todas" nzLabel="Todas"></nz-option>
         </nz-select>
     </div>
@@ -45,9 +49,21 @@
                 Quedan {{ diasRestantes(s) }} día(s) para que suba el justificativo.
             </div>
 
-            <a *ngIf="s.justificativoUrl" [href]="s.justificativoUrl" target="_blank" class="ver-justificativo">
-                <nz-icon nzType="file-pdf"></nz-icon> Ver justificativo
-            </a>
+            <div *ngIf="s.justificativoUrl" class="justificativo-subido">
+                <a [href]="s.justificativoUrl" target="_blank" class="ver-justificativo">
+                    <nz-icon nzType="file-pdf"></nz-icon> Ver justificativo
+                </a>
+                <nz-tag *ngIf="s.justificativoValidado" nzColor="green">
+                    <nz-icon nzType="check-circle"></nz-icon> Validado por {{ s.nombreValidador }}
+                </nz-tag>
+                <button
+                    *ngIf="!s.justificativoValidado"
+                    nz-button nzType="link" nzSize="small"
+                    [nzLoading]="procesandoId === s.id"
+                    (click)="validarCertificado(s)">
+                    <nz-icon nzType="check-circle"></nz-icon> Validar certificado
+                </button>
+            </div>
 
             <div *ngIf="s.estado === 'vencido_sin_justificativo'" class="vencido-info">
                 <nz-icon nzType="warning"></nz-icon>

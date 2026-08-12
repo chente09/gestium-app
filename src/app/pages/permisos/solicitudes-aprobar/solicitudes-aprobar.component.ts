@@ -51,7 +51,7 @@ export class SolicitudesAprobarComponent implements OnInit, OnDestroy {
   solicitudes: SolicitudPermiso[] = [];
   filtradas: SolicitudPermiso[] = [];
   loading = false;
-  filtroEstado: EstadoSolicitud | 'todas' = 'pendiente';
+  filtroEstado: EstadoSolicitud | 'todas' | 'certificados_pendientes' = 'pendiente';
 
   showRechazoModal = false;
   solicitudARechazar: SolicitudPermiso | null = null;
@@ -87,9 +87,33 @@ export class SolicitudesAprobarComponent implements OnInit, OnDestroy {
   }
 
   aplicarFiltro(): void {
-    this.filtradas = this.filtroEstado === 'todas'
-      ? this.solicitudes
-      : this.solicitudes.filter(s => s.estado === this.filtroEstado);
+    if (this.filtroEstado === 'todas') {
+      this.filtradas = this.solicitudes;
+    } else if (this.filtroEstado === 'certificados_pendientes') {
+      this.filtradas = this.solicitudes.filter(s => s.justificativoUrl && !s.justificativoValidado);
+    } else {
+      this.filtradas = this.solicitudes.filter(s => s.estado === this.filtroEstado);
+    }
+  }
+
+  async validarCertificado(s: SolicitudPermiso): Promise<void> {
+    if (!s.id) return;
+    const user = this.usersService.getCurrentUser();
+    if (!user) return;
+
+    this.procesandoId = s.id;
+    try {
+      await this.solicitudesService.validarCertificado(s.id, {
+        uid: user.uid,
+        nombre: user.displayName || user.email || 'Desconocido'
+      });
+      this.message.success('Certificado validado.');
+    } catch (error) {
+      console.error('Error validando certificado:', error);
+      this.message.error('No se pudo validar el certificado.');
+    } finally {
+      this.procesandoId = null;
+    }
   }
 
   async aprobar(s: SolicitudPermiso): Promise<void> {

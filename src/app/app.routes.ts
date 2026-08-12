@@ -20,6 +20,7 @@ import { PayrollReciboComponent } from './pages/payroll/payroll-recibo/payroll-r
 import { solicitudesAprobarGuard } from './guards/solicitudesPermiso/solicitudes-aprobar.guard';
 import { MisSolicitudesComponent } from './pages/permisos/mis-solicitudes/mis-solicitudes.component';
 import { SolicitudesAprobarComponent } from './pages/permisos/solicitudes-aprobar/solicitudes-aprobar.component';
+import { SaldoVacacionesComponent } from './pages/permisos/saldo-vacaciones/saldo-vacaciones.component';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
 
@@ -82,6 +83,7 @@ const payrollRoutes: Routes = [
 
 const solicitudesAprobarRoutes: Routes = [
   { path: 'permisos/aprobar', component: SolicitudesAprobarComponent },
+  { path: 'permisos/saldos', component: SaldoVacacionesComponent },
 ].map(withAuthAnd([solicitudesAprobarGuard]));
 
 const errorRoutes: Routes = [

@@ -1,0 +1,49 @@
+<div class="permisos-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/permisos/aprobar"><nz-icon nzType="audit"></nz-icon> Solicitudes por Aprobar</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Saldo de Vacaciones</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <h1 class="page-title"><nz-icon nzType="bar-chart"></nz-icon> Saldo de Vacaciones por Empleado</h1>
+
+    <input
+        nz-input
+        class="search-input"
+        placeholder="Buscar por nombre o cédula..."
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="filtrar()" />
+
+    <nz-card [nzLoading]="loading" class="table-card">
+        <nz-table #tabla [nzData]="filtrados" [nzBordered]="true" [nzPageSize]="20">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Cédula</th>
+                    <th>Afiliado desde</th>
+                    <th>Elegible vacaciones</th>
+                    <th>Saldo disponible</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let e of tabla.data; trackBy: trackById">
+                    <td>{{ e.nombreCompleto }}</td>
+                    <td>{{ e.cedula }}</td>
+                    <td>{{ e.fechaAfiliacionIESS || '—' }}</td>
+                    <td>
+                        <nz-tag [nzColor]="e.elegibleVacaciones ? 'green' : 'gold'">
+                            {{ e.elegibleVacaciones ? 'Sí' : 'Falta 1 año' }}
+                        </nz-tag>
+                    </td>
+                    <td [class.saldo-negativo]="(e.saldoVacacionesDisponible ?? 0) < 0">
+                        <b>{{ e.saldoVacacionesDisponible ?? 0 }}</b> días
+                    </td>
+                </tr>
+            </tbody>
+        </nz-table>
+    </nz-card>
+</div>

@@ -1,0 +1,27 @@
+.permisos-container {
+    padding: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.page-title {
+    margin: 12px 0 16px;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-input {
+    max-width: 360px;
+    margin-bottom: 16px;
+}
+
+.table-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+}
+
+.saldo-negativo {
+    color: #cf1322;
+}

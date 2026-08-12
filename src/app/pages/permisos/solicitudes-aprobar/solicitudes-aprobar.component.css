@@ -101,8 +101,22 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    margin-top: 8px;
     font-size: 13px;
+}
+
+.justificativo-subido {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.link {
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .acciones {

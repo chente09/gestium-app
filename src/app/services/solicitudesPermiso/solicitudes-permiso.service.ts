@@ -16,13 +16,18 @@ import { Observable } from 'rxjs';
 import { PayrollService } from '../payroll/payroll.service';
 import { RegistersService } from '../registers/registers.service';
 
-export type TipoSolicitud = 'vacaciones' | 'medico' | 'con_descuento_vacaciones';
+export type TipoSolicitud = 'vacaciones' | 'medico' | 'con_descuento_vacaciones' | 'calamidad_domestica';
 export type EstadoSolicitud = 'pendiente' | 'aprobado' | 'rechazado' | 'vencido_sin_justificativo';
 
 export const TIPOS_SOLICITUD: Record<TipoSolicitud, { label: string; requiereJustificativo: boolean; descuentaAlAprobar: boolean }> = {
   vacaciones: { label: 'Vacaciones', requiereJustificativo: false, descuentaAlAprobar: true },
   medico: { label: 'Permiso médico', requiereJustificativo: true, descuentaAlAprobar: false },
-  con_descuento_vacaciones: { label: 'Permiso con descuento de vacaciones', requiereJustificativo: false, descuentaAlAprobar: true }
+  con_descuento_vacaciones: { label: 'Permiso con descuento de vacaciones', requiereJustificativo: false, descuentaAlAprobar: true },
+  // Disponible para todos, incluidos pasantes (a diferencia de Vacaciones y
+  // con_descuento_vacaciones) — mismo tratamiento que Médico: requiere
+  // justificativo y, si vence sin subirlo, descuenta de vacaciones (salvo
+  // pasante, que no tiene saldo — ver verificarYVencerSiCorresponde).
+  calamidad_domestica: { label: 'Calamidad doméstica', requiereJustificativo: true, descuentaAlAprobar: false }
 };
 
 // Plazo para subir el justificativo una vez aprobado el permiso. Pasado
@@ -55,6 +60,10 @@ export interface SolicitudPermiso {
   justificativoUrl?: string;
   justificativoSubidoEn?: string; // ISO
   descontadoDeVacaciones?: boolean;
+  justificativoValidado?: boolean;
+  validadoPor?: string;
+  nombreValidador?: string;
+  fechaValidacion?: string; // ISO
 }
 
 function diffDiasCalendario(fechaInicio: string, fechaFin: string): number {
@@ -275,6 +284,19 @@ export class SolicitudesPermisoService {
 
     const mailRef = collection(this.firestore, 'mail');
     await addDoc(mailRef, mailDoc);
+  }
+
+  // Paso aparte de aprobar el permiso: deja constancia de que alguien con
+  // permiso de aprobar (coordinador/admin/gerente) efectivamente revisó el
+  // certificado subido, no solo que existe un archivo.
+  async validarCertificado(id: string, validador: { uid: string; nombre: string }): Promise<void> {
+    const ref2 = doc(this.firestore, `${this.collectionName}/${id}`);
+    await updateDoc(ref2, {
+      justificativoValidado: true,
+      validadoPor: validador.uid,
+      nombreValidador: validador.nombre,
+      fechaValidacion: new Date().toISOString()
+    });
   }
 
   async subirJustificativo(id: string, file: File): Promise<string> {

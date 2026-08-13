@@ -123,8 +123,13 @@ export class HistoryItinerarioComponent implements OnInit {
         email: user.email ?? undefined,
         nombre: user.displayName ?? undefined,
       });
-      this.message.success('Itinerario devuelto a pendiente. Se guardó un registro en el historial.');
+      this.message.success('Itinerario devuelto a pendiente. Ajustá lo que haga falta (ej. la fecha de término) y guardá.');
       await this.refrescarUnItem(id);
+      // Fecha/hora de solicitud se refrescaron solas a hoy y el término se
+      // recalculó con el mismo plazo de antes — se abre el modal de una vez
+      // para que se pueda corregir esa fecha ahí mismo, sin ir a buscar la
+      // fila de nuevo.
+      this.startEdit(id);
     } catch (error) {
       this.message.error('Error al revertir el itinerario.');
       console.error(error);
@@ -331,6 +336,22 @@ export class HistoryItinerarioComponent implements OnInit {
 
   trackById(index: number, item: any): string | number {
     return item.id ?? index;
+  }
+
+  // Fila compacta por defecto; el detalle completo se abre bajo demanda —
+  // mismo patrón que Actividades Pendientes y Roles de Pago.
+  private expandedIds = new Set<string>();
+
+  toggleExpand(id: string): void {
+    if (this.expandedIds.has(id)) {
+      this.expandedIds.delete(id);
+    } else {
+      this.expandedIds.add(id);
+    }
+  }
+
+  isExpanded(id: string): boolean {
+    return this.expandedIds.has(id);
   }
 
   // ========== EDICIÓN ==========

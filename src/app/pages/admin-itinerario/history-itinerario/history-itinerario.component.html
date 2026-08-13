@@ -64,114 +64,135 @@
         (nzPageIndexChange)="onPageIndexChange($event)">
         <thead>
             <tr>
-                <th nzWidth="145px">Área Oficina</th>
-                <th nzWidth="5%">Estado</th>
-                <th nzWidth="7%">Trámite</th>
-                <th nzWidth="5%">Número de Proceso</th>
-                <th nzWidth="6%">Unidad</th>
-                <th nzWidth="4%">Piso</th>
-                <th nzWidth="6%">Juez</th>
-                <th nzWidth="6%">Área</th>
-                <th nzWidth="6%">Diligencia</th>
-                <th nzWidth="7%">Recibe</th>
-                <th nzWidth="6%">Fecha de Solicitud</th>
-                <th nzWidth="6%">Fecha de Término</th>
-                <th nzWidth="7%">Observaciones</th>
-                <th nzWidth="4%">Adjuntos</th>
-                <th nzWidth="6%">Detalles Completado</th>
-                <th nzWidth="7%">Obs. Completado</th>
-                <th nzWidth="6%">Imagen Completado</th>
-                <th nzWidth="5%">Acciones</th>
+                <th nzWidth="36px"></th>
+                <th nzWidth="80px">Estado</th>
+                <th nzWidth="220px">Trámite</th>
+                <th nzWidth="180px">Área Oficina</th>
+                <th nzWidth="110px">Fecha Término</th>
+                <th nzWidth="230px">Acciones</th>
             </tr>
         </thead>
         <tbody>
-            <tr *ngFor="let item of itinerarioTable.data; trackBy: trackById">
-                <td>
-                    <strong>Area: </strong> {{ item.manualArea || getAreaDisplayName(item.area) }}
-                    <br>
-                    <strong>Solicita: </strong> {{ item.creadoPor }}
-                </td>
-                <td>
-                    <nz-tag [nzColor]="getEstadoColor(item.estado)">
-                        {{ getEstadoTexto(item.estado) }}
-                    </nz-tag>
-                </td>
-                <td>
-                    {{ item.tramite }}
-                    <i *ngIf="item.fechaEdicion" nz-icon nzType="edit" nzTheme="outline" class="edited-indicator"
-                        nz-tooltip [nzTooltipTitle]="'Editado por ' + item.editadoPor + ' el ' + item.fechaEdicion + ' ' + item.horaEdicion"></i>
-                </td>
-                <td>{{ item.nroProceso }}</td>
-                <td>{{ item.manualJuzgado || item.juzgado }}</td>
-                <td>{{ item.manualPiso || item.piso }}</td>
-                <td>{{ item.juez }}</td>
-                <td>{{ item.manualMateria || item.materia }}</td>
-                <td>{{ item.manualDiligencia || item.diligencia }}</td>
-                <td>{{ item.solicita }}</td>
-                <td>{{ item.fechaSolicitud }} <br> {{item.horaSolicitud}}</td>
-                <td>{{ item.fechaTermino }}</td>
-                <td>{{ item.observaciones }}</td>
-                <!-- Columna de la Imagen -->
-                <td>
-                    <ng-container *ngIf="item.imagen || item.pdf; else noData">
-                        <a *ngIf="item.imagen" [href]="item.imagen" target="_blank">
-                            <img [src]="item.imagen" alt="Imagen" width="60" style="cursor: pointer;">
-                        </a>
-                        <a *ngIf="item.pdf" [href]="item.pdf" download="documento.pdf" target="_blank"
-                            style="color: rgb(190, 31, 31);">
-                            <i nz-icon nzType="download"></i> Descargar PDF
-                        </a>
-                    </ng-container>
-                    <ng-template #noData>
-                        N/A
-                    </ng-template>
-                </td>
-                <td>
-                    {{ item.completPor }}
-                    <br>
-                    {{ item.fechaCompletado }}
-                    <br>
-                    {{ item.horaCompletado }}
-                </td>
-                <td>
-                    <span *ngIf="item.obsCompletado">
-                        {{ item.obsCompletado }}
-                    </span>
-                    <span *ngIf="!item.obsCompletado && item.historial && item.historial.length > 0">
-                        {{ item.historial[item.historial.length - 1].observacion }}
-                    </span>
-                    <button nz-button nzType="link" style="color: #bf8220" (click)="verHistorial(item)"
-                        *ngIf="item.historial && item.historial.length > 0">
-                        Ver Historial
-                    </button>
-                </td>
-                <td>
-                    <ng-container *ngIf="item.imgcompletado; else noImage">
-                        <a [href]="item.imgcompletado" target="_blank">
-                            <img [src]="item.imgcompletado" alt="Imagen" width="100" style="cursor: pointer;">
-                        </a>
-                    </ng-container>
-                    <ng-template #noImage>
-                        N/A
-                    </ng-template>
-                </td>
+            <ng-container *ngFor="let item of itinerarioTable.data; trackBy: trackById">
+                <tr class="itinerario-row" (click)="toggleExpand(item.id)">
+                    <td class="expand-cell">
+                        <nz-icon [nzType]="isExpanded(item.id) ? 'down' : 'right'"></nz-icon>
+                    </td>
+                    <td>
+                        <nz-tag [nzColor]="getEstadoColor(item.estado)">
+                            {{ getEstadoTexto(item.estado) }}
+                        </nz-tag>
+                    </td>
+                    <td>
+                        {{ item.tramite }}
+                        <i *ngIf="item.fechaEdicion" nz-icon nzType="edit" nzTheme="outline" class="edited-indicator"
+                            nz-tooltip [nzTooltipTitle]="'Editado por ' + item.editadoPor + ' el ' + item.fechaEdicion + ' ' + item.horaEdicion"></i>
+                        <span *ngIf="item.nroProceso" class="nro-proceso">N° {{ item.nroProceso }}</span>
+                    </td>
+                    <td>
+                        {{ item.manualArea || getAreaDisplayName(item.area) }}
+                        <span class="solicita-hint">{{ item.creadoPor }}</span>
+                    </td>
+                    <td class="fecha-termino">{{ item.fechaTermino }}</td>
+                    <td (click)="$event.stopPropagation()">
+                        <button *ngIf="isAdmin()" nz-button nzType="link" nzDanger nz-popconfirm
+                            nzPopconfirmTitle="¿Seguro que quieres eliminar?" (nzOnConfirm)="eliminar(item.id)"><nz-icon
+                                [nzType]="'delete'"></nz-icon>
+                        </button>
+                        <button nz-button nzType="link" nzInfo (click)="startEdit(item.id)"><nz-icon
+                                [nzType]="'edit'"></nz-icon>Editar
+                        </button>
+                        <button *ngIf="puedeRevertir(item)" nz-button nzType="link" nz-popconfirm
+                            nzPopconfirmTitle="¿Volver este ítem a pendiente?"
+                            (nzOnConfirm)="revertirAPendiente(item.id)"><nz-icon
+                                [nzType]="'undo'"></nz-icon>Reabrir
+                        </button>
+                    </td>
+                </tr>
 
-                <!-- Acciones -->
-                <td>
-                    <button *ngIf="isAdmin()" nz-button nzType="link" nzDanger nz-popconfirm
-                        nzPopconfirmTitle="¿Seguro que quieres eliminar?" (nzOnConfirm)="eliminar(item.id)"><nz-icon
-                            [nzType]="'delete'"></nz-icon>
-                    </button>
-                    <button nz-button nzType="link" nzInfo (click)="startEdit(item.id)"><nz-icon
-                            [nzType]="'edit'"></nz-icon>Editar
-                    </button>
-                    <button *ngIf="puedeRevertir(item)" nz-button nzType="link" nz-popconfirm
-                        nzPopconfirmTitle="¿Volver este ítem a pendiente?"
-                        (nzOnConfirm)="revertirAPendiente(item.id)"><nz-icon
-                            [nzType]="'undo'"></nz-icon>Reabrir
-                    </button>
-                </td>
-            </tr>
+                <tr *ngIf="isExpanded(item.id)" class="detalle-row">
+                    <td colspan="6">
+                        <div class="detalle-panel">
+                            <div class="detalle-col">
+                                <h4>Datos del trámite</h4>
+                                <div class="detalle-linea">
+                                    <span>Unidad, Juzgado o Entidad</span><span>{{ item.manualJuzgado || item.juzgado || '—' }}</span>
+                                </div>
+                                <div class="detalle-linea">
+                                    <span>Piso</span><span>{{ item.manualPiso || item.piso || '—' }}</span>
+                                </div>
+                                <div class="detalle-linea">
+                                    <span>Juez</span><span>{{ item.juez || '—' }}</span>
+                                </div>
+                                <div class="detalle-linea">
+                                    <span>Materia</span><span>{{ item.manualMateria || item.materia || '—' }}</span>
+                                </div>
+                                <div class="detalle-linea">
+                                    <span>Diligencia</span><span>{{ item.manualDiligencia || item.diligencia || '—' }}</span>
+                                </div>
+                                <div class="detalle-linea">
+                                    <span>Recibe</span><span>{{ item.solicita || '—' }}</span>
+                                </div>
+                                <div class="detalle-linea" *ngIf="item.observaciones">
+                                    <span>Observaciones</span><span>{{ item.observaciones }}</span>
+                                </div>
+
+                                <div class="detalle-subtitulo">Adjuntos</div>
+                                <div class="adjuntos-row" *ngIf="item.imagen || item.pdf; else sinAdjuntos">
+                                    <a *ngIf="item.imagen" [href]="item.imagen" target="_blank">
+                                        <img [src]="item.imagen" alt="Imagen" width="60" style="cursor: pointer;">
+                                    </a>
+                                    <a *ngIf="item.pdf" [href]="item.pdf" download="documento.pdf" target="_blank" class="pdf-link">
+                                        <i nz-icon nzType="download"></i> Descargar PDF
+                                    </a>
+                                </div>
+                                <ng-template #sinAdjuntos>
+                                    <p class="sin-items">Sin adjuntos.</p>
+                                </ng-template>
+                            </div>
+
+                            <div class="detalle-col">
+                                <h4>Fechas y seguimiento</h4>
+                                <div class="detalle-linea">
+                                    <span>Solicitud</span><span>{{ item.fechaSolicitud }} · {{ item.horaSolicitud }}</span>
+                                </div>
+                                <div class="detalle-linea">
+                                    <span>Término</span><span class="fecha-termino">{{ item.fechaTermino }}</span>
+                                </div>
+
+                                <ng-container *ngIf="item.completPor || item.fechaCompletado">
+                                    <div class="detalle-subtitulo">Completado</div>
+                                    <div class="detalle-linea">
+                                        <span>Por</span><span>{{ item.completPor }}</span>
+                                    </div>
+                                    <div class="detalle-linea">
+                                        <span>Cuándo</span><span>{{ item.fechaCompletado }} {{ item.horaCompletado }}</span>
+                                    </div>
+                                    <div class="detalle-linea" *ngIf="item.obsCompletado">
+                                        <span>Observación</span><span>{{ item.obsCompletado }}</span>
+                                    </div>
+                                    <div class="adjuntos-row" *ngIf="item.imgcompletado">
+                                        <a [href]="item.imgcompletado" target="_blank">
+                                            <img [src]="item.imgcompletado" alt="Imagen de completado" width="60" style="cursor: pointer;">
+                                        </a>
+                                    </div>
+                                </ng-container>
+
+                                <ng-container *ngIf="item.historial && item.historial.length > 0">
+                                    <div class="detalle-subtitulo">Última actividad</div>
+                                    <div class="detalle-linea">
+                                        <span>{{ item.historial[item.historial.length - 1].fecha }} {{ item.historial[item.historial.length - 1].hora }}</span>
+                                    </div>
+                                    <p class="ultima-actividad-obs">{{ item.historial[item.historial.length - 1].observacion }}</p>
+                                    <button nz-button nzType="link" style="color: #bf8220; padding-left: 0;" (click)="verHistorial(item)">
+                                        Ver Historial
+                                    </button>
+                                </ng-container>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </ng-container>
         </tbody>
     </nz-table>
 

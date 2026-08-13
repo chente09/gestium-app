@@ -1,7 +1,10 @@
 <nz-modal [nzVisible]="visible" nzTitle="Editar actividad" (nzOnCancel)="close()" [nzWidth]="800"
     [nzFooter]="editModalFooter">
     <ng-container *nzModalContent>
-        <form nz-form [formGroup]="editForm" class="itinerario-form">
+        <div *ngIf="!formReady" class="edit-modal-loading">
+            <i nz-icon nzType="loading"></i> Cargando datos del trámite...
+        </div>
+        <form *ngIf="formReady" nz-form [formGroup]="editForm" class="itinerario-form">
             <nz-row [nzGutter]="16">
                 <nz-col [nzXs]="24" [nzSm]="10">
                     <nz-form-item>
@@ -187,7 +190,7 @@
 
 <ng-template #editModalFooter>
     <button nz-button (click)="close()">Cancelar</button>
-    <button nz-button nzType="primary" [nzLoading]="isSavingEdit" (click)="save()">
+    <button nz-button nzType="primary" [nzLoading]="isSavingEdit" [disabled]="!formReady" (click)="save()">
         <i nz-icon nzType="save"></i> Guardar
     </button>
 </ng-template>

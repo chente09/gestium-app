@@ -46,6 +46,12 @@ export class ItinerarioEditModalComponent implements OnChanges {
   @Output() saved = new EventEmitter<string>();
 
   editForm: FormGroup = new FormGroup({});
+  // buildForm() es async (espera resolver el área) — sin esta bandera, el
+  // template intenta enlazar formControlName contra el editForm todavía
+  // vacío del ciclo anterior mientras se resuelve, y Angular tira
+  // "Cannot read properties of null (reading '_rawValidators')" dejando
+  // el formulario roto y en blanco.
+  formReady = false;
   editSelectedImage: File | null = null;
   editSelectedPDF: File | null = null;
   editImageFileList: any[] = [];
@@ -88,6 +94,7 @@ export class ItinerarioEditModalComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['itinerario'] && this.itinerario) {
+      this.formReady = false;
       this.buildForm(this.itinerario);
     }
   }
@@ -134,6 +141,8 @@ export class ItinerarioEditModalComponent implements OnChanges {
     this.editSelectedPDF = null;
     this.editImageFileList = [];
     this.editPdfFileList = [];
+
+    this.formReady = true;
   }
 
   onEditAreaChange(area: string): void {

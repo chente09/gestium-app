@@ -50,8 +50,110 @@
 
 /* Estilos de la tabla */
 .itinerario-table {
-    min-width: 1900px; /* Ancho mínimo de la tabla */
+    min-width: 860px;
     width: 100%;
+}
+
+/* ========== FILA COMPACTA + PANEL EXPANDIBLE ========== */
+.itinerario-row {
+    cursor: pointer;
+    transition: background-color 150ms ease-out;
+}
+
+.itinerario-row:hover {
+    background: #f5f7fa;
+}
+
+.expand-cell {
+    text-align: center;
+    color: #8c8c8c;
+}
+
+.nro-proceso,
+.solicita-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: #8c8c8c;
+}
+
+.fecha-termino {
+    color: brown;
+    font-weight: 600;
+}
+
+.detalle-row td {
+    padding: 0 !important;
+    background: #fbfbfc;
+}
+
+.detalle-panel {
+    display: flex;
+    gap: 32px;
+    padding: 20px 24px;
+    flex-wrap: wrap;
+    white-space: normal;
+}
+
+.detalle-col {
+    flex: 1;
+    min-width: 240px;
+}
+
+.detalle-col h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #001529;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 8px 0;
+}
+
+.detalle-subtitulo {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8c8c8c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 12px 0 4px 0;
+}
+
+.detalle-linea {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    font-size: 13px;
+    color: #262626;
+    border-bottom: 1px solid #ececec;
+}
+
+.detalle-linea span:first-child {
+    color: #8c8c8c;
+}
+
+.sin-items {
+    font-size: 12px;
+    color: #bfbfbf;
+    font-style: italic;
+    margin: 4px 0;
+}
+
+.adjuntos-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pdf-link {
+    color: rgb(190, 31, 31);
+    white-space: nowrap;
+}
+
+.ultima-actividad-obs {
+    font-size: 12px;
+    color: #595959;
+    margin: 4px 0 0;
 }
 
 ::ng-deep .ant-table-tbody>tr:hover td {

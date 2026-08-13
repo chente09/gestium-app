@@ -4,6 +4,7 @@ import { Storage, ref, getDownloadURL, deleteObject, uploadBytes } from '@angula
 import { firstValueFrom, map, Observable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { ImageCompressionService } from '../image-compression/image-compression.service';
+import { DateUtilsService } from '../date-utils/date-utils.service';
 
 enum Estado {
   COMPLETADO = 'completado',
@@ -76,6 +77,7 @@ export class ItinerarioService {
     private firestore: Firestore,
     private storage: Storage,
     private imageCompression: ImageCompressionService,
+    private dateUtils: DateUtilsService,
   ) { }
 
   // 📌 Crear un nuevo itinerario con imagen y PDF opcionales
@@ -362,7 +364,12 @@ export class ItinerarioService {
   async revertirAPendiente(
     id: string,
     revertidoPor: { uid: string; email?: string; nombre?: string },
-    nuevaSolicitud?: Partial<Pick<Itinerario, 'fechaSolicitud' | 'horaSolicitud' | 'fechaTermino' | 'tramite' | 'solicita' | 'observaciones'>>
+    nuevaSolicitud?: Partial<Pick<Itinerario,
+      | 'creadoPor' | 'juzgado' | 'manualJuzgado' | 'materia' | 'manualMateria'
+      | 'diligencia' | 'manualDiligencia' | 'piso' | 'manualPiso' | 'juez'
+      | 'tramite' | 'solicita' | 'fechaSolicitud' | 'horaSolicitud' | 'fechaTermino'
+      | 'observaciones' | 'area' | 'manualArea'
+    >>
   ): Promise<void> {
     const docRef = doc(this.firestore, `${this.collectionName}/${id}`);
 
@@ -397,6 +404,33 @@ export class ItinerarioService {
 
       const historialActualizado = [...(itinerarioData.historial || []), entradaReversion];
 
+      // El botón simple de "Reabrir" en Historial no pasa nuevaSolicitud (no
+      // hay formulario) — igual conviene refrescar las fechas a hoy en vez
+      // de dejar la solicitud/término congelados en la fecha original, que
+      // ya no tiene sentido para un trámite que recién se está retomando.
+      // Se preserva el mismo plazo (en días) que tenía la solicitud original.
+      let fechasRefrescadas: Partial<Itinerario> = {};
+      if (!nuevaSolicitud) {
+        const fechaSolicitudHoy = this.dateUtils.getFechaActualEcuador();
+        const horaSolicitudHoy = this.dateUtils.getHoraActualEcuador();
+
+        const fechaSolicitudOriginal = new Date(itinerarioData.fechaSolicitud);
+        const fechaTerminoOriginal = new Date(itinerarioData.fechaTermino);
+        const plazoDiasValido = !isNaN(fechaSolicitudOriginal.getTime()) && !isNaN(fechaTerminoOriginal.getTime());
+        const plazoDias = plazoDiasValido
+          ? Math.max(1, Math.round((fechaTerminoOriginal.getTime() - fechaSolicitudOriginal.getTime()) / (1000 * 60 * 60 * 24)))
+          : 3;
+
+        const [y, m, d] = fechaSolicitudHoy.split('-').map(Number);
+        const nuevaFechaTermino = new Date(y, m - 1, d + plazoDias);
+
+        fechasRefrescadas = {
+          fechaSolicitud: fechaSolicitudHoy,
+          horaSolicitud: horaSolicitudHoy,
+          fechaTermino: nuevaFechaTermino.toISOString().split('T')[0]
+        };
+      }
+
       await updateDoc(docRef, {
         estado: Estado.PENDIENTE,
         historial: historialActualizado,
@@ -406,6 +440,7 @@ export class ItinerarioService {
         obsCompletado: deleteField(),
         imgcompletado: deleteField(),
         pdfCompletado: deleteField(),
+        ...fechasRefrescadas,
         ...(nuevaSolicitud || {}),
       });
     } catch (error: any) {

@@ -19,3 +19,14 @@
 .readonly-value {
     color: rgba(0, 0, 0, 0.65);
 }
+
+.edit-modal-loading {
+    padding: 40px 0;
+    text-align: center;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 14px;
+}
+
+.edit-modal-loading i {
+    margin-right: 6px;
+}

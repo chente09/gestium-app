@@ -947,6 +947,23 @@ export class ItinerarioComponent implements OnInit {
     return item.id;
   }
 
+  // Fila compacta por defecto; el detalle completo (unidad, piso, materia,
+  // diligencia, adjuntos, historial) se abre bajo demanda en vez de mostrar
+  // 14 columnas siempre — mismo patrón que la tabla de Roles de Pago.
+  private expandedIds = new Set<string>();
+
+  toggleExpand(id: string): void {
+    if (this.expandedIds.has(id)) {
+      this.expandedIds.delete(id);
+    } else {
+      this.expandedIds.add(id);
+    }
+  }
+
+  isExpanded(id: string): boolean {
+    return this.expandedIds.has(id);
+  }
+
   onCurrentPageDataChange(list: readonly Itinerario[]): void {
     this.listOfCurrentPageData = [...list];
     this.refreshCheckedStatus();

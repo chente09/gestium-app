@@ -360,6 +360,44 @@ export class ItinerarioFormComponent implements OnInit {
           if (quiereReabrir) {
             const user = this.usersService.getCurrentUser();
             const formData = this.itinerarioForm.value;
+
+            // El dropdown muestra/guarda el nombre del área; Firestore guarda
+            // el slug — misma resolución que al crear un registro nuevo.
+            const resolvedArea = formData.area && formData.area !== 'Otro'
+              ? (await this.registersService.findAreaByIdentifier(formData.area))?.slug || formData.area
+              : formData.area;
+
+            // Reabrir con nueva solicitud reemplaza los datos activos del
+            // registro por los de esta nueva solicitud — pero la mayoría de
+            // estos campos son opcionales en el formulario, así que si se
+            // dejan en blanco no deben borrar los valores completos que ya
+            // tenía el trámite anterior. Solo se manda lo que sí se llenó;
+            // fechaSolicitud/horaSolicitud/fechaTermino/creadoPor/área van
+            // siempre porque el formulario ya los exige como obligatorios.
+            const camposReapertura: Record<string, any> = {
+              creadoPor: formData.creadoPor,
+              juzgado: formData.juzgado,
+              manualJuzgado: formData.manualJuzgado,
+              materia: formData.materia,
+              manualMateria: formData.manualMateria,
+              diligencia: formData.diligencia,
+              manualDiligencia: formData.manualDiligencia,
+              piso: formData.piso,
+              manualPiso: formData.manualPiso,
+              juez: formData.juez,
+              tramite: formData.tramite,
+              solicita: formData.solicita,
+              fechaSolicitud: formData.fechaSolicitud,
+              horaSolicitud: formData.horaSolicitud,
+              fechaTermino: formData.fechaTermino,
+              observaciones: formData.observaciones,
+              area: resolvedArea,
+              manualArea: formData.manualArea,
+            };
+            const nuevaSolicitudSinBlancos = Object.fromEntries(
+              Object.entries(camposReapertura).filter(([, valor]) => valor !== '' && valor !== null && valor !== undefined)
+            );
+
             try {
               await this.itinerarioService.revertirAPendiente(
                 masReciente.id,
@@ -368,14 +406,7 @@ export class ItinerarioFormComponent implements OnInit {
                   email: user?.email ?? undefined,
                   nombre: user?.displayName ?? undefined,
                 },
-                {
-                  fechaSolicitud: formData.fechaSolicitud,
-                  horaSolicitud: formData.horaSolicitud,
-                  fechaTermino: formData.fechaTermino,
-                  tramite: formData.tramite,
-                  solicita: formData.solicita,
-                  observaciones: formData.observaciones,
-                }
+                nuevaSolicitudSinBlancos
               );
               this.message.success('Trámite reabierto con la nueva solicitud 🔄');
               this.resetForm();

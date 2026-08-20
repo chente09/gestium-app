@@ -272,14 +272,22 @@ export class ItinerarioFormComponent implements OnInit {
         const activos = allDocs.filter(d => d.data.estado !== Estado.COMPLETADO);
         const completados = allDocs.filter(d => d.data.estado === Estado.COMPLETADO);
 
+        // Si el usuario ya decidió explícitamente "crear de todas formas"
+        // en el aviso de activos, no tiene sentido interrumpirlo de nuevo
+        // con el aviso de completados un segundo después.
+        let yaConfirmoCrearActividadNueva = false;
+
         // Ya hay un trámite activo (pendiente/incompleto) con ese número:
-        // no se crea uno nuevo, hay que editar el que ya existe.
+        // se avisa, pero no es obligatorio editarlo — puede ser una
+        // actividad genuinamente distinta dentro del mismo proceso (ej. un
+        // nuevo escrito sobre el mismo N° de juicio), así que también se
+        // deja seguir y crear la nueva actividad.
         if (activos.length > 0) {
           this.isLoading = false;
 
-          // Con un solo match activo podemos llevar directo a editarlo; con
-          // más de uno (caso raro) solo informamos, sin adivinar cuál.
-          const irAEditar = activos.length === 1;
+          // Con un solo match activo podemos ofrecer ir directo a editarlo;
+          // con más de uno (caso raro) no se adivina cuál, solo se informa.
+          const puedeEditar = activos.length === 1;
           const listaHtml = `
               <div style="max-height: 300px; overflow-y: auto;">
                 <p>⚠️ El número de proceso "<b>${nroProceso}</b>" ya está pendiente/incompleto en los siguientes trámites:</p>
@@ -292,41 +300,48 @@ export class ItinerarioFormComponent implements OnInit {
                     </li>
                   `).join('')}
                 </ul>
+                <p>Si es el mismo trámite, editá el existente. Si es una actividad distinta dentro del mismo proceso, podés crearla igual.</p>
               </div>`;
 
-          if (irAEditar) {
-            const quiereEditar = await new Promise<boolean>((resolve) => {
-              this.modal.confirm({
-                nzTitle: 'Número de proceso ya activo',
-                nzContent: listaHtml + '<p>Edítalo en vez de crear uno nuevo.</p>',
-                nzOkText: 'Ir a editar',
-                nzCancelText: 'Cerrar',
-                nzOnOk: () => resolve(true),
-                nzOnCancel: () => resolve(false),
-              });
-            });
-
-            if (quiereEditar) {
-              this.router.navigate(['/itinerario'], { queryParams: { editId: activos[0].id } });
+          // modal.warning()/confirm() no respetan un nzFooter a medida
+          // (siempre terminan mostrando su único botón "OK" fijo) — para 3
+          // botones reales hace falta modal.create(), el API genérico.
+          const accion = await new Promise<'editar' | 'crear' | 'cancelar'>((resolve) => {
+            const footerButtons: any[] = [
+              { label: 'Cancelar', onClick: () => { modalRef.destroy(); resolve('cancelar'); } },
+              { label: 'Crear actividad nueva de todas formas', onClick: () => { modalRef.destroy(); resolve('crear'); } },
+            ];
+            if (puedeEditar) {
+              footerButtons.push({ label: 'Ir a editar', type: 'primary', onClick: () => { modalRef.destroy(); resolve('editar'); } });
             }
-          } else {
-            await new Promise<void>((resolve) => {
-              this.modal.warning({
-                nzTitle: 'Número de proceso ya activo',
-                nzContent: listaHtml + '<p>Edítalo desde la lista de Itinerarios en vez de crear uno nuevo.</p>',
-                nzOkText: 'Entendido',
-                nzOnOk: () => resolve(),
-              });
+
+            const modalRef = this.modal.create({
+              nzTitle: '⚠️ Número de proceso ya activo',
+              nzContent: listaHtml,
+              nzFooter: footerButtons,
+              nzOnCancel: () => resolve('cancelar'),
             });
+          });
+
+          if (accion === 'cancelar') {
+            return;
           }
 
-          return;
+          if (accion === 'editar') {
+            this.router.navigate(['/itinerario'], { queryParams: { editId: activos[0].id } });
+            return;
+          }
+
+          // accion === 'crear': sigue el flujo normal de creación más abajo.
+          this.isLoading = true;
+          yaConfirmoCrearActividadNueva = true;
         }
 
         // Solo hay coincidencias ya completadas: no es un duplicado real,
         // pero se ofrece reabrir el más reciente con la nueva solicitud
-        // en vez de dejar crear un registro suelto aparte.
-        if (completados.length > 0) {
+        // en vez de dejar crear un registro suelto aparte. Si ya se
+        // confirmó crear de todas formas arriba, no se vuelve a interrumpir.
+        if (completados.length > 0 && !yaConfirmoCrearActividadNueva) {
           this.isLoading = false;
 
           const masReciente = [...completados].sort((a, b) =>

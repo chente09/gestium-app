@@ -16,10 +16,23 @@ import { Observable } from 'rxjs';
 import { PayrollService } from '../payroll/payroll.service';
 import { RegistersService } from '../registers/registers.service';
 
-export type TipoSolicitud = 'vacaciones' | 'medico' | 'con_descuento_vacaciones' | 'calamidad_domestica';
+export type TipoSolicitud = 'vacaciones' | 'medico' | 'con_descuento_vacaciones' | 'calamidad_domestica' | 'maternidad' | 'paternidad';
 export type EstadoSolicitud = 'pendiente' | 'aprobado' | 'rechazado' | 'vencido_sin_justificativo';
 
-export const TIPOS_SOLICITUD: Record<TipoSolicitud, { label: string; requiereJustificativo: boolean; descuentaAlAprobar: boolean }> = {
+// diasSugeridos: para precargar fechaFin al elegir el tipo (Código del
+// Trabajo Ecuador Art. 152: maternidad 84 días, paternidad 10 días —
+// ambos ajustables a mano por casos de ampliación legal: parto múltiple,
+// cesárea, cuidado especial del recién nacido, etc.)
+// exentoDeDescuentoPorVencimiento: maternidad/paternidad son licencias de
+// ley, remuneradas aparte — nunca se les puede descontar vacaciones por
+// demorarse en subir el certificado, a diferencia de médico/calamidad.
+export const TIPOS_SOLICITUD: Record<TipoSolicitud, {
+  label: string;
+  requiereJustificativo: boolean;
+  descuentaAlAprobar: boolean;
+  exentoDeDescuentoPorVencimiento?: boolean;
+  diasSugeridos?: number;
+}> = {
   vacaciones: { label: 'Vacaciones', requiereJustificativo: false, descuentaAlAprobar: true },
   medico: { label: 'Permiso médico', requiereJustificativo: true, descuentaAlAprobar: false },
   con_descuento_vacaciones: { label: 'Permiso con descuento de vacaciones', requiereJustificativo: false, descuentaAlAprobar: true },
@@ -27,7 +40,21 @@ export const TIPOS_SOLICITUD: Record<TipoSolicitud, { label: string; requiereJus
   // con_descuento_vacaciones) — mismo tratamiento que Médico: requiere
   // justificativo y, si vence sin subirlo, descuenta de vacaciones (salvo
   // pasante, que no tiene saldo — ver verificarYVencerSiCorresponde).
-  calamidad_domestica: { label: 'Calamidad doméstica', requiereJustificativo: true, descuentaAlAprobar: false }
+  calamidad_domestica: { label: 'Calamidad doméstica', requiereJustificativo: true, descuentaAlAprobar: false },
+  maternidad: {
+    label: 'Licencia de maternidad',
+    requiereJustificativo: true,
+    descuentaAlAprobar: false,
+    exentoDeDescuentoPorVencimiento: true,
+    diasSugeridos: 84
+  },
+  paternidad: {
+    label: 'Licencia de paternidad',
+    requiereJustificativo: true,
+    descuentaAlAprobar: false,
+    exentoDeDescuentoPorVencimiento: true,
+    diasSugeridos: 10
+  }
 };
 
 // Plazo para subir el justificativo una vez aprobado el permiso. Pasado
@@ -340,7 +367,12 @@ export class SolicitudesPermisoService {
   async verificarYVencerSiCorresponde(solicitud: SolicitudPermiso): Promise<void> {
     if (solicitud.estado !== 'aprobado' || !this.plazoVencido(solicitud)) return;
 
-    const empleado = await this.payrollService.getPayrollEmployeeById(solicitud.payrollEmployeeId);
+    // Maternidad/paternidad son licencias de ley, remuneradas aparte — nunca
+    // se les descuenta vacaciones por demorarse en subir el certificado,
+    // sin importar afiliación/pasantía (a diferencia de médico/calamidad).
+    const exento = !!TIPOS_SOLICITUD[solicitud.tipo].exentoDeDescuentoPorVencimiento;
+
+    const empleado = exento ? null : await this.payrollService.getPayrollEmployeeById(solicitud.payrollEmployeeId);
     // Un pasante no tiene saldo de vacaciones que perder — queda vencido
     // igual (para que se vea que no se justificó), pero sin descuento.
     const esPasante = empleado ? this.payrollService.esPasante(empleado) : false;
@@ -359,7 +391,7 @@ export class SolicitudesPermisoService {
     const ref2 = doc(this.firestore, `${this.collectionName}/${solicitud.id}`);
     await updateDoc(ref2, {
       estado: 'vencido_sin_justificativo',
-      descontadoDeVacaciones: !esPasante
+      descontadoDeVacaciones: !exento && !esPasante
     });
   }
 

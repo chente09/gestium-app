@@ -80,6 +80,27 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
       fechaFin: ['', Validators.required],
       motivo: ['', Validators.required]
     });
+
+    // Maternidad/paternidad tienen una duración de ley conocida (84/10
+    // días) — se sugiere sola la fecha de término al elegir el tipo o la
+    // fecha de inicio, pero sigue siendo un campo editable a mano para los
+    // casos de ampliación legal (parto múltiple, cesárea, etc.).
+    this.form.get('tipo')?.valueChanges.subscribe(() => this.sugerirFechaFin());
+    this.form.get('fechaInicio')?.valueChanges.subscribe(() => this.sugerirFechaFin());
+  }
+
+  private sugerirFechaFin(): void {
+    const tipo: TipoSolicitud = this.form.get('tipo')?.value;
+    const fechaInicio: string = this.form.get('fechaInicio')?.value;
+    const dias = TIPOS_SOLICITUD[tipo]?.diasSugeridos;
+    if (!dias || !fechaInicio) return;
+
+    const inicio = new Date(fechaInicio);
+    if (isNaN(inicio.getTime())) return;
+
+    const fin = new Date(inicio);
+    fin.setDate(fin.getDate() + dias - 1);
+    this.form.patchValue({ fechaFin: fin.toISOString().split('T')[0] }, { emitEvent: false });
   }
 
   async ngOnInit(): Promise<void> {

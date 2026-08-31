@@ -64,6 +64,11 @@ export interface LineaRolPago {
   nombre: string;
   cedula: string;
   diasTrabajados: string;
+  // Tarifa mensual completa sin prorratear (SBU para afiliado, $300 fijo
+  // para pasante) — se guarda aparte de `remuneracion` para poder
+  // reprorratear cuando se edita diasTrabajados después (ver
+  // PayrollService.recalcularLinea), sin tener que volver a pedir el SBU.
+  remuneracionBase: number;
   remuneracion: number;
   elegibleDecimos: boolean; // afiliado — décimos son proporcionales desde el día 1
   decimoTercero: number;
@@ -179,6 +184,18 @@ export class PayrollService {
     return fecha >= unAnioDespues;
   }
 
+  // días trabajados / mes comercial (30 días fijos, Art. base del cálculo
+  // de nómina del Ministerio del Trabajo — año comercial = 360 días = 12 x
+  // 30, sin importar los días reales del mes de calendario) — 1 (mes
+  // completo) si diasTrabajados es "TODOS", vacío, o no un número válido.
+  // Así una persona que entra a mitad de mes (ej. "15" días trabajados)
+  // cobra proporcional en vez del básico completo.
+  private proporcionDiasTrabajados(diasTrabajados: string): number {
+    const dias = Number(diasTrabajados);
+    if (diasTrabajados === 'TODOS' || !diasTrabajados?.trim() || isNaN(dias) || dias <= 0) return 1;
+    return Math.min(1, dias / 30);
+  }
+
   // ============================================
   // 🧮 Cálculo de una línea de rol
   // ============================================
@@ -191,7 +208,9 @@ export class PayrollService {
     descuentosVarios: DescuentoVario[]
   ): LineaRolPago {
     const esPasante = !employee.fechaAfiliacionIESS;
-    const remuneracion = esPasante ? PASANTE_REMUNERACION : sbu;
+    const remuneracionBase = esPasante ? PASANTE_REMUNERACION : sbu;
+    const proporcion = this.proporcionDiasTrabajados(diasTrabajados);
+    const remuneracion = round2(remuneracionBase * proporcion);
 
     // Décimos: proporcionales desde el primer mes de afiliación, sin espera de 1 año.
     const elegibleDecimos = !esPasante;
@@ -201,8 +220,8 @@ export class PayrollService {
     const elegibleFondosReserva = this.esElegibleVacaciones(employee, fechaCorte);
 
     const decimoTercero = elegibleDecimos ? round2(remuneracion / 12) : 0;
-    const decimoCuarto = elegibleDecimos ? round2(sbu / 12) : 0;
-    const fondosReserva = elegibleFondosReserva ? round2(sbu / 12) : 0;
+    const decimoCuarto = elegibleDecimos ? round2((sbu / 12) * proporcion) : 0;
+    const fondosReserva = elegibleFondosReserva ? round2((sbu / 12) * proporcion) : 0;
     const descuentoIESS = esPasante ? 0 : round2(remuneracion * IESS_PORCENTAJE);
 
     const totalBonosVarios = bonosVarios.reduce((sum, b) => sum + b.monto, 0);
@@ -216,6 +235,7 @@ export class PayrollService {
       nombre: employee.nombreCompleto,
       cedula: employee.cedula,
       diasTrabajados,
+      remuneracionBase,
       remuneracion,
       elegibleDecimos,
       decimoTercero,
@@ -231,14 +251,43 @@ export class PayrollService {
     };
   }
 
-  // Recalcula los totales de una línea ya existente (ej. al editar bonos/descuentos)
+  // Recalcula una línea ya existente (ej. al editar días trabajados o
+  // bonos/descuentos) — vuelve a prorratear remuneración/décimos/fondos de
+  // reserva/IESS desde remuneracionBase en vez de solo re-sumar totales,
+  // así un cambio en diasTrabajados sí impacta el pago.
   recalcularLinea(linea: LineaRolPago): LineaRolPago {
+    // Compatibilidad con líneas guardadas antes de que existiera este campo:
+    // en esas, remuneracion todavía no estaba prorrateada, así que ya
+    // equivale a la base completa.
+    const remuneracionBase = linea.remuneracionBase ?? linea.remuneracion;
+    const proporcion = this.proporcionDiasTrabajados(linea.diasTrabajados);
+    const remuneracion = round2(remuneracionBase * proporcion);
+
+    const decimoTercero = linea.elegibleDecimos ? round2(remuneracion / 12) : 0;
+    const decimoCuarto = linea.elegibleDecimos ? round2((remuneracionBase / 12) * proporcion) : 0;
+    const fondosReserva = linea.elegibleFondosReserva ? round2((remuneracionBase / 12) * proporcion) : 0;
+    // elegibleDecimos === !esPasante siempre (ver calcularLinea) — sirve
+    // también acá para saber si corresponde descuento IESS.
+    const descuentoIESS = linea.elegibleDecimos ? round2(remuneracion * IESS_PORCENTAJE) : 0;
+
     const totalBonosVarios = linea.bonosVarios.reduce((sum, b) => sum + b.monto, 0);
     const totalDescuentosVarios = linea.descuentosVarios.reduce((sum, dv) => sum + dv.monto, 0);
-    const totalIngresos = round2(linea.remuneracion + linea.decimoTercero + linea.decimoCuarto + linea.fondosReserva + totalBonosVarios);
-    const totalDescuentos = round2(linea.descuentoIESS + totalDescuentosVarios);
+    const totalIngresos = round2(remuneracion + decimoTercero + decimoCuarto + fondosReserva + totalBonosVarios);
+    const totalDescuentos = round2(descuentoIESS + totalDescuentosVarios);
     const liquidoARecibir = round2(totalIngresos - totalDescuentos);
-    return { ...linea, totalIngresos, totalDescuentos, liquidoARecibir };
+
+    return {
+      ...linea,
+      remuneracionBase,
+      remuneracion,
+      decimoTercero,
+      decimoCuarto,
+      fondosReserva,
+      descuentoIESS,
+      totalIngresos,
+      totalDescuentos,
+      liquidoARecibir
+    };
   }
 
   // ============================================

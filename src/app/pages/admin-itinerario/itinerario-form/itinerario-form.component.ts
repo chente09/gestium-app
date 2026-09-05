@@ -300,7 +300,7 @@ export class ItinerarioFormComponent implements OnInit {
                     </li>
                   `).join('')}
                 </ul>
-                <p>Si es el mismo trámite, editá el existente. Si es una actividad distinta dentro del mismo proceso, podés crearla igual.</p>
+                <p>Si es el mismo trámite, edita el existente. Si es una actividad distinta dentro del mismo proceso, puedes crearla igual.</p>
               </div>`;
 
           // modal.warning()/confirm() no respetan un nzFooter a medida
@@ -361,7 +361,7 @@ export class ItinerarioFormComponent implements OnInit {
                     📝 <b>Observación de cierre:</b> ${masReciente.data.obsCompletado || 'Sin observaciones'}
                   </li>
                 </ul>
-                <p>¿Querés <b>reabrirlo</b> con esta nueva solicitud (se actualizan las fechas y queda registrado en el historial), en vez de crear un registro aparte?</p>
+                <p>¿Quieres <b>reabrirlo</b> con esta nueva solicitud (se actualizan las fechas y queda registrado en el historial), en vez de crear un registro aparte?</p>
               </div>
             `,
               nzOkText: 'Sí, reabrir',

@@ -11,6 +11,14 @@
 
     <h1 class="page-title"><nz-icon nzType="bar-chart"></nz-icon> Saldo de Vacaciones por Empleado</h1>
 
+    <nz-collapse class="info-saldo">
+        <nz-collapse-panel nzHeader="ℹ️ ¿Cómo se calcula esto?" [nzActive]="false">
+            <p>"Elegible vacaciones" se calcula desde la fecha de afiliación de cada empleado (no desde enero de cada año) — se habilita al cumplir 1 año exacto de afiliación continua.</p>
+            <p>Al cumplir el año, el empleado tiene 11 días descontables disponibles. El "Saldo disponible" es ese número menos los días que ya tomó desde su último aniversario — por eso puede superar 11 si no los usa, o quedar en negativo si tomó de más (incluso antes de cumplir el año, por acuerdo mutuo).</p>
+            <p>Para empleados con más de un año de antigüedad, tomamos como referencia solo su último aniversario cumplido, no el acumulado histórico completo.</p>
+        </nz-collapse-panel>
+    </nz-collapse>
+
     <input
         nz-input
         class="search-input"
@@ -19,31 +27,37 @@
         (ngModelChange)="filtrar()" />
 
     <nz-card [nzLoading]="loading" class="table-card">
-        <nz-table #tabla [nzData]="filtrados" [nzBordered]="true" [nzPageSize]="20">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Cédula</th>
-                    <th>Afiliado desde</th>
-                    <th>Elegible vacaciones</th>
-                    <th>Saldo disponible</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let e of tabla.data; trackBy: trackById">
-                    <td>{{ e.nombreCompleto }}</td>
-                    <td>{{ e.cedula }}</td>
-                    <td>{{ e.fechaAfiliacionIESS || '—' }}</td>
-                    <td>
-                        <nz-tag [nzColor]="e.elegibleVacaciones ? 'green' : 'gold'">
-                            {{ e.elegibleVacaciones ? 'Sí' : 'Falta 1 año' }}
-                        </nz-tag>
-                    </td>
-                    <td [class.saldo-negativo]="(e.saldoVacacionesDisponible ?? 0) < 0">
-                        <b>{{ e.saldoVacacionesDisponible ?? 0 }}</b> días
-                    </td>
-                </tr>
-            </tbody>
-        </nz-table>
+        <div class="table-scroll">
+            <nz-table #tabla [nzData]="filtrados" [nzBordered]="true" [nzPageSize]="20" class="saldo-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Cédula</th>
+                        <th>Afiliado desde</th>
+                        <th>Elegible vacaciones</th>
+                        <th>Período vigente</th>
+                        <th>Saldo disponible</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let e of tabla.data; trackBy: trackById">
+                        <td>{{ e.nombreCompleto }}</td>
+                        <td>{{ e.cedula }}</td>
+                        <td>{{ e.fechaAfiliacionIESS || '—' }}</td>
+                        <td>
+                            <nz-tag [nzColor]="e.elegibleVacaciones ? 'green' : 'gold'">
+                                {{ e.elegibleVacaciones ? 'Sí' : 'Falta 1 año' }}
+                            </nz-tag>
+                        </td>
+                        <td>{{ e.periodoVigente ? (e.periodoVigente.inicio + ' a ' + e.periodoVigente.fin) : '—' }}</td>
+                        <td>
+                            <nz-tag [nzColor]="saldoColor(e)" nz-tooltip [nzTooltipTitle]="saldoTooltip(e)">
+                                {{ saldoCorto(e) }}
+                            </nz-tag>
+                        </td>
+                    </tr>
+                </tbody>
+            </nz-table>
+        </div>
     </nz-card>
 </div>

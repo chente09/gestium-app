@@ -193,7 +193,10 @@ export class SolicitudesPermisoService {
 
     const dias = diffDiasCalendario(solicitud.fechaInicio, solicitud.fechaFin);
     const saldoActual = empleado.saldoVacacionesDisponible ?? 0;
-    const nuevoSaldo = Math.max(0, saldoActual - dias);
+    // Sin piso en 0: si toma más días de los que tiene, el saldo debe
+    // quedar en negativo (deuda real), no esconderse — ver comentario en
+    // PayrollEmployee.saldoVacacionesDisponible.
+    const nuevoSaldo = saldoActual - dias;
     await this.payrollService.updatePayrollEmployee(empleado.id, { saldoVacacionesDisponible: nuevoSaldo });
   }
 
@@ -381,7 +384,8 @@ export class SolicitudesPermisoService {
       try {
         const dias = diffDiasCalendario(solicitud.fechaInicio, solicitud.fechaFin);
         const saldoActual = empleado.saldoVacacionesDisponible ?? 0;
-        const nuevoSaldo = Math.max(0, saldoActual - dias);
+        // Sin piso en 0 — ver descontarDiasDeVacaciones.
+        const nuevoSaldo = saldoActual - dias;
         await this.payrollService.updatePayrollEmployee(empleado.id, { saldoVacacionesDisponible: nuevoSaldo });
       } catch (error) {
         console.error('[Permisos] No se pudo descontar el saldo de vacaciones al vencer:', error);

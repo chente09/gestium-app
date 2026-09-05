@@ -13,18 +13,29 @@
         nzType="warning"
         nzShowIcon
         nzMessage="Tu cuenta no está vinculada a un registro de nómina"
-        nzDescription="Pedile a un administrador que te vincule desde Empleados de Nómina para poder solicitar permisos y vacaciones.">
+        nzDescription="Pídele a un administrador que te vincule desde Empleados de Nómina para poder solicitar permisos y vacaciones.">
     </nz-alert>
 
     <ng-container *ngIf="payrollEmployee">
+        <nz-collapse class="info-vacaciones">
+            <nz-collapse-panel nzHeader="ℹ️ ¿Cómo funcionan los permisos y vacaciones?" [nzActive]="false">
+                <p>Las vacaciones formales se habilitan al cumplir 1 año de afiliación al IESS, contado desde tu propia fecha de afiliación (no desde enero de cada año).</p>
+                <p>Al cumplir el año tienes 11 días descontables disponibles; tu saldo es ese número menos lo que ya tomaste desde tu último aniversario, así que puede superar 11 si no los usas, o quedar en negativo si tomas de más.</p>
+                <p>Los permisos médicos y por calamidad doméstica son de ley: no descuentan de tu saldo, salvo que no subas el justificativo dentro del plazo. Maternidad y paternidad nunca descuentan.</p>
+                <p>El "Permiso con descuento de vacaciones" sí se descuenta de tu saldo al aprobarse, incluso antes de cumplir el año (se da por acuerdo mutuo) — si tomas más días de los que tienes disponibles, tu saldo puede quedar en negativo.</p>
+            </nz-collapse-panel>
+        </nz-collapse>
+
         <nz-card nzTitle="Nueva solicitud" class="form-card">
             <div *ngIf="elegibleVacaciones" class="saldo-info">
                 <nz-icon nzType="info-circle"></nz-icon>
-                Saldo de vacaciones disponible: <b>{{ payrollEmployee.saldoVacacionesDisponible ?? 0 }}</b> días
+                <b>{{ saldoTexto() }}</b>
+                <span *ngIf="periodoVigente"> — período vigente: {{ periodoVigente.inicio }} a {{ periodoVigente.fin }}</span>
             </div>
             <div *ngIf="!elegibleVacaciones" class="saldo-info">
                 <nz-icon nzType="info-circle"></nz-icon>
-                Todavía no cumplís 1 año de afiliación al IESS, así que por ahora solo podés pedir permisos (no vacaciones).
+                Todavía no cumples 1 año de afiliación al IESS, así que por ahora solo puedes pedir permisos (no vacaciones).
+                <span *ngIf="(payrollEmployee.saldoVacacionesDisponible ?? 0) < 0"> {{ saldoTexto() }}.</span>
             </div>
 
             <form nz-form [formGroup]="form" nzLayout="vertical" (ngSubmit)="crearSolicitud()">

@@ -184,6 +184,32 @@ export class PayrollService {
     return fecha >= unAnioDespues;
   }
 
+  // A qué ciclo aniversario-a-aniversario corresponde hoy el saldo de
+  // vacaciones. Si ya cumplió al menos 1 año, es el ÚLTIMO ciclo ya
+  // CERRADO (contra el que realmente se descuenta el saldo) — no el que
+  // está corriendo ahora mismo, que todavía no terminó de acumularse. Si
+  // todavía no cumple el año, es su primer ciclo, aún en curso (no hay uno
+  // cerrado todavía). Recalculado siempre desde fechaAfiliacionIESS + hoy,
+  // sin guardar nada — así no se desactualiza con el paso del tiempo.
+  periodoVacacionesVigente(fechaAfiliacionIESS: string, fecha: Date = new Date()): { inicio: string; fin: string } {
+    const [y, m, d] = fechaAfiliacionIESS.split('-').map(Number);
+    let aniversariosCumplidos = 0;
+    while (new Date(y + aniversariosCumplidos + 1, m - 1, d) <= fecha) {
+      aniversariosCumplidos++;
+    }
+    const inicio = aniversariosCumplidos === 0
+      ? new Date(y, m - 1, d)
+      : new Date(y + aniversariosCumplidos - 1, m - 1, d);
+    const fin = new Date(y + Math.max(aniversariosCumplidos, 1), m - 1, d);
+    return { inicio: this.formatearFechaLocal(inicio), fin: this.formatearFechaLocal(fin) };
+  }
+
+  private formatearFechaLocal(fecha: Date): string {
+    const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dd = String(fecha.getDate()).padStart(2, '0');
+    return `${fecha.getFullYear()}-${mm}-${dd}`;
+  }
+
   // días trabajados / mes comercial (30 días fijos, Art. base del cálculo
   // de nómina del Ministerio del Trabajo — año comercial = 360 días = 12 x
   // 30, sin importar los días reales del mes de calendario) — 1 (mes

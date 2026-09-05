@@ -1,6 +1,6 @@
 .permisos-container {
     padding: 24px;
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
@@ -10,6 +10,18 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.info-saldo {
+    margin-bottom: 16px;
+}
+
+.info-saldo p {
+    margin: 0 0 8px;
+}
+
+.info-saldo p:last-child {
+    margin-bottom: 0;
 }
 
 .search-input {
@@ -22,6 +34,16 @@
     border-radius: 8px;
 }
 
-.saldo-negativo {
-    color: #cf1322;
+.table-scroll {
+    overflow-x: auto;
 }
+
+.saldo-table {
+    min-width: 900px;
+}
+
+.saldo-table td,
+.saldo-table th {
+    white-space: nowrap;
+}
+

@@ -12,6 +12,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { RouterModule } from '@angular/router';
@@ -42,6 +43,7 @@ import {
     NzIconModule,
     NzEmptyModule,
     NzAlertModule,
+    NzCollapseModule,
     NzBreadCrumbModule
   ],
   templateUrl: './mis-solicitudes.component.html',
@@ -54,6 +56,7 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
   elegibleVacaciones = false;
   esPasante = false;
   cargandoPerfil = true;
+  periodoVigente: { inicio: string; fin: string } | null = null;
 
   solicitudes: SolicitudPermiso[] = [];
   loading = false;
@@ -114,6 +117,9 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
     this.payrollEmployee = await this.payrollService.getPayrollEmployeeByUid(user.uid);
     this.elegibleVacaciones = this.payrollEmployee ? this.payrollService.esElegibleVacaciones(this.payrollEmployee) : false;
     this.esPasante = this.payrollEmployee ? this.payrollService.esPasante(this.payrollEmployee) : false;
+    this.periodoVigente = this.payrollEmployee?.fechaAfiliacionIESS
+      ? this.payrollService.periodoVacacionesVigente(this.payrollEmployee.fechaAfiliacionIESS)
+      : null;
     this.cargandoPerfil = false;
 
     const tipoActual = this.form.get('tipo')?.value;
@@ -138,6 +144,17 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  // Mismo criterio que SaldoVacacionesComponent.saldoTexto: un número
+  // negativo significa "adelanto" antes de cumplir el año, o "deuda real"
+  // si ya lo cumplió — el texto lo deja explícito.
+  saldoTexto(): string {
+    const saldo = this.payrollEmployee?.saldoVacacionesDisponible ?? 0;
+    if (this.elegibleVacaciones) {
+      return saldo < 0 ? `Debes ${Math.abs(saldo)} día(s) de este período` : `${saldo} día(s) disponibles`;
+    }
+    return saldo < 0 ? `Adelanto de ${Math.abs(saldo)} día(s) (aún sin cumplir el año)` : `${saldo} día(s)`;
   }
 
   tiposParaSeleccionar(): { value: TipoSolicitud; label: string }[] {

@@ -116,9 +116,79 @@ service cloud.firestore {
                        request.resource.data.area == resource.data.area &&
                        request.resource.data.creadoPor == resource.data.creadoPor;
 
+      // Recordatorios de la Bitácora de Gestiones (IESS): cualquier integrante
+      // del área puede darles seguimiento aunque no los haya creado, pero solo
+      // en lo necesario para eso — nunca título, descripción, prioridad, área
+      // ni el vínculo con el coactivado. (Las allow de un mismo método se
+      // combinan con OR, así que esta regla se suma a la anterior.)
+      allow update: if isAuthenticated() &&
+                       isActiveUser() &&
+                       resource.data.get('coactivadoId', null) != null &&
+                       ownsArea(resource.data.area) &&
+                       request.resource.data.area == resource.data.area &&
+                       request.resource.data.creadoPor == resource.data.creadoPor &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['estado', 'fechaCompletada', 'notas', 'fechaLimite', 'responsable', 'responsableNombre']);
+
       allow delete: if isAuthenticated() &&
                        isActiveUser() &&
                        (resource.data.creadoPor == request.auth.uid || isAdminOrCoordinador());
+    }
+
+    // ============================================
+    // 📞 IESS — Bitácora de Gestiones
+    // Coactivados (ID = cédula/RUC) y su historial de gestiones. Lo ve y
+    // registra el área IESS; admin/coordinador entran a todas las áreas.
+    // ============================================
+    function esDelAreaIess() {
+      return isAuthenticated() && isActiveUser() &&
+             (isAdminOrCoordinador() || ownsArea('iess'));
+    }
+
+    match /coactivados/{cedula} {
+      allow read: if esDelAreaIess();
+
+      // La cédula del documento debe coincidir con su ID (evita duplicados
+      // por typos) y el creador siempre es quien lo escribe.
+      allow create: if esDelAreaIess() &&
+                       request.resource.data.cedula == cedula &&
+                       request.resource.data.nombre is string &&
+                       request.resource.data.nombre.size() > 0 &&
+                       request.resource.data.cartera is string &&
+                       request.resource.data.creadoPor.uid == request.auth.uid;
+
+      // Solo nombre y cartera se pueden corregir; cédula y creador quedan fijos.
+      allow update: if esDelAreaIess() &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['nombre', 'nombreBusqueda', 'cartera']);
+
+      allow delete: if isAdmin();
+    }
+
+    // Las gestiones son el registro de qué se hizo con cada coactivado: las
+    // crea cualquiera del área, cualquiera del área puede corregir su tipo y
+    // texto (queda sellado quién y cuándo editó) y solo admin puede borrarlas.
+    match /gestiones_coactivado/{gestionId} {
+      allow read: if esDelAreaIess();
+
+      allow create: if esDelAreaIess() &&
+                       request.resource.data.registradoPor.uid == request.auth.uid &&
+                       request.resource.data.coactivadoId is string &&
+                       request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro'] &&
+                       request.resource.data.descripcion is string &&
+                       request.resource.data.descripcion.size() > 0;
+
+      // Quién la registró, cuándo y de qué coactivado son inmutables: de ahí
+      // salen las métricas de gestión por integrante.
+      allow update: if esDelAreaIess() &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['tipo', 'descripcion', 'editadoPor', 'fechaEdicion']) &&
+                       request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro'] &&
+                       request.resource.data.descripcion is string &&
+                       request.resource.data.descripcion.size() > 0 &&
+                       request.resource.data.editadoPor.uid == request.auth.uid;
+
+      allow delete: if isAdmin();
     }
 
     // ============================================

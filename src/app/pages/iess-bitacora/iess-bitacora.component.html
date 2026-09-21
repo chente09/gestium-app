@@ -1,0 +1,395 @@
+<div class="bitacora-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/area/iess">IESS</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Bitácora de Gestiones</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <div class="page-header">
+        <h1 class="page-title"><nz-icon nzType="phone"></nz-icon> Bitácora de Gestiones</h1>
+        <a *ngIf="esAdmin" nz-button routerLink="/iess/reportes">
+            <nz-icon nzType="bar-chart"></nz-icon> Reporte de gestión
+        </a>
+    </div>
+
+    <div class="bitacora-layout">
+
+        <!-- ================= BÚSQUEDA ================= -->
+        <aside class="panel-busqueda">
+            <nz-card [nzBodyStyle]="{ padding: '12px' }">
+                <div class="busqueda-row">
+                    <input
+                        nz-input
+                        [(ngModel)]="termino"
+                        (keyup.enter)="buscar()"
+                        placeholder="Cédula o apellidos..." />
+                    <button nz-button nzType="primary" class="brand-btn" [nzLoading]="buscando" (click)="buscar()" aria-label="Buscar">
+                        <nz-icon nzType="search"></nz-icon>
+                    </button>
+                </div>
+
+                <button nz-button nzType="dashed" nzBlock class="btn-nuevo" (click)="abrirAlta()">
+                    <nz-icon nzType="plus"></nz-icon> Nuevo coactivado
+                </button>
+
+                <div *ngIf="cedulaNoEncontrada" class="cedula-no-encontrada">
+                    <nz-alert
+                        nzType="info"
+                        nzShowIcon
+                        nzMessage="No hay ningún coactivado con la cédula {{ cedulaNoEncontrada }}">
+                    </nz-alert>
+                    <button nz-button nzType="primary" nzBlock class="brand-btn" (click)="abrirAlta(cedulaNoEncontrada)">
+                        Registrarlo ahora
+                    </button>
+                </div>
+
+                <ng-container *ngIf="resultados !== null">
+                    <nz-empty
+                        *ngIf="resultados.length === 0"
+                        nzNotFoundContent="Sin resultados. Si es un coactivado nuevo, usa «Nuevo coactivado».">
+                    </nz-empty>
+
+                    <button
+                        type="button"
+                        class="resultado-item"
+                        *ngFor="let c of resultados; trackBy: trackByCedula"
+                        [class.activo]="seleccionado?.cedula === c.cedula"
+                        (click)="seleccionar(c)">
+                        <span class="resultado-nombre">{{ c.nombre }}</span>
+                        <span class="resultado-meta">
+                            {{ c.cedula }}
+                            <nz-tag nzColor="blue">{{ c.cartera }}</nz-tag>
+                        </span>
+                    </button>
+                </ng-container>
+            </nz-card>
+        </aside>
+
+        <!-- ================= FICHA ================= -->
+        <main class="panel-ficha">
+
+            <!-- Alta de coactivado -->
+            <nz-card *ngIf="mostrarAlta" nzTitle="Registrar coactivado" [nzBodyStyle]="{ padding: '16px' }">
+                <form nz-form [formGroup]="altaForm" nzLayout="vertical" (ngSubmit)="guardarCoactivado()">
+                    <div class="alta-grid">
+                        <nz-form-item>
+                            <nz-form-label nzRequired>Cédula / RUC</nz-form-label>
+                            <nz-form-control nzErrorTip="10 dígitos (13 si es RUC), solo números">
+                                <input nz-input formControlName="cedula" maxlength="13" inputmode="numeric" />
+                            </nz-form-control>
+                        </nz-form-item>
+
+                        <nz-form-item>
+                            <nz-form-label nzRequired>Cartera</nz-form-label>
+                            <nz-form-control nzErrorTip="Elige el abogado dueño de la cartera">
+                                <nz-select formControlName="cartera" nzPlaceHolder="Selecciona la cartera">
+                                    <nz-option *ngFor="let cartera of carteras" [nzValue]="cartera" [nzLabel]="cartera"></nz-option>
+                                </nz-select>
+                            </nz-form-control>
+                        </nz-form-item>
+                    </div>
+
+                    <nz-form-item>
+                        <nz-form-label nzRequired>Nombre completo</nz-form-label>
+                        <nz-form-control nzErrorTip="Ingresa el nombre (apellidos primero)">
+                            <input nz-input class="input-mayusculas" formControlName="nombre" placeholder="APELLIDOS NOMBRES" />
+                        </nz-form-control>
+                    </nz-form-item>
+
+                    <div class="acciones-form">
+                        <button nz-button type="button" (click)="cancelarAlta()">Cancelar</button>
+                        <button nz-button nzType="primary" class="brand-btn" type="submit" [nzLoading]="guardandoCoactivado">
+                            Registrar coactivado
+                        </button>
+                    </div>
+                </form>
+            </nz-card>
+
+            <!-- Ficha abierta -->
+            <ng-container *ngIf="seleccionado && !mostrarAlta">
+                <nz-card [nzBodyStyle]="{ padding: '16px' }" class="ficha-card">
+                    <div class="ficha-header">
+                        <div>
+                            <h2 class="ficha-nombre">{{ seleccionado.nombre }}</h2>
+                            <span class="ficha-cedula">{{ seleccionado.cedula }}</span>
+                        </div>
+                        <div class="ficha-cartera">
+                            <nz-tag nzColor="blue">Cartera: {{ seleccionado.cartera }}</nz-tag>
+                            <button nz-button nzType="link" nzSize="small" (click)="abrirEdicion()">
+                                <nz-icon nzType="edit"></nz-icon> Editar
+                            </button>
+                            <button *ngIf="esAdmin" nz-button nzType="link" nzDanger nzSize="small" (click)="abrirEliminacion()">
+                                <nz-icon nzType="delete"></nz-icon> Eliminar
+                            </button>
+                        </div>
+                    </div>
+
+                    <nz-alert
+                        *ngIf="ultimaGestion"
+                        class="banner-ultima"
+                        [nzType]="ultimaEsHoyDeOtro ? 'warning' : 'info'"
+                        nzShowIcon
+                        [nzMessage]="bannerMensaje"
+                        [nzDescription]="ultimaEsHoyDeOtro ? ultimaGestion.descripcion : null">
+                    </nz-alert>
+
+                    <!-- Seguimientos abiertos: si alguien más ya tiene uno agendado, se ve acá -->
+                    <div class="recordatorios" *ngIf="recordatorios.length > 0">
+                        <div class="recordatorios-titulo">
+                            <nz-icon nzType="bell"></nz-icon> Recordatorios pendientes
+                        </div>
+                        <div class="recordatorio-item" *ngFor="let r of recordatorios; trackBy: trackByActividad">
+                            <div class="recordatorio-info">
+                                <span class="recordatorio-fecha" [class.vencido]="esVencido(r)">
+                                    {{ r.fechaLimite | date:'dd/MM/yyyy' }}
+                                </span>
+                                <nz-tag *ngIf="esVencido(r)" nzColor="red">Vencido</nz-tag>
+                                <span class="recordatorio-resp">
+                                    <nz-icon nzType="user"></nz-icon> {{ r.responsableNombre }}
+                                </span>
+                            </div>
+                            <button
+                                nz-button
+                                nzSize="small"
+                                type="button"
+                                [nzLoading]="completandoId === r.id"
+                                (click)="completarRecordatorio(r)">
+                                <nz-icon nzType="check-circle"></nz-icon> Completar
+                            </button>
+                        </div>
+                    </div>
+                </nz-card>
+
+                <nz-card nzTitle="Nueva gestión" [nzBodyStyle]="{ padding: '16px' }" class="ficha-card">
+                    <form nz-form [formGroup]="gestionForm" nzLayout="vertical" (ngSubmit)="registrarGestion()">
+                        <nz-form-item>
+                            <nz-form-label>Tipo</nz-form-label>
+                            <nz-form-control>
+                                <nz-radio-group formControlName="tipo" nzButtonStyle="solid">
+                                    <label nz-radio-button *ngFor="let tipo of tiposGestion" [nzValue]="tipo.value">{{ tipo.label }}</label>
+                                </nz-radio-group>
+                            </nz-form-control>
+                        </nz-form-item>
+
+                        <nz-form-item>
+                            <nz-form-label nzRequired>¿Qué se habló o se acordó?</nz-form-label>
+                            <nz-form-control>
+                                <textarea
+                                    nz-input
+                                    formControlName="descripcion"
+                                    rows="3"
+                                    placeholder="Compromisos, fechas, datos de contacto..."></textarea>
+                            </nz-form-control>
+                        </nz-form-item>
+
+                        <div class="switch-recordatorio">
+                            <nz-switch formControlName="recordatorio"></nz-switch>
+                            <span>Crear recordatorio en la agenda</span>
+                        </div>
+
+                        <div class="recordatorio-grid" *ngIf="recordatorioActivo">
+                            <nz-form-item>
+                                <nz-form-label nzRequired>Fecha del seguimiento</nz-form-label>
+                                <nz-form-control nzErrorTip="Elige una fecha (lunes a viernes)">
+                                    <nz-date-picker
+                                        formControlName="fechaRecordatorio"
+                                        nzFormat="dd/MM/yyyy"
+                                        [nzDisabledDate]="fechaNoDisponible"
+                                        style="width: 100%;">
+                                    </nz-date-picker>
+                                </nz-form-control>
+                            </nz-form-item>
+
+                            <nz-form-item>
+                                <nz-form-label>Responsable</nz-form-label>
+                                <nz-form-control>
+                                    <nz-select formControlName="responsable" nzPlaceHolder="Elige un responsable">
+                                        <nz-option *ngFor="let r of responsables" [nzValue]="r.uid" [nzLabel]="r.nombre"></nz-option>
+                                    </nz-select>
+                                </nz-form-control>
+                            </nz-form-item>
+                        </div>
+
+                        <div class="acciones-form">
+                            <button
+                                nz-button
+                                nzType="primary"
+                                class="brand-btn"
+                                type="submit"
+                                [nzLoading]="guardandoGestion"
+                                [disabled]="gestionForm.invalid">
+                                <nz-icon nzType="save"></nz-icon> Registrar gestión
+                            </button>
+                        </div>
+                    </form>
+                </nz-card>
+
+                <nz-card
+                    [nzTitle]="'Historial de gestiones (' + gestiones.length + ')'"
+                    [nzLoading]="cargandoGestiones"
+                    [nzBodyStyle]="{ padding: '0 16px' }"
+                    class="ficha-card">
+                    <nz-empty
+                        *ngIf="!cargandoGestiones && gestiones.length === 0"
+                        nzNotFoundContent="Todavía no hay gestiones registradas para este coactivado">
+                    </nz-empty>
+
+                    <div class="gestion-item" *ngFor="let g of gestiones; trackBy: trackById">
+                        <div class="gestion-cabecera">
+                            <nz-tag [nzColor]="tipoColor(g.tipo)">{{ tipoLabel(g.tipo) }}</nz-tag>
+                            <span class="gestion-fecha">{{ g.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+                            <span class="gestion-autor">· {{ g.registradoPor.nombre }}</span>
+                            <nz-icon
+                                *ngIf="g.editadoPor"
+                                nzType="edit"
+                                class="gestion-editada"
+                                nz-tooltip
+                                [nzTooltipTitle]="textoEdicion(g)">
+                            </nz-icon>
+
+                            <span class="gestion-acciones">
+                                <button nz-button nzType="text" nzSize="small" nz-tooltip nzTooltipTitle="Editar" (click)="abrirEdicionGestion(g)">
+                                    <nz-icon nzType="edit"></nz-icon>
+                                </button>
+                                <button
+                                    *ngIf="esAdmin"
+                                    nz-button
+                                    nzType="text"
+                                    nzDanger
+                                    nzSize="small"
+                                    nz-tooltip
+                                    nzTooltipTitle="Eliminar"
+                                    nz-popconfirm
+                                    nzPopconfirmTitle="¿Eliminar esta gestión? Si tiene un recordatorio en la agenda, también se elimina. No se puede deshacer."
+                                    nzOkText="Eliminar"
+                                    nzOkDanger
+                                    nzCancelText="Cancelar"
+                                    [nzLoading]="eliminandoGestionId === g.id"
+                                    (nzOnConfirm)="eliminarGestion(g)">
+                                    <nz-icon nzType="delete"></nz-icon>
+                                </button>
+                            </span>
+                        </div>
+                        <p class="gestion-texto">{{ g.descripcion }}</p>
+                    </div>
+                </nz-card>
+            </ng-container>
+
+            <!-- Estado vacío -->
+            <nz-card *ngIf="!seleccionado && !mostrarAlta" [nzBodyStyle]="{ padding: '32px 16px' }">
+                <nz-empty nzNotFoundContent="Busca un coactivado por cédula o apellidos para ver su cartera y sus gestiones"></nz-empty>
+            </nz-card>
+        </main>
+    </div>
+</div>
+
+<nz-modal
+    [(nzVisible)]="mostrarEdicionGestion"
+    nzTitle="Editar gestión"
+    (nzOnCancel)="mostrarEdicionGestion = false"
+    [nzFooter]="edicionGestionFooter">
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="edicionGestionForm" nzLayout="vertical">
+            <nz-form-item>
+                <nz-form-label>Tipo</nz-form-label>
+                <nz-form-control>
+                    <nz-radio-group formControlName="tipo" nzButtonStyle="solid">
+                        <label nz-radio-button *ngFor="let tipo of tiposGestion" [nzValue]="tipo.value">{{ tipo.label }}</label>
+                    </nz-radio-group>
+                </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+                <nz-form-label nzRequired>¿Qué se habló o se acordó?</nz-form-label>
+                <nz-form-control>
+                    <textarea nz-input formControlName="descripcion" rows="4"></textarea>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+        <p class="nota-edicion">Se conserva quién la registró y cuándo; queda anotado que la editaste tú.</p>
+    </ng-container>
+    <ng-template #edicionGestionFooter>
+        <button nz-button nzType="default" (click)="mostrarEdicionGestion = false">Cancelar</button>
+        <button
+            nz-button
+            nzType="primary"
+            class="brand-btn"
+            [nzLoading]="guardandoEdicionGestion"
+            [disabled]="edicionGestionForm.invalid"
+            (click)="guardarEdicionGestion()">
+            Guardar cambios
+        </button>
+    </ng-template>
+</nz-modal>
+
+<nz-modal
+    [(nzVisible)]="mostrarEliminacion"
+    nzTitle="Eliminar coactivado"
+    (nzOnCancel)="mostrarEliminacion = false"
+    [nzFooter]="eliminacionFooter">
+    <ng-container *nzModalContent>
+        <nz-alert
+            *ngIf="seleccionado"
+            nzType="error"
+            nzShowIcon
+            nzMessage="Esta acción no se puede deshacer"
+            [nzDescription]="'Se borrarán ' + seleccionado.nombre + ', sus ' + gestiones.length + ' gestión(es) y todos sus recordatorios de la agenda.'">
+        </nz-alert>
+        <p class="confirmacion-texto">
+            Para confirmar, escribe su cédula: <b>{{ seleccionado?.cedula }}</b>
+        </p>
+        <input nz-input [(ngModel)]="confirmacionCedula" (keyup.enter)="confirmarEliminacion()" inputmode="numeric" />
+    </ng-container>
+    <ng-template #eliminacionFooter>
+        <button nz-button nzType="default" (click)="mostrarEliminacion = false">Cancelar</button>
+        <button
+            nz-button
+            nzType="primary"
+            nzDanger
+            [nzLoading]="eliminando"
+            [disabled]="!confirmacionValida"
+            (click)="confirmarEliminacion()">
+            Eliminar definitivamente
+        </button>
+    </ng-template>
+</nz-modal>
+
+<nz-modal
+    [(nzVisible)]="mostrarEdicion"
+    nzTitle="Editar coactivado"
+    (nzOnCancel)="mostrarEdicion = false"
+    [nzFooter]="edicionFooter">
+    <ng-container *nzModalContent>
+        <form nz-form [formGroup]="edicionForm" nzLayout="vertical">
+            <nz-form-item>
+                <nz-form-label nzRequired>Nombre completo</nz-form-label>
+                <nz-form-control nzErrorTip="Ingresa el nombre">
+                    <input nz-input class="input-mayusculas" formControlName="nombre" />
+                </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+                <nz-form-label nzRequired>Cartera</nz-form-label>
+                <nz-form-control>
+                    <nz-select formControlName="cartera">
+                        <nz-option *ngFor="let cartera of carteras" [nzValue]="cartera" [nzLabel]="cartera"></nz-option>
+                    </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+    <ng-template #edicionFooter>
+        <button nz-button nzType="default" (click)="mostrarEdicion = false">Cancelar</button>
+        <button
+            nz-button
+            nzType="primary"
+            class="brand-btn"
+            [nzLoading]="guardandoEdicion"
+            [disabled]="edicionForm.invalid"
+            (click)="guardarEdicion()">
+            Guardar
+        </button>
+    </ng-template>
+</nz-modal>

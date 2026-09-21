@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   CdkDragDrop,
@@ -106,6 +107,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     private registersService: RegistersService,
     private messageService: NzMessageService,
     private fb: FormBuilder,
+    private router: Router,
   ) {
     this.createForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(100)]],
@@ -866,6 +868,14 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.selectedActivity = null;
     }, 300);
+  }
+
+  // 📞 Recordatorios de la Bitácora de Gestiones del IESS: abre la ficha de
+  // su coactivado (la actividad guarda su cédula en coactivadoId).
+  abrirFichaCoactivado(activity: AreaActivity): void {
+    if (!activity.coactivadoId) return;
+    this.closeViewModal();
+    this.router.navigate(['/iess/bitacora'], { queryParams: { cedula: activity.coactivadoId } });
   }
 
   // 👁️ Editar desde vista previa

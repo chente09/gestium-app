@@ -185,6 +185,8 @@
                                                 style="margin: 0;">
                                                 {{ activity.estado }}
                                             </nz-tag>
+                                            <i nz-icon nzType="phone" nzTheme="outline" *ngIf="activity.coactivadoId"
+                                                nz-tooltip nzTooltipTitle="Seguimiento de la Bitácora IESS"></i>
                                         </div>
 
                                         <div class="activity-content">
@@ -296,6 +298,8 @@
                                                 style="margin: 0;">
                                                 {{ activity.estado }}
                                             </nz-tag>
+                                            <i nz-icon nzType="phone" nzTheme="outline" *ngIf="activity.coactivadoId"
+                                                nz-tooltip nzTooltipTitle="Seguimiento de la Bitácora IESS"></i>
                                         </div>
 
                                         <!-- 📝 CONTENIDO -->
@@ -582,6 +586,20 @@
                     </div>
                     <div class="view-info-value">
                         {{ selectedActivity.responsableNombre }}
+                    </div>
+                </div>
+
+                <!-- Coactivado (recordatorios de la Bitácora de Gestiones del IESS) -->
+                <div class="view-info-item" *ngIf="selectedActivity.coactivadoId">
+                    <div class="view-info-label">
+                        <i nz-icon nzType="phone" nzTheme="outline"></i>
+                        Coactivado:
+                    </div>
+                    <div class="view-info-value">
+                        {{ selectedActivity.coactivadoNombre }}
+                        <button nz-button nzType="link" nzSize="small" (click)="abrirFichaCoactivado(selectedActivity)">
+                            Abrir ficha
+                        </button>
                     </div>
                 </div>
 

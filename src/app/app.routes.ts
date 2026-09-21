@@ -21,6 +21,9 @@ import { solicitudesAprobarGuard } from './guards/solicitudesPermiso/solicitudes
 import { MisSolicitudesComponent } from './pages/permisos/mis-solicitudes/mis-solicitudes.component';
 import { SolicitudesAprobarComponent } from './pages/permisos/solicitudes-aprobar/solicitudes-aprobar.component';
 import { SaldoVacacionesComponent } from './pages/permisos/saldo-vacaciones/saldo-vacaciones.component';
+import { iessGuard } from './guards/iess/iess.guard';
+import { IessBitacoraComponent } from './pages/iess-bitacora/iess-bitacora.component';
+import { IessReportesComponent } from './pages/iess-reportes/iess-reportes.component';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
 
@@ -72,6 +75,7 @@ function withAuthAnd(extraGuards: any[]) {
 
 const superAdminRoutes: Routes = [
   { path: 'admin/users', component: UserAreaAdminComponent },
+  { path: 'iess/reportes', component: IessReportesComponent },
 ].map(withAuthAnd([AdminGuard]));
 
 const payrollRoutes: Routes = [
@@ -85,6 +89,10 @@ const solicitudesAprobarRoutes: Routes = [
   { path: 'permisos/aprobar', component: SolicitudesAprobarComponent },
   { path: 'permisos/saldos', component: SaldoVacacionesComponent },
 ].map(withAuthAnd([solicitudesAprobarGuard]));
+
+const iessRoutes: Routes = [
+  { path: 'iess/bitacora', component: IessBitacoraComponent },
+].map(withAuthAnd([iessGuard]));
 
 const errorRoutes: Routes = [
   { path: 'unauthorized', component: UnauthorizedComponent }, 
@@ -100,5 +108,6 @@ export const routes: Routes = [
   ...superAdminRoutes,
   ...payrollRoutes,
   ...solicitudesAprobarRoutes,
+  ...iessRoutes,
   ...errorRoutes
 ];

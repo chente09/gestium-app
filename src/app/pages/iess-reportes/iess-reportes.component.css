@@ -1,0 +1,89 @@
+.reportes-container {
+    padding: 16px 24px 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 12px 0 16px;
+}
+
+.page-title {
+    margin: 0;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.acciones-header {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.barra-periodo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+nz-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+}
+
+/* ===== Resumen ===== */
+.resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+@media (min-width: 800px) {
+    .resumen-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.chips-tipo {
+    margin-bottom: 16px;
+}
+
+/* ===== Tablas ===== */
+.tabla-card {
+    margin-bottom: 16px;
+}
+
+.tabla-scroll {
+    overflow-x: auto;
+}
+
+.num {
+    text-align: center;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.cero {
+    color: #bfbfbf;
+}
+
+.total {
+    font-weight: 600;
+}
+
+.fila-total td {
+    font-weight: 700;
+    background: #fafafa;
+}

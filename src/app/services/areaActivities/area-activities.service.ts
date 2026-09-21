@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Firestore, addDoc, collection, collectionData, doc, updateDoc, deleteDoc, query, where, orderBy } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, collectionData, doc, updateDoc, deleteDoc, getDocs, query, where, orderBy } from '@angular/fire/firestore';
 import { from, Observable, of, throwError } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { RegistersService } from '../registers/registers.service';
 import { UsersService } from '../users/users.service';
+import { borrarEnLotes } from '../firestore-utils/batch-delete';
 
 export interface AreaActivity {
   id?: string;
@@ -21,6 +22,11 @@ export interface AreaActivity {
   notas?: string;
   fechaCompletada?: Date | any;
   etiquetas?: string[];
+  // Recordatorios creados desde la Bitácora de Gestiones del IESS: ligan la
+  // actividad con su coactivado (cédula) y con la gestión que la originó.
+  coactivadoId?: string;
+  coactivadoNombre?: string;
+  gestionId?: string;
 }
 
 @Injectable({
@@ -105,19 +111,28 @@ export class AreaActivitiesService {
   // ============================================
   // ➕ CREAR ACTIVIDAD (con validación)
   // ============================================
-  async createActivity(activityData: Omit<AreaActivity, 'id' | 'fechaCreacion' | 'creadoPor' | 'creadoPorNombre' | 'area'>): Promise<string> {
+  // `areaSlugOverride`: para actividades que deben quedar en un área concreta
+  // sin importar el área de quien las crea (ej. recordatorios del IESS
+  // creados por un admin de otra área). Las reglas de Firestore siguen
+  // exigiendo que sea admin/coordinador o de esa misma área.
+  async createActivity(
+    activityData: Omit<AreaActivity, 'id' | 'fechaCreacion' | 'creadoPor' | 'creadoPorNombre' | 'area'>,
+    areaSlugOverride?: string
+  ): Promise<string> {
     const user = this.usersService.getCurrentUser();
     if (!user) throw new Error('🔒 Usuario no autenticado');
 
     const currentRegister = this.registersService.getCurrentRegister();
     if (!currentRegister) throw new Error('🔒 Usuario sin registro');
 
-    const userArea = currentRegister.areaAsignada;
-    if (!userArea || userArea === 'sin_asignar') {
-      throw new Error('⛔ Usuario sin área asignada');
+    let areaSlug = areaSlugOverride;
+    if (!areaSlug) {
+      const userArea = currentRegister.areaAsignada;
+      if (!userArea || userArea === 'sin_asignar') {
+        throw new Error('⛔ Usuario sin área asignada');
+      }
+      areaSlug = await this.getAreaSlugByName(userArea);
     }
-
-    const areaSlug = await this.getAreaSlugByName(userArea);
 
     const newActivity: Omit<AreaActivity, 'id'> = {
       ...activityData,
@@ -324,6 +339,39 @@ export class AreaActivitiesService {
   // 📅 MÉTODOS AUXILIARES (sin cambios)
   // ============================================
   
+  // Actividades del área ligadas a un coactivado (recordatorios de la
+  // Bitácora de Gestiones). Solo igualdades (sin orderBy ni rangos) → no
+  // requiere índice compuesto; se ordena en el cliente. El where de `area`
+  // es obligatorio: sin él las reglas de Firestore rechazan la consulta.
+  getActivitiesByCoactivado(area: string, coactivadoId: string): Observable<AreaActivity[]> {
+    const ref = collection(this.firestore, this.collectionName);
+    const q = query(ref, where('area', '==', area), where('coactivadoId', '==', coactivadoId));
+
+    return (collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>).pipe(
+      map(lista =>
+        lista
+          .map(a => ({ ...a, fechaLimite: a.fechaLimite?.toDate ? a.fechaLimite.toDate() : a.fechaLimite }))
+          .sort((a, b) => new Date(a.fechaLimite).getTime() - new Date(b.fechaLimite).getTime())
+      )
+    );
+  }
+
+  // Borra TODAS las actividades ligadas a un coactivado (abiertas y ya
+  // completadas). Solo tiene sentido al eliminar el coactivado — las reglas
+  // de Firestore ya limitan el delete a su creador o admin/coordinador.
+  async deleteActivitiesByCoactivado(area: string, coactivadoId: string): Promise<void> {
+    const ref = collection(this.firestore, this.collectionName);
+    const snap = await getDocs(query(ref, where('area', '==', area), where('coactivadoId', '==', coactivadoId)));
+    await borrarEnLotes(this.firestore, snap.docs.map(d => d.ref));
+  }
+
+  // Borra las actividades creadas a partir de UNA gestión (su recordatorio).
+  async deleteActivitiesByGestion(area: string, gestionId: string): Promise<void> {
+    const ref = collection(this.firestore, this.collectionName);
+    const snap = await getDocs(query(ref, where('area', '==', area), where('gestionId', '==', gestionId)));
+    await borrarEnLotes(this.firestore, snap.docs.map(d => d.ref));
+  }
+
   async postponeActivity(activityId: string, newDate: Date): Promise<void> {
     await this.updateActivity(activityId, {
       fechaLimite: newDate,

@@ -60,6 +60,15 @@ export class SharedDataService {
     'Otro'
   ];
 
+  // Carteras del área IESS: abogado dueño de cada coactivado. Lista fija —
+  // para sumar o quitar a alguien basta editarla acá.
+  readonly carterasIess: string[] = [
+    'Jose Luis Rueda',
+    'Marcelo Mena',
+    'Jessica Ordoñez',
+    'Mayra Ordoñez'
+  ];
+
   readonly estados: string[] = [
     'Completado', 
     'Incompleto', 
@@ -188,6 +197,10 @@ export class SharedDataService {
 
   getPisos(): string[] {
     return [...this.pisos];
+  }
+
+  getCarterasIess(): string[] {
+    return this.carterasIess;
   }
 
   getEstados(): string[] {

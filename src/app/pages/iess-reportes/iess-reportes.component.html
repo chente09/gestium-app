@@ -1,0 +1,180 @@
+<div class="reportes-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/area/iess">IESS</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/iess/bitacora">Bitácora de Gestiones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Reporte de gestión</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <div class="page-header">
+        <h1 class="page-title"><nz-icon nzType="bar-chart"></nz-icon> Reporte de gestión</h1>
+
+        <div class="acciones-header">
+            <button nz-button (click)="cargar()" [nzLoading]="cargando">
+                <nz-icon nzType="reload"></nz-icon> Actualizar
+            </button>
+            <button nz-button [disabled]="!reporte || reporte.totalGestiones === 0" [nzLoading]="exportando === 'pdf'" (click)="exportarPdf()">
+                <nz-icon nzType="file-pdf"></nz-icon> PDF
+            </button>
+            <button nz-button [disabled]="!reporte || reporte.totalGestiones === 0" [nzLoading]="exportando === 'excel'" (click)="exportarExcel()">
+                <nz-icon nzType="file-excel"></nz-icon> Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= PERÍODO ================= -->
+    <div class="barra-periodo">
+        <nz-radio-group [ngModel]="periodo" (ngModelChange)="cambiarPeriodo($event)" nzButtonStyle="solid">
+            <label nz-radio-button nzValue="hoy">Hoy</label>
+            <label nz-radio-button nzValue="ayer">Ayer</label>
+            <label nz-radio-button nzValue="semana">Esta semana</label>
+            <label nz-radio-button nzValue="mes">Este mes</label>
+            <label nz-radio-button nzValue="personalizado">Personalizado</label>
+        </nz-radio-group>
+
+        <nz-range-picker
+            *ngIf="periodo === 'personalizado'"
+            [ngModel]="rango"
+            (ngModelChange)="alCambiarRango($event)"
+            [nzDisabledDate]="fechaFutura"
+            nzFormat="dd/MM/yyyy">
+        </nz-range-picker>
+    </div>
+
+    <nz-card *ngIf="periodo === 'personalizado' && rango.length !== 2 && !reporte" [nzBodyStyle]="{ padding: '32px 16px' }">
+        <nz-empty nzNotFoundContent="Elige las dos fechas del período"></nz-empty>
+    </nz-card>
+
+    <ng-container *ngIf="reporte">
+
+        <nz-card *ngIf="reporte.totalGestiones === 0" [nzLoading]="cargando" [nzBodyStyle]="{ padding: '32px 16px' }">
+            <nz-empty nzNotFoundContent="No hay gestiones registradas en este período"></nz-empty>
+        </nz-card>
+
+        <ng-container *ngIf="reporte.totalGestiones > 0">
+
+            <!-- ================= RESUMEN ================= -->
+            <div class="resumen-grid">
+                <nz-card [nzBodyStyle]="{ padding: '12px 16px' }" [nzLoading]="cargando">
+                    <nz-statistic [nzValue]="reporte.totalGestiones" nzTitle="Gestiones"></nz-statistic>
+                </nz-card>
+                <nz-card [nzBodyStyle]="{ padding: '12px 16px' }" [nzLoading]="cargando">
+                    <nz-statistic [nzValue]="reporte.coactivadosDistintos" nzTitle="Coactivados distintos"></nz-statistic>
+                </nz-card>
+                <nz-card [nzBodyStyle]="{ padding: '12px 16px' }" [nzLoading]="cargando">
+                    <nz-statistic
+                        [nzValue]="reporte.integrantesActivos + ' de ' + reporte.integrantes.length"
+                        nzTitle="Integrantes activos">
+                    </nz-statistic>
+                </nz-card>
+                <nz-card [nzBodyStyle]="{ padding: '12px 16px' }" [nzLoading]="cargando">
+                    <nz-statistic [nzValue]="promedioPorDiaActivo" nzTitle="Promedio por día con actividad"></nz-statistic>
+                </nz-card>
+            </div>
+
+            <div class="chips-tipo">
+                <nz-tag *ngFor="let t of tipos">{{ t.etiqueta }}: <b>{{ reporte.porTipo[t.clave] }}</b></nz-tag>
+            </div>
+
+            <!-- ================= POR DÍA ================= -->
+            <nz-card nzTitle="Gestiones por día" [nzBodyStyle]="{ padding: '0' }" [nzLoading]="cargando" class="tabla-card">
+                <div class="tabla-scroll">
+                    <nz-table
+                        #tablaDias
+                        [nzData]="reporte.dias"
+                        [nzFrontPagination]="false"
+                        [nzBordered]="true"
+                        nzSize="small">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th *ngFor="let i of reporte.integrantes; trackBy: trackByUid" class="num">{{ i.nombre }}</th>
+                                <th class="num">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let dia of tablaDias.data">
+                                <td class="nowrap">{{ etiquetaDia(dia) }}</td>
+                                <td *ngFor="let i of reporte.integrantes; trackBy: trackByUid" class="num" [class.cero]="!reporte.matriz[dia][i.uid]">
+                                    {{ reporte.matriz[dia][i.uid] || '–' }}
+                                </td>
+                                <td class="num total">{{ reporte.totalesPorDia[dia] }}</td>
+                            </tr>
+                            <tr class="fila-total">
+                                <td>Total</td>
+                                <td *ngFor="let i of reporte.integrantes; trackBy: trackByUid" class="num">{{ reporte.totalesPorIntegrante[i.uid] }}</td>
+                                <td class="num">{{ reporte.totalGestiones }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-card>
+
+            <!-- ================= POR INTEGRANTE ================= -->
+            <nz-card nzTitle="Resumen por integrante" [nzBodyStyle]="{ padding: '0' }" [nzLoading]="cargando" class="tabla-card">
+                <div class="tabla-scroll">
+                    <nz-table
+                        #tablaIntegrantes
+                        [nzData]="reporte.resumenIntegrantes"
+                        [nzFrontPagination]="false"
+                        [nzBordered]="true"
+                        nzSize="small">
+                        <thead>
+                            <tr>
+                                <th>Integrante</th>
+                                <th class="num">Gestiones</th>
+                                <th *ngFor="let t of tipos" class="num">{{ t.etiqueta }}</th>
+                                <th class="num">Coactivados distintos</th>
+                                <th class="num">Días activos</th>
+                                <th class="num">Prom. por día activo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let r of tablaIntegrantes.data; trackBy: trackByUid">
+                                <td class="nowrap">{{ r.nombre }}</td>
+                                <td class="num total" [class.cero]="r.total === 0">{{ r.total }}</td>
+                                <td *ngFor="let t of tipos" class="num" [class.cero]="!r.porTipo[t.clave]">{{ r.porTipo[t.clave] || '–' }}</td>
+                                <td class="num" [class.cero]="r.total === 0">{{ r.coactivadosDistintos }}</td>
+                                <td class="num" [class.cero]="r.total === 0">{{ r.diasActivos }}</td>
+                                <td class="num" [class.cero]="r.total === 0">{{ r.promedioPorDiaActivo }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-card>
+
+            <!-- ================= POR CARTERA ================= -->
+            <nz-card nzTitle="Gestiones por cartera" [nzBodyStyle]="{ padding: '0' }" [nzLoading]="cargando" class="tabla-card">
+                <div class="tabla-scroll">
+                    <nz-table
+                        #tablaCarteras
+                        [nzData]="reporte.porCartera"
+                        [nzFrontPagination]="false"
+                        [nzBordered]="true"
+                        nzSize="small">
+                        <thead>
+                            <tr>
+                                <th>Cartera</th>
+                                <th class="num">Gestiones</th>
+                                <th class="num">Coactivados distintos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let c of tablaCarteras.data">
+                                <td>{{ c.cartera }}</td>
+                                <td class="num total">{{ c.gestiones }}</td>
+                                <td class="num">{{ c.coactivadosDistintos }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-card>
+        </ng-container>
+    </ng-container>
+</div>

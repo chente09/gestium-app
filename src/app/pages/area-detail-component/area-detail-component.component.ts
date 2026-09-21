@@ -60,6 +60,11 @@ export class AreaDetailComponentComponent implements OnInit {
         icon: 'form',
         isExternal: true
       },
+      {
+        title: 'Bitácora de Gestiones',
+        route: '/iess/bitacora',
+        icon: 'phone'
+      },
     ],
   };
 

@@ -11,15 +11,23 @@ import { borrarEnLotes } from '../firestore-utils/batch-delete';
 // bitácora (Register.areaAsignada y AreaActivity.area guardan el slug).
 export const AREA_IESS = 'iess';
 
-export type TipoGestion = 'llamada' | 'mensaje' | 'reunion' | 'otro';
+export const COLECCION_GESTIONES = 'gestiones_coactivado';
+
+// 'migrado' no se registra a mano: lo crea el importador de títulos al
+// migrar las notas del Excel en la carga inicial (ver TitulosCreditoService).
+export type TipoGestion = 'llamada' | 'mensaje' | 'reunion' | 'otro' | 'migrado';
 
 // El orden acá es el orden en que aparecen los botones en la bitácora.
 export const TIPOS_GESTION: Record<TipoGestion, string> = {
   llamada: 'Llamada',
   mensaje: 'Mensaje',
   reunion: 'Reunión',
-  otro: 'Otro'
+  otro: 'Otro',
+  migrado: 'Migrado del Excel'
 };
+
+// Tipos que sí puede elegir una persona al registrar una gestión a mano.
+export const TIPOS_GESTION_SELECCIONABLES: TipoGestion[] = ['llamada', 'mensaje', 'reunion', 'otro'];
 
 // Cualquiera del área IESS puede corregir el tipo y el texto de una gestión
 // (queda sellado quién y cuándo la editó); solo admin puede borrarla. Quién
@@ -39,6 +47,12 @@ export interface GestionCoactivado {
   registradoPor: { uid: string; nombre: string };
   editadoPor?: { uid: string; nombre: string };
   fechaEdicion?: Date;
+  // Solo en gestiones tipo 'migrado': de qué importación vino, la
+  // OBSERVACION GENERAL del Excel (base del informe del IESS, aparte del
+  // detalle en `descripcion`) y la clave para no volver a migrarla.
+  cargaId?: string;
+  observacionGeneral?: string;
+  claveHistorica?: string;
 }
 
 // Firestore devuelve Timestamps; la app trabaja con Date.
@@ -51,7 +65,7 @@ function aGestion(id: string, data: any): GestionCoactivado {
   providedIn: 'root'
 })
 export class GestionesCoactivadoService {
-  private collectionName = 'gestiones_coactivado';
+  private collectionName = COLECCION_GESTIONES;
 
   constructor(
     private firestore: Firestore,

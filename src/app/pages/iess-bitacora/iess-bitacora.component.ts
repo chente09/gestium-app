@@ -19,6 +19,8 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzCollapseModule } from 'ng-zorro-antd/collapse';
+import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 
@@ -29,6 +31,7 @@ import { AreaActivity } from '../../services/areaActivities/area-activities.serv
 import {
   CoactivadosService,
   Coactivado,
+  ResumenCartera,
   esCedulaValida,
   normalizarCedula
 } from '../../services/coactivados/coactivados.service';
@@ -37,8 +40,19 @@ import {
   GestionesCoactivadoService,
   GestionCoactivado,
   TipoGestion,
-  TIPOS_GESTION
+  TIPOS_GESTION,
+  TIPOS_GESTION_SELECCIONABLES
 } from '../../services/gestionesCoactivado/gestiones-coactivado.service';
+import { TitulosCreditoService } from '../../services/titulosCredito/titulos-credito.service';
+import {
+  TituloCredito,
+  TipoCancelacion,
+  ResumenTitulos,
+  esCancelado,
+  fechaCorta,
+  formatoMoneda,
+  resumirTitulos
+} from '../../services/titulosCredito/titulos-credito.util';
 
 @Component({
   selector: 'app-iess-bitacora',
@@ -63,6 +77,8 @@ import {
     NzPopconfirmModule,
     NzEmptyModule,
     NzAlertModule,
+    NzCollapseModule,
+    NzTableModule,
     NzBreadCrumbModule
   ],
   templateUrl: './iess-bitacora.component.html',
@@ -70,8 +86,8 @@ import {
 })
 export class IessBitacoraComponent implements OnInit, OnDestroy {
   readonly carteras: string[];
-  readonly tiposGestion = (Object.keys(TIPOS_GESTION) as TipoGestion[])
-    .map(value => ({ value, label: TIPOS_GESTION[value] }));
+  // 'migrado' no aparece: lo pone solo el importador de títulos, no se elige a mano.
+  readonly tiposGestion = TIPOS_GESTION_SELECCIONABLES.map(value => ({ value, label: TIPOS_GESTION[value] }));
 
   // Búsqueda
   termino = '';
@@ -109,6 +125,31 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   recordatorios: AreaActivity[] = [];
   completandoId: string | null = null;
 
+  // Títulos de crédito del coactivado abierto.
+  titulos: TituloCredito[] = [];
+  cargandoTitulos = false;
+  filtroTitulos = '';
+  readonly formatoMoneda = formatoMoneda;
+  readonly esCancelado = esCancelado;
+
+  get titulosFiltrados(): TituloCredito[] {
+    const t = this.filtroTitulos.trim().toUpperCase();
+    if (!t) return this.titulos;
+    return this.titulos.filter(x => x.numero.includes(t) || (x.guia ?? '').toUpperCase().includes(t));
+  }
+
+  // Registrar abono/pago total de un título (cualquiera del área).
+  mostrarCancelacion = false;
+  guardandoCancelacion = false;
+  tituloCancelando: TituloCredito | null = null;
+  cancelacionForm: FormGroup;
+
+  // Panel de carteras: para decidir por dónde seguir gestionando (solo se
+  // carga cuando se aterriza en la vista vacía, no al abrir un coactivado
+  // directo desde la agenda).
+  resumenCarteras: ResumenCartera[] = [];
+  cargandoResumen = false;
+
   altaForm: FormGroup;
   edicionForm: FormGroup;
   gestionForm: FormGroup;
@@ -116,6 +157,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
   private gestionesSub?: Subscription;
   private recordatoriosSub?: Subscription;
+  private titulosSub?: Subscription;
   private uid: string | null;
 
   // El seguimiento se agenda de lunes a viernes (la agenda semanal no
@@ -131,6 +173,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     private sharedData: SharedDataService,
     private coactivadosService: CoactivadosService,
     private gestionesService: GestionesCoactivadoService,
+    private titulosService: TitulosCreditoService,
     private usersService: UsersService,
     private registersService: RegistersService,
     private route: ActivatedRoute,
@@ -164,20 +207,52 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       descripcion: ['', [Validators.required, Validators.pattern(/\S/)]]
     });
 
+    this.cancelacionForm = this.fb.group({
+      tipo: ['abono', Validators.required],
+      montoCancelado: [null],
+      honorario: [null]
+    });
+
     // La fecha solo es obligatoria si se pidió recordatorio.
     this.gestionForm.get('recordatorio')!.valueChanges.subscribe(activo => {
       const fecha = this.gestionForm.get('fechaRecordatorio')!;
       fecha.setValidators(activo ? [Validators.required] : []);
       fecha.updateValueAndValidity();
     });
+
+    // Monto y honorario solo son obligatorios si es pago total.
+    this.cancelacionForm.get('tipo')!.valueChanges.subscribe((tipo: TipoCancelacion) => {
+      const requerido = tipo === 'pago_total' ? [Validators.required, Validators.min(0.01)] : [];
+      this.cancelacionForm.get('montoCancelado')!.setValidators(requerido);
+      this.cancelacionForm.get('honorario')!.setValidators(requerido);
+      this.cancelacionForm.get('montoCancelado')!.updateValueAndValidity();
+      this.cancelacionForm.get('honorario')!.updateValueAndValidity();
+    });
   }
 
   ngOnInit(): void {
     this.cargarResponsables();
 
-    // Desde la agenda: un recordatorio abre directo la ficha de su coactivado.
+    // Desde la agenda: un recordatorio abre directo la ficha de su coactivado
+    // (en ese caso no hace falta cargar el panel de carteras).
     const cedula = this.route.snapshot.queryParamMap.get('cedula');
     if (cedula) this.abrirPorCedula(cedula);
+    else this.cargarResumenCarteras();
+  }
+
+  private async cargarResumenCarteras(): Promise<void> {
+    this.cargandoResumen = true;
+    try {
+      this.resumenCarteras = await Promise.all(this.carteras.map(c => this.coactivadosService.getResumenCartera(c)));
+    } catch (error) {
+      console.error('Error cargando el panel de carteras:', error);
+    } finally {
+      this.cargandoResumen = false;
+    }
+  }
+
+  get totalCoactivadosCartera(): number {
+    return this.resumenCarteras.reduce((s, r) => s + r.coactivados, 0);
   }
 
   ngOnDestroy(): void {
@@ -261,6 +336,12 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       error: error => console.error('Error cargando recordatorios:', error)
     });
 
+    this.cargandoTitulos = true;
+    this.titulosSub = this.titulosService.getPorCoactivado(coactivado.cedula).subscribe({
+      next: titulos => { this.titulos = titulos; this.cargandoTitulos = false; },
+      error: error => { console.error('Error cargando títulos:', error); this.cargandoTitulos = false; }
+    });
+
     this.cargandoGestiones = true;
     this.gestionesSub = this.gestionesService.getGestiones(coactivado.cedula).subscribe({
       next: gestiones => {
@@ -278,9 +359,16 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   private limpiarSeleccion(): void {
     this.gestionesSub?.unsubscribe();
     this.recordatoriosSub?.unsubscribe();
+    this.titulosSub?.unsubscribe();
     this.seleccionado = null;
     this.gestiones = [];
     this.recordatorios = [];
+    this.titulos = [];
+    this.filtroTitulos = '';
+  }
+
+  get resumenTitulos(): ResumenTitulos {
+    return resumirTitulos(this.titulos);
   }
 
   private reiniciarFormularioGestion(tipo: TipoGestion = 'llamada'): void {
@@ -566,6 +654,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       case 'llamada': return 'geekblue';
       case 'mensaje': return 'green';
       case 'reunion': return 'purple';
+      case 'migrado': return 'default';
       default: return 'default';
     }
   }
@@ -580,5 +669,62 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
   trackByActividad(index: number, a: AreaActivity): string | undefined {
     return a.id;
+  }
+
+  fechaCorta(iso?: string): string {
+    return fechaCorta(iso);
+  }
+
+  trackByTitulo(index: number, t: TituloCredito): string {
+    return t.numero;
+  }
+
+  // ============================================
+  // 💰 Registrar abono / pago total de un título
+  // ============================================
+  abrirCancelacion(t: TituloCredito): void {
+    this.tituloCancelando = t;
+    this.cancelacionForm.reset({ tipo: 'abono', montoCancelado: null, honorario: null });
+    this.mostrarCancelacion = true;
+  }
+
+  cerrarCancelacion(): void {
+    this.mostrarCancelacion = false;
+    this.tituloCancelando = null;
+  }
+
+  async guardarCancelacion(): Promise<void> {
+    if (!this.tituloCancelando || this.cancelacionForm.invalid) {
+      this.cancelacionForm.markAllAsTouched();
+      return;
+    }
+
+    this.guardandoCancelacion = true;
+    try {
+      const v = this.cancelacionForm.value;
+      await this.titulosService.registrarCancelacion(this.tituloCancelando.numero, {
+        tipo: v.tipo,
+        montoCancelado: v.tipo === 'pago_total' ? v.montoCancelado : undefined,
+        honorario: v.tipo === 'pago_total' ? v.honorario : undefined
+      });
+      this.message.success('Cancelación registrada.');
+      this.cerrarCancelacion();
+    } catch (error) {
+      console.error('Error registrando la cancelación:', error);
+      this.message.error('No se pudo registrar la cancelación.');
+    } finally {
+      this.guardandoCancelacion = false;
+    }
+  }
+
+  // Solo admin: corrige una cancelación/abono registrada por error.
+  async deshacerCancelacion(t: TituloCredito): Promise<void> {
+    try {
+      await this.titulosService.deshacerCancelacion(t.numero);
+      this.message.success('Cancelación deshecha.');
+    } catch (error) {
+      console.error('Error deshaciendo la cancelación:', error);
+      this.message.error('No se pudo deshacer la cancelación.');
+    }
   }
 }

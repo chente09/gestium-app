@@ -11,9 +11,17 @@
 
     <div class="page-header">
         <h1 class="page-title"><nz-icon nzType="phone"></nz-icon> Bitácora de Gestiones</h1>
-        <a *ngIf="esAdmin" nz-button routerLink="/iess/reportes">
-            <nz-icon nzType="bar-chart"></nz-icon> Reporte de gestión
-        </a>
+        <div class="acciones-admin" *ngIf="esAdmin">
+            <a nz-button routerLink="/iess/titulos">
+                <nz-icon nzType="upload"></nz-icon> Importar títulos
+            </a>
+            <a nz-button routerLink="/iess/reportes">
+                <nz-icon nzType="bar-chart"></nz-icon> Reporte de gestión
+            </a>
+            <a nz-button routerLink="/iess/recuperacion">
+                <nz-icon nzType="dollar"></nz-icon> Recuperación
+            </a>
+        </div>
     </div>
 
     <div class="bitacora-layout">
@@ -127,6 +135,84 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- Resumen de títulos de crédito: el número solo no alcanza (la
+                         mediana es 7 títulos por coactivado, hay casos con más de 200) -->
+                    <div class="resumen-titulos" *ngIf="!cargandoTitulos && titulos.length > 0">
+                        <span class="chip-titulos">{{ titulos.length }} título(s)</span>
+                        <span class="chip-titulos">{{ formatoMoneda(resumenTitulos.capitalTotal) }} de capital</span>
+                        <span class="chip-titulos">{{ resumenTitulos.entregados }} entregado(s)</span>
+                        <span class="chip-titulos" *ngIf="resumenTitulos.noEntregados > 0">{{ resumenTitulos.noEntregados }} no entregado(s)</span>
+                        <span class="chip-titulos cancelado" *ngIf="resumenTitulos.cancelados > 0">
+                            {{ resumenTitulos.cancelados }} cancelado(s) ({{ formatoMoneda(resumenTitulos.capitalCancelado) }})
+                        </span>
+                    </div>
+
+                    <nz-collapse *ngIf="!cargandoTitulos && titulos.length > 0" class="collapse-titulos">
+                        <nz-collapse-panel [nzHeader]="'Ver los ' + titulos.length + ' título(s)'" [nzActive]="false">
+                            <input
+                                *ngIf="titulos.length > 10"
+                                nz-input
+                                [(ngModel)]="filtroTitulos"
+                                placeholder="Filtrar por número o guía..."
+                                class="filtro-titulos" />
+                            <div class="tabla-titulos-scroll">
+                                <nz-table
+                                    #tablaTitulos
+                                    [nzData]="titulosFiltrados"
+                                    [nzPageSize]="20"
+                                    [nzShowPagination]="titulosFiltrados.length > 20"
+                                    nzSize="small"
+                                    [nzBordered]="true">
+                                    <thead>
+                                        <tr>
+                                            <th>Número</th>
+                                            <th>Capital</th>
+                                            <th>Estado</th>
+                                            <th>Guía</th>
+                                            <th>Fecha entrega</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let t of tablaTitulos.data; trackBy: trackByTitulo">
+                                            <td>{{ t.numero }}</td>
+                                            <td>{{ formatoMoneda(t.capital) }}</td>
+                                            <td>
+                                                <nz-tag [nzColor]="esCancelado(t) ? 'red' : t.estadoEntrega === 'entregado' ? 'green' : 'gold'">
+                                                    {{ esCancelado(t) ? 'Cancelado' : (t.estadoEntrega === 'entregado' ? 'Entregado' : 'No entregado') }}
+                                                </nz-tag>
+                                                <nz-tag *ngIf="t.tipoCancelacion === 'abono'" nzColor="blue">Abono</nz-tag>
+                                            </td>
+                                            <td>{{ t.guia || '—' }}</td>
+                                            <td>{{ fechaCorta(t.fechaEntrega) }}</td>
+                                            <td class="nowrap">
+                                                <button
+                                                    *ngIf="!esCancelado(t)"
+                                                    nz-button
+                                                    nzType="link"
+                                                    nzSize="small"
+                                                    (click)="abrirCancelacion(t)">
+                                                    Registrar pago
+                                                </button>
+                                                <button
+                                                    *ngIf="esAdmin && t.tipoCancelacion"
+                                                    nz-button
+                                                    nzType="link"
+                                                    nzDanger
+                                                    nzSize="small"
+                                                    nz-popconfirm
+                                                    nzPopconfirmTitle="¿Deshacer esta cancelación/abono?"
+                                                    (nzOnConfirm)="deshacerCancelacion(t)">
+                                                    Deshacer
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </nz-table>
+                            </div>
+                        </nz-collapse-panel>
+                    </nz-collapse>
 
                     <nz-alert
                         *ngIf="ultimaGestion"
@@ -275,14 +361,59 @@
                             </span>
                         </div>
                         <p class="gestion-texto">{{ g.descripcion }}</p>
+                        <p class="gestion-texto gestion-obs-general" *ngIf="g.observacionGeneral">
+                            <strong>Observación general (IESS):</strong> {{ g.observacionGeneral }}
+                        </p>
                     </div>
                 </nz-card>
             </ng-container>
 
-            <!-- Estado vacío -->
-            <nz-card *ngIf="!seleccionado && !mostrarAlta" [nzBodyStyle]="{ padding: '32px 16px' }">
-                <nz-empty nzNotFoundContent="Busca un coactivado por cédula o apellidos para ver su cartera y sus gestiones"></nz-empty>
-            </nz-card>
+            <!-- Panel de carteras: qué hay cargado y por dónde seguir gestionando -->
+            <ng-container *ngIf="!seleccionado && !mostrarAlta">
+                <nz-card *ngIf="cargandoResumen" [nzLoading]="true" [nzBodyStyle]="{ padding: '32px 16px' }"></nz-card>
+
+                <nz-card
+                    *ngIf="!cargandoResumen && resumenCarteras.length > 0 && totalCoactivadosCartera === 0"
+                    [nzBodyStyle]="{ padding: '32px 16px' }">
+                    <nz-empty nzNotFoundContent="Busca un coactivado por cédula o apellidos para ver su cartera y sus gestiones"></nz-empty>
+                </nz-card>
+
+                <div *ngIf="!cargandoResumen && totalCoactivadosCartera > 0" class="panel-carteras">
+                    <nz-card *ngFor="let r of resumenCarteras" class="carta-cartera" [nzTitle]="r.cartera">
+                        <div class="carta-stats">
+                            <span class="stat-item"><b>{{ r.coactivados }}</b> coactivado(s)</span>
+                            <span class="stat-item"><b>{{ r.titulos }}</b> título(s)</span>
+                            <span class="stat-item">{{ formatoMoneda(r.capital) }} de capital</span>
+                        </div>
+
+                        <nz-alert
+                            *ngIf="r.pendientes.length > 0"
+                            nzType="warning"
+                            nzShowIcon
+                            class="alerta-pendientes"
+                            [nzMessage]="r.pendientes.length + ' sin ninguna gestión todavía'">
+                        </nz-alert>
+                        <nz-alert
+                            *ngIf="r.coactivados > 0 && r.pendientes.length === 0"
+                            nzType="success"
+                            nzShowIcon
+                            class="alerta-pendientes"
+                            nzMessage="Todos tienen al menos una gestión">
+                        </nz-alert>
+
+                        <a
+                            *ngIf="r.coactivados > 0"
+                            nz-button
+                            nzType="link"
+                            nzSize="small"
+                            class="btn-ver-pendientes"
+                            [routerLink]="['/iess/cartera', r.cartera]">
+                            Ver todos los casos ({{ r.coactivados }})
+                            <nz-icon nzType="arrow-right"></nz-icon>
+                        </a>
+                    </nz-card>
+                </div>
+            </ng-container>
         </main>
     </div>
 </div>
@@ -389,6 +520,56 @@
             [nzLoading]="guardandoEdicion"
             [disabled]="edicionForm.invalid"
             (click)="guardarEdicion()">
+            Guardar
+        </button>
+    </ng-template>
+</nz-modal>
+
+<nz-modal
+    [(nzVisible)]="mostrarCancelacion"
+    nzTitle="Registrar pago del título"
+    (nzOnCancel)="cerrarCancelacion()"
+    [nzFooter]="cancelacionFooter">
+    <ng-container *nzModalContent>
+        <p *ngIf="tituloCancelando" class="titulo-cancelando">
+            Título <b>{{ tituloCancelando.numero }}</b> — {{ formatoMoneda(tituloCancelando.capital) }}
+        </p>
+        <form nz-form [formGroup]="cancelacionForm" nzLayout="vertical">
+            <nz-form-item>
+                <nz-form-label nzRequired>Tipo de pago</nz-form-label>
+                <nz-form-control>
+                    <nz-radio-group formControlName="tipo" nzButtonStyle="solid">
+                        <label nz-radio-button nzValue="abono">Abono (pago parcial)</label>
+                        <label nz-radio-button nzValue="pago_total">Pago por totalidad</label>
+                    </nz-radio-group>
+                </nz-form-control>
+            </nz-form-item>
+
+            <ng-container *ngIf="cancelacionForm.value.tipo === 'pago_total'">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Monto cancelado</nz-form-label>
+                    <nz-form-control nzErrorTip="Ingresa el monto cancelado">
+                        <input nz-input type="number" min="0" step="0.01" formControlName="montoCancelado" />
+                    </nz-form-control>
+                </nz-form-item>
+                <nz-form-item>
+                    <nz-form-label nzRequired>Honorario</nz-form-label>
+                    <nz-form-control nzErrorTip="Ingresa el honorario">
+                        <input nz-input type="number" min="0" step="0.01" formControlName="honorario" />
+                    </nz-form-control>
+                </nz-form-item>
+            </ng-container>
+        </form>
+    </ng-container>
+    <ng-template #cancelacionFooter>
+        <button nz-button nzType="default" (click)="cerrarCancelacion()">Cancelar</button>
+        <button
+            nz-button
+            nzType="primary"
+            class="brand-btn"
+            [nzLoading]="guardandoCancelacion"
+            [disabled]="cancelacionForm.invalid"
+            (click)="guardarCancelacion()">
             Guardar
         </button>
     </ng-template>

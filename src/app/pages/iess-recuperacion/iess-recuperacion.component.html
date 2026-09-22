@@ -1,0 +1,59 @@
+<div class="recuperacion-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/iess/bitacora">Bitácora de Gestiones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Recuperación de cartera</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <h1 class="page-title"><nz-icon nzType="dollar"></nz-icon> Recuperación de cartera</h1>
+    <p class="page-subtitulo">
+        Solo cuenta lo registrado como "pago por totalidad" (honorario y monto cancelado reales).
+        Los abonos se cuentan aparte porque el título todavía sigue abierto.
+    </p>
+
+    <nz-card *ngIf="cargando" [nzLoading]="true" [nzBodyStyle]="{ padding: '32px 16px' }"></nz-card>
+
+    <ng-container *ngIf="!cargando">
+        <div class="resumen-total">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="totalCancelados" nzTitle="Títulos cancelados (pago total)"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="totalAbonos" nzTitle="Títulos con abono"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-monto">
+                <div class="stat-titulo">Monto cancelado</div>
+                <div class="stat-valor">{{ formatoMoneda(totalMontoCancelado) }}</div>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-monto">
+                <div class="stat-titulo">Honorarios</div>
+                <div class="stat-valor">{{ formatoMoneda(totalHonorarios) }}</div>
+            </nz-card>
+        </div>
+
+        <nz-card nzTitle="Por cartera" class="paso-card">
+            <div class="tabla-scroll">
+                <nz-table [nzData]="resumenes" [nzShowPagination]="false" nzSize="small" [nzBordered]="true">
+                    <thead>
+                        <tr>
+                            <th>Cartera</th>
+                            <th>Cancelados</th>
+                            <th>Con abono</th>
+                            <th>Monto cancelado</th>
+                            <th>Honorarios</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let r of resumenes; trackBy: trackByCartera">
+                            <td>{{ r.cartera }}</td>
+                            <td>{{ r.titulosCancelados }}</td>
+                            <td>{{ r.titulosConAbono }}</td>
+                            <td>{{ formatoMoneda(r.montoCancelado) }}</td>
+                            <td>{{ formatoMoneda(r.honorarios) }}</td>
+                        </tr>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
+    </ng-container>
+</div>

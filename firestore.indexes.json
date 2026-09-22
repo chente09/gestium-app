@@ -1,0 +1,29 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "area_activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "area", "order": "ASCENDING" },
+        { "fieldPath": "fechaLimite", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "rolesPago",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "anio", "order": "DESCENDING" },
+        { "fieldPath": "mes", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "titulos_credito",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "coactivadoId", "order": "ASCENDING" },
+        { "fieldPath": "capital", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

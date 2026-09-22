@@ -1,0 +1,304 @@
+<div class="titulos-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/iess/bitacora">Bitácora de Gestiones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Importar títulos de crédito</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <h1 class="page-title"><nz-icon nzType="upload"></nz-icon> Importar títulos de crédito</h1>
+
+    <nz-alert
+        nzType="info"
+        nzShowIcon
+        class="info-importar"
+        nzMessage="Esto no escribe nada todavía"
+        nzDescription="Elige el archivo, revisa lo que se va a hacer y recién al final confirmas. Los títulos ya cargados se detectan solos y no se duplican.">
+    </nz-alert>
+
+    <!-- ================= PASO 1: ARCHIVO ================= -->
+    <nz-card nzTitle="1. Elegir archivo" class="paso-card">
+        <input
+            type="file"
+            id="archivo-titulos"
+            accept=".xlsx,.xls,.csv"
+            (change)="onArchivoSeleccionado($event)"
+            hidden />
+        <label for="archivo-titulos" nz-button nzType="dashed" class="btn-archivo">
+            <nz-icon nzType="file-excel"></nz-icon>
+            {{ archivo ? archivo.name : 'Seleccionar matriz de seguimiento, matriz de llamadas o CSV de guías' }}
+        </label>
+
+        <nz-empty *ngIf="leyendo" nzNotFoundContent="Leyendo el archivo..."></nz-empty>
+
+        <div *ngIf="!leyendo && hojas.length > 0" class="lista-hojas">
+            <div class="hoja-item" *ngFor="let h of hojas">
+                <label nz-checkbox [(ngModel)]="h.incluida" [nzDisabled]="!h.formato"></label>
+                <div class="hoja-info">
+                    <b>{{ h.tabla.nombre }}</b>
+                    <span *ngIf="h.formato" class="hoja-detalle">
+                        {{ h.formato.filas }} título(s)
+                        <span *ngIf="h.formato.traeAbogado"> · trae columna de abogado</span>
+                    </span>
+                    <nz-radio-group *ngIf="h.formato" [(ngModel)]="h.estadoEntrega" nzSize="small" class="estado-entrega-hoja">
+                        <label nz-radio-button nzValue="entregado">Entregados</label>
+                        <label nz-radio-button nzValue="no_entregado">No entregados</label>
+                    </nz-radio-group>
+                    <span *ngIf="h.formato" class="nota-radio">Detectado automáticamente — corrígelo si no es correcto.</span>
+                    <span *ngIf="!h.formato" class="hoja-detalle hoja-no-reconocida">No se reconocen títulos de crédito en esta hoja</span>
+                </div>
+            </div>
+        </div>
+    </nz-card>
+
+    <!-- ================= PASO 2: CARTERA ================= -->
+    <nz-card *ngIf="hojasIncluidas.length > 0" nzTitle="2. ¿A qué cartera va?" class="paso-card">
+        <nz-radio-group [(ngModel)]="origenCartera" class="radio-cartera">
+            <label nz-radio nzValue="archivo" [nzDisabled]="!puedeUsarColumnaArchivo">
+                Usar la columna de abogado del archivo
+                <span *ngIf="!puedeUsarColumnaArchivo" class="nota-radio">(no disponible: alguna hoja elegida no trae esa columna)</span>
+            </label>
+            <label nz-radio nzValue="una">Asignar todo a una sola cartera</label>
+        </nz-radio-group>
+
+        <nz-select
+            *ngIf="origenCartera === 'una'"
+            [(ngModel)]="carteraSeleccionada"
+            nzPlaceHolder="Selecciona la cartera"
+            class="select-cartera">
+            <nz-option *ngFor="let c of carteras" [nzValue]="c" [nzLabel]="c"></nz-option>
+        </nz-select>
+
+        <label nz-checkbox [(ngModel)]="migrarObservaciones" class="check-migrar">
+            Es la carga inicial: migrar las observaciones del Excel como gestión histórica
+        </label>
+        <p class="nota-radio nota-migrar">
+            Marca esto solo la primera vez que cargas una cartera. En las cargas siguientes (nuevas entregas,
+            actualizaciones) déjalo sin marcar — de ahí en adelante las gestiones se registran desde la bitácora, no desde el Excel.
+        </p>
+
+        <button
+            nz-button
+            nzType="primary"
+            class="brand-btn btn-analizar"
+            [disabled]="!listoParaAnalizar"
+            [nzLoading]="analizando"
+            (click)="analizar()">
+            <nz-icon nzType="search"></nz-icon> Analizar
+        </button>
+    </nz-card>
+
+    <!-- ================= PASO 3: PLAN ================= -->
+    <nz-card *ngIf="plan" nzTitle="3. Qué se va a hacer" class="paso-card">
+
+        <nz-alert
+            *ngIf="plan.rucSinCartera.length > 0"
+            nzType="warning"
+            nzShowIcon
+            class="alerta-plan"
+            [nzMessage]="plan.rucSinCartera.length + ' RUC nuevo(s) sin cartera determinada'"
+            nzDescription="No se pudo saber a qué cartera pertenecen (el archivo no trae abogado o el nombre no coincide con ninguna). Elige 'Asignar todo a una sola cartera' arriba y vuelve a analizar.">
+        </nz-alert>
+
+        <div class="resumen-plan">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.nuevos.length" nzTitle="Títulos nuevos"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.coactivadosNuevos.length" nzTitle="Coactivados nuevos"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.transiciones.length" nzTitle="Pasan a entregado"></nz-statistic></nz-card>
+            <nz-card *ngIf="plan.actualizaciones.length > 0" [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.actualizaciones.length" nzTitle="Actualizan su estado (ej. cancelado)"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.duplicados.length" nzTitle="Ya estaban cargados"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="plan.conflictos.length > 0">
+                <nz-statistic [nzValue]="plan.conflictos.length" nzTitle="Conflictos (no se tocan)"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="plan.invalidos.length > 0">
+                <nz-statistic [nzValue]="plan.invalidos.length" nzTitle="Filas inválidas"></nz-statistic>
+            </nz-card>
+            <nz-card *ngIf="migrarObservaciones" [nzBodyStyle]="{ padding: '10px 14px' }">
+                <nz-statistic [nzValue]="plan.gestionesHistoricas.length" nzTitle="Gestiones históricas a migrar"></nz-statistic>
+            </nz-card>
+        </div>
+
+        <p class="capital-plan" *ngIf="plan.nuevos.length > 0">
+            Capital de los títulos nuevos: <b>{{ formatoMoneda(capitalNuevos) }}</b>
+        </p>
+
+        <nz-collapse *ngIf="plan.coactivadosNuevos.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.coactivadosNuevos.length + ' coactivado(s) nuevo(s) a crear'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.coactivadosNuevos" [nzPageSize]="10" [nzShowPagination]="plan.coactivadosNuevos.length > 10" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>RUC</th><th>Nombre</th><th>Cartera</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let c of plan.coactivadosNuevos">
+                                <td>{{ c.ruc }}</td><td>{{ c.nombre }}</td><td>{{ c.cartera }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse *ngIf="plan.gestionesHistoricas.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.gestionesHistoricas.length + ' gestión(es) histórica(s) a migrar'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table
+                        [nzData]="plan.gestionesHistoricas"
+                        [nzPageSize]="10"
+                        [nzShowPagination]="plan.gestionesHistoricas.length > 10"
+                        nzSize="small"
+                        [nzBordered]="true">
+                        <thead><tr><th>RUC</th><th>Coactivado</th><th>Detalle</th><th>Observación general (IESS)</th><th>Contacto original</th><th>Fecha</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let g of plan.gestionesHistoricas; trackBy: trackByGestionHistorica">
+                                <td>{{ g.ruc }}</td>
+                                <td>{{ g.coactivadoNombre }}</td>
+                                <td>{{ g.descripcion }}</td>
+                                <td>{{ g.observacionGeneral || '—' }}</td>
+                                <td>{{ g.personaLlama || '—' }}</td>
+                                <td class="nowrap">{{ fechaCorta(g.fecha) }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse *ngIf="plan.conflictos.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.conflictos.length + ' conflicto(s) — no se van a tocar'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.conflictos" [nzPageSize]="10" [nzShowPagination]="plan.conflictos.length > 10" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>Fila</th><th>Título</th><th>RUC</th><th>Motivo</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let item of plan.conflictos; trackBy: trackByItemPlan">
+                                <td>{{ item.fila.fila }}</td><td>{{ item.fila.numero }}</td><td>{{ item.fila.ruc }}</td><td>{{ item.motivo }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse *ngIf="plan.invalidos.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.invalidos.length + ' fila(s) inválida(s) — se ignoran'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.invalidos" [nzPageSize]="10" [nzShowPagination]="plan.invalidos.length > 10" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>Fila</th><th>Título</th><th>Motivo</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let i of plan.invalidos; trackBy: trackByInvalida">
+                                <td>{{ i.fila }}</td><td>{{ i.numero || '—' }}</td><td>{{ i.motivo }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <div class="acciones-confirmar">
+            <button
+                nz-button
+                nzType="primary"
+                nzDanger
+                class="btn-confirmar"
+                [disabled]="!puedeConfirmar"
+                [nzLoading]="confirmando"
+                (click)="confirmar()">
+                <nz-icon nzType="check"></nz-icon> Confirmar carga
+            </button>
+            <span *ngIf="!puedeConfirmar && plan.rucSinCartera.length === 0" class="nota-radio">
+                No hay nada nuevo que cargar (todo ya estaba o quedó en conflicto).
+            </span>
+        </div>
+    </nz-card>
+
+    <!-- ================= HISTORIAL ================= -->
+    <nz-card nzTitle="Historial de importaciones" [nzLoading]="cargandoHistorial" class="paso-card">
+        <nz-empty *ngIf="!cargandoHistorial && cargas.length === 0" nzNotFoundContent="Todavía no se ha importado nada"></nz-empty>
+        <div class="tabla-scroll" *ngIf="cargas.length > 0">
+            <nz-table [nzData]="cargas" [nzPageSize]="10" [nzShowPagination]="cargas.length > 10" nzSize="small" [nzBordered]="true">
+                <thead>
+                    <tr>
+                        <th>Fecha</th><th>Archivo</th><th>Cartera</th><th>Nuevos</th><th>Coactivados</th>
+                        <th>Entregados</th><th>Actualizados</th><th>Duplicados</th><th>Conflictos</th><th>Migradas</th><th>Por</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let c of cargas; trackBy: trackByCarga">
+                        <td class="nowrap">{{ c.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ c.archivo }}</td>
+                        <td>{{ c.cartera }}</td>
+                        <td>{{ c.nuevos }}</td>
+                        <td>{{ c.coactivadosNuevos }}</td>
+                        <td>{{ c.transiciones }}</td>
+                        <td>{{ c.actualizaciones ?? 0 }}</td>
+                        <td>{{ c.duplicados }}</td>
+                        <td>{{ c.conflictos }}</td>
+                        <td>{{ c.gestionesHistoricas ?? 0 }}</td>
+                        <td class="nowrap">{{ c.realizadoPor.nombre }}</td>
+                        <td class="nowrap">
+                            <button
+                                *ngIf="(c.gestionesHistoricas ?? 0) > 0"
+                                nz-button
+                                nzDanger
+                                nzType="link"
+                                nzSize="small"
+                                nz-popconfirm
+                                nzPopconfirmTitle="¿Deshacer las gestiones históricas migradas en esta carga? Los títulos y coactivados no se tocan."
+                                nzPopconfirmPlacement="left"
+                                (nzOnConfirm)="deshacerMigracion(c)"
+                                [nzLoading]="deshaciendoCarga === c.id">
+                                Deshacer migración
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </nz-table>
+        </div>
+    </nz-card>
+
+    <!-- ================= ZONA DE PELIGRO ================= -->
+    <nz-card nzTitle="Zona de peligro" class="paso-card">
+        <p class="nota-radio">
+            Borra TODOS los coactivados, títulos y gestiones de una cartera — para empezar de cero con una carga de prueba.
+            No toca otras carteras ni el historial de importaciones (es auditoría permanente).
+        </p>
+
+        <nz-select
+            [(ngModel)]="carteraAVaciar"
+            (ngModelChange)="onCarteraAVaciarChange()"
+            nzPlaceHolder="Selecciona la cartera a vaciar"
+            class="select-cartera">
+            <nz-option *ngFor="let c of carteras" [nzValue]="c" [nzLabel]="c"></nz-option>
+        </nz-select>
+
+        <button
+            nz-button
+            nzDanger
+            [disabled]="!carteraAVaciar"
+            [nzLoading]="calculandoVaciado"
+            (click)="calcularVaciado()">
+            Calcular qué se borraría
+        </button>
+
+        <ng-container *ngIf="resumenVaciado">
+            <nz-alert
+                nzType="warning"
+                nzShowIcon
+                class="alerta-plan"
+                nzMessage="Esto se va a borrar permanentemente"
+                [nzDescription]="resumenVaciado.coactivados + ' coactivado(s), ' + resumenVaciado.titulos + ' título(s) y ' + resumenVaciado.gestiones + ' gestión(es) de ' + carteraAVaciar + '. No se puede deshacer.'">
+            </nz-alert>
+            <button
+                nz-button
+                nzDanger
+                nzType="primary"
+                nz-popconfirm
+                nzPopconfirmTitle="¿Confirmas el borrado total de esta cartera? No se puede deshacer."
+                nzPopconfirmPlacement="top"
+                (nzOnConfirm)="vaciarCartera()"
+                [nzLoading]="vaciando">
+                Confirmar borrado total
+            </button>
+        </ng-container>
+    </nz-card>
+</div>

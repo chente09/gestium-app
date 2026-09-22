@@ -174,7 +174,7 @@ service cloud.firestore {
       allow create: if esDelAreaIess() &&
                        request.resource.data.registradoPor.uid == request.auth.uid &&
                        request.resource.data.coactivadoId is string &&
-                       request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro'] &&
+                       request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro', 'migrado'] &&
                        request.resource.data.descripcion is string &&
                        request.resource.data.descripcion.size() > 0;
 
@@ -183,12 +183,37 @@ service cloud.firestore {
       allow update: if esDelAreaIess() &&
                        request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['tipo', 'descripcion', 'editadoPor', 'fechaEdicion']) &&
-                       request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro'] &&
+                       request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro', 'migrado'] &&
                        request.resource.data.descripcion is string &&
                        request.resource.data.descripcion.size() > 0 &&
                        request.resource.data.editadoPor.uid == request.auth.uid;
 
       allow delete: if isAdmin();
+    }
+
+    // Títulos de crédito (ID = número de título, no se repite). Se cargan
+    // por importación masiva desde Excel/CSV — solo admin, para no dejar
+    // que una carga a mano rompa la validación de duplicados del importador.
+    match /titulos_credito/{numero} {
+      allow read: if esDelAreaIess();
+      allow create: if isAdmin() && request.resource.data.numero == numero;
+      allow update, delete: if isAdmin();
+
+      // Registrar un abono/pago total (cualquiera del área, no solo admin):
+      // solo puede tocar los campos de cancelación, nada del resto del
+      // título (capital, guía, fechas, etc. — eso sigue siendo solo admin).
+      allow update: if esDelAreaIess() &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['tipoCancelacion', 'estadoIess', 'montoCancelado', 'honorario', 'canceladoPor', 'fechaCancelacion']) &&
+                       request.resource.data.tipoCancelacion in ['abono', 'pago_total'] &&
+                       request.resource.data.canceladoPor.uid == request.auth.uid;
+    }
+
+    // Auditoría de cada importación: se crea, nunca se edita ni se borra.
+    match /cargas_titulos/{cargaId} {
+      allow read: if esDelAreaIess();
+      allow create: if isAdmin() && request.resource.data.realizadoPor.uid == request.auth.uid;
+      allow update, delete: if false;
     }
 
     // ============================================

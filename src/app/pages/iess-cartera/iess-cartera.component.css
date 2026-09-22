@@ -1,0 +1,64 @@
+.cartera-container {
+    padding: 16px 24px 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.page-title {
+    margin: 12px 0 16px;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+nz-card.paso-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.resumen-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+@media (min-width: 700px) {
+    .resumen-stats {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.carta-capital .stat-titulo {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.45);
+    margin-bottom: 4px;
+}
+
+.carta-capital .stat-valor {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.filtro-casos {
+    margin-bottom: 12px;
+    max-width: 320px;
+}
+
+.tabla-scroll {
+    overflow-x: auto;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.fila-caso {
+    cursor: pointer;
+}
+
+.fila-caso:hover {
+    background: #f7fbff;
+}

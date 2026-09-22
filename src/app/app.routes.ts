@@ -24,6 +24,9 @@ import { SaldoVacacionesComponent } from './pages/permisos/saldo-vacaciones/sald
 import { iessGuard } from './guards/iess/iess.guard';
 import { IessBitacoraComponent } from './pages/iess-bitacora/iess-bitacora.component';
 import { IessReportesComponent } from './pages/iess-reportes/iess-reportes.component';
+import { IessTitulosComponent } from './pages/iess-titulos/iess-titulos.component';
+import { IessCarteraComponent } from './pages/iess-cartera/iess-cartera.component';
+import { IessRecuperacionComponent } from './pages/iess-recuperacion/iess-recuperacion.component';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
 
@@ -76,6 +79,8 @@ function withAuthAnd(extraGuards: any[]) {
 const superAdminRoutes: Routes = [
   { path: 'admin/users', component: UserAreaAdminComponent },
   { path: 'iess/reportes', component: IessReportesComponent },
+  { path: 'iess/titulos', component: IessTitulosComponent },
+  { path: 'iess/recuperacion', component: IessRecuperacionComponent },
 ].map(withAuthAnd([AdminGuard]));
 
 const payrollRoutes: Routes = [
@@ -92,6 +97,7 @@ const solicitudesAprobarRoutes: Routes = [
 
 const iessRoutes: Routes = [
   { path: 'iess/bitacora', component: IessBitacoraComponent },
+  { path: 'iess/cartera/:cartera', component: IessCarteraComponent },
 ].map(withAuthAnd([iessGuard]));
 
 const errorRoutes: Routes = [

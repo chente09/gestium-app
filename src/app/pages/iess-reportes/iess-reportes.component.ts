@@ -21,7 +21,7 @@ import {
   GestionCoactivado,
   GestionesCoactivadoService,
   TIPOS_GESTION,
-  TipoGestion
+  TIPOS_GESTION_SELECCIONABLES
 } from '../../services/gestionesCoactivado/gestiones-coactivado.service';
 import {
   IntegranteReporte,
@@ -65,7 +65,10 @@ const MAX_DIAS_RANGO = 92;
   styleUrl: './iess-reportes.component.css'
 })
 export class IessReportesComponent implements OnInit {
-  readonly tipos: TipoReporte[] = (Object.keys(TIPOS_GESTION) as TipoGestion[])
+  // 'migrado' queda afuera: es historial cargado por el importador de
+  // títulos, no actividad del día — mezclarlo desvirtuaría el conteo por
+  // integrante que es justamente el propósito de este reporte.
+  readonly tipos: TipoReporte[] = TIPOS_GESTION_SELECCIONABLES
     .map(clave => ({ clave, etiqueta: TIPOS_GESTION[clave] }));
 
   periodo: Periodo = 'hoy';
@@ -149,7 +152,8 @@ export class IessReportesComponent implements OnInit {
     const pedido = ++this.ultimoPedido;
     this.cargando = true;
     try {
-      const gestiones = await this.gestionesService.getGestionesPorRango(desde, hasta);
+      const gestiones = (await this.gestionesService.getGestionesPorRango(desde, hasta))
+        .filter(g => g.tipo !== 'migrado');
       if (pedido !== this.ultimoPedido) return;
 
       this.gestiones = gestiones;

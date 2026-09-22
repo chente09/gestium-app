@@ -1,0 +1,64 @@
+<div class="cartera-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/iess/bitacora">Bitácora de Gestiones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>{{ cartera }}</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <h1 class="page-title"><nz-icon nzType="folder-open"></nz-icon> {{ cartera }}</h1>
+
+    <nz-card *ngIf="cargando" [nzLoading]="true" [nzBodyStyle]="{ padding: '32px 16px' }"></nz-card>
+
+    <ng-container *ngIf="!cargando && resumen">
+        <div class="resumen-stats">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.coactivados" nzTitle="Coactivados"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulos" nzTitle="Títulos"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-capital">
+                <div class="stat-titulo">Capital</div>
+                <div class="stat-valor">{{ formatoMoneda(resumen.capital) }}</div>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.pendientes.length" nzTitle="Sin gestión todavía"></nz-statistic></nz-card>
+        </div>
+
+        <nz-card class="paso-card">
+            <input
+                nz-input
+                [(ngModel)]="filtro"
+                placeholder="Filtrar por nombre..."
+                class="filtro-casos" />
+
+            <nz-empty *ngIf="filtrados.length === 0" nzNotFoundContent="Sin resultados para ese filtro."></nz-empty>
+
+            <div class="tabla-scroll" *ngIf="filtrados.length > 0">
+                <nz-table
+                    [nzData]="filtrados"
+                    [nzPageSize]="20"
+                    [nzShowPagination]="filtrados.length > 20"
+                    nzSize="small"
+                    [nzBordered]="true">
+                    <thead>
+                        <tr><th>Nombre</th><th>Cédula</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            *ngFor="let c of filtrados; trackBy: trackByCedula"
+                            class="fila-caso"
+                            (click)="abrirFicha(c)">
+                            <td>{{ c.nombre }}</td>
+                            <td class="nowrap">{{ c.cedula }}</td>
+                            <td>
+                                <nz-tag [nzColor]="c.tieneGestion ? 'green' : 'orange'">
+                                    {{ c.tieneGestion ? 'Con gestión' : 'Sin gestión' }}
+                                </nz-tag>
+                            </td>
+                        </tr>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
+    </ng-container>
+</div>

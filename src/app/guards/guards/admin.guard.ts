@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { RegistersService } from '../../services/registers/registers.service';
 import { UsersService } from '../../services/users/users.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -17,8 +18,13 @@ export class AdminGuard implements CanActivate {
   ) {}
 
   async canActivate(): Promise<boolean> {
-    const user = this.usersService.getCurrentUser();
-    
+    // Esperar el estado real de auth (no leer getCurrentUser() al toque):
+    // en una navegación directa a una ruta con este guard, Firebase Auth
+    // puede no haber terminado de restaurar la sesión todavía, y
+    // getCurrentUser() devolvería null aunque el usuario sí esté logueado
+    // (mismo fix que ya tienen payrollGuard/solicitudesAprobarGuard/iessGuard).
+    const user = await firstValueFrom(this.usersService.user$);
+
     if (!user) {
       this.message.error('Debe iniciar sesión para acceder a esta página');
       this.router.navigate(['/login']);

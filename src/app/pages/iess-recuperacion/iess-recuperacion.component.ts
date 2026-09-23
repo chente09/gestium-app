@@ -71,6 +71,14 @@ export class IessRecuperacionComponent implements OnInit {
     return this.resumenes.reduce((s, r) => s + r.titulosConAbono, 0);
   }
 
+  get totalHonorariosCobrados(): number {
+    return this.resumenes.reduce((s, r) => s + r.honorariosCobrados, 0);
+  }
+
+  get totalHonorariosPorCobrar(): number {
+    return this.resumenes.reduce((s, r) => s + r.honorariosPorCobrar, 0);
+  }
+
   trackByCartera(index: number, r: ResumenRecuperacion): string {
     return r.cartera;
   }

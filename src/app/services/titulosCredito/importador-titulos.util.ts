@@ -213,6 +213,12 @@ export function parseFechaISO(celda: Celda): string | undefined {
   if (celda instanceof Date) {
     return isNaN(celda.getTime()) ? undefined : `${celda.getUTCFullYear()}-${pad(celda.getUTCMonth() + 1)}-${pad(celda.getUTCDate())}`;
   }
+  // Celda numérica que Excel no formateó como fecha (serial: días desde
+  // 1899-12-30) — pasa como número plano en vez de Date.
+  if (typeof celda === 'number' && celda > 0) {
+    const d = new Date(Math.round((celda - 25569) * 86400 * 1000));
+    return isNaN(d.getTime()) ? undefined : `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  }
   const texto = textoCelda(celda);
   let m = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;

@@ -32,6 +32,17 @@ export interface TituloCredito {
   honorario?: number; // solo pago_total
   canceladoPor?: { uid: string; nombre: string };
   fechaCancelacion?: Date | any;
+  // El título cancelado y el honorario cobrado son eventos distintos: el
+  // IESS le paga el honorario a la oficina en su propio tiempo, aparte de
+  // cuándo se canceló el título.
+  honorarioCobrado?: boolean;
+  honorarioCobradoPor?: { uid: string; nombre: string };
+  fechaCobroHonorario?: Date | any;
+  // Número de comprobante del pago del honorario (viene de la carga masiva
+  // de pagos ya cobrados, no se pide en el registro manual).
+  comprobantePago?: string;
+  // De qué carga masiva de pagos vino (para poder rastrearla, no para deshacerla).
+  cargaPagosId?: string;
 }
 
 // Excel guarda el RUC como número y se come el cero inicial (0502… queda

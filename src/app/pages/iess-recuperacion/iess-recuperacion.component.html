@@ -26,8 +26,19 @@
                 <div class="stat-valor">{{ formatoMoneda(totalMontoCancelado) }}</div>
             </nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-monto">
-                <div class="stat-titulo">Honorarios</div>
+                <div class="stat-titulo">Honorarios (total registrado)</div>
                 <div class="stat-valor">{{ formatoMoneda(totalHonorarios) }}</div>
+            </nz-card>
+        </div>
+
+        <div class="resumen-total resumen-total-cobro">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-monto carta-cobrado">
+                <div class="stat-titulo">Honorarios ya cobrados</div>
+                <div class="stat-valor">{{ formatoMoneda(totalHonorariosCobrados) }}</div>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-monto carta-por-cobrar">
+                <div class="stat-titulo">Honorarios por cobrar</div>
+                <div class="stat-valor">{{ formatoMoneda(totalHonorariosPorCobrar) }}</div>
             </nz-card>
         </div>
 
@@ -41,6 +52,8 @@
                             <th>Con abono</th>
                             <th>Monto cancelado</th>
                             <th>Honorarios</th>
+                            <th>Cobrados</th>
+                            <th>Por cobrar</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -50,6 +63,8 @@
                             <td>{{ r.titulosConAbono }}</td>
                             <td>{{ formatoMoneda(r.montoCancelado) }}</td>
                             <td>{{ formatoMoneda(r.honorarios) }}</td>
+                            <td>{{ formatoMoneda(r.honorariosCobrados) }}</td>
+                            <td>{{ formatoMoneda(r.honorariosPorCobrar) }}</td>
                         </tr>
                     </tbody>
                 </nz-table>

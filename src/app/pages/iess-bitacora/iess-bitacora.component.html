@@ -21,6 +21,9 @@
             <a nz-button routerLink="/iess/recuperacion">
                 <nz-icon nzType="dollar"></nz-icon> Recuperación
             </a>
+            <a nz-button routerLink="/iess/pagos">
+                <nz-icon nzType="check-circle"></nz-icon> Importar pagos
+            </a>
         </div>
     </div>
 
@@ -170,7 +173,7 @@
                                             <th>Capital</th>
                                             <th>Estado</th>
                                             <th>Guía</th>
-                                            <th>Fecha entrega</th>
+                                            <th>Fecha sorteo</th>
                                             <th></th>
                                         </tr>
                                     </thead>
@@ -183,12 +186,22 @@
                                                     {{ esCancelado(t) ? 'Cancelado' : (t.estadoEntrega === 'entregado' ? 'Entregado' : 'No entregado') }}
                                                 </nz-tag>
                                                 <nz-tag *ngIf="t.tipoCancelacion === 'abono'" nzColor="blue">Abono</nz-tag>
+                                                <nz-tag
+                                                    *ngIf="t.tipoCancelacion === 'pago_total'"
+                                                    [nzColor]="t.honorarioCobrado ? 'green' : 'orange'"
+                                                    class="tag-honorario"
+                                                    nz-tooltip
+                                                    nzTooltipTitle="Clic para marcar si el IESS ya pagó el honorario"
+                                                    (click)="toggleHonorarioCobrado(t)">
+                                                    <nz-icon [nzType]="cambiandoHonorarioNumero === t.numero ? 'loading' : (t.honorarioCobrado ? 'check' : 'clock-circle')"></nz-icon>
+                                                    {{ formatoMoneda(t.honorario || 0) }} honorario {{ t.honorarioCobrado ? 'cobrado' : 'por cobrar' }}
+                                                </nz-tag>
                                             </td>
                                             <td>{{ t.guia || '—' }}</td>
-                                            <td>{{ fechaCorta(t.fechaEntrega) }}</td>
+                                            <td class="nowrap">{{ fechaCorta(t.fechaSorteo) }}</td>
                                             <td class="nowrap">
                                                 <button
-                                                    *ngIf="!esCancelado(t)"
+                                                    *ngIf="!t.tipoCancelacion"
                                                     nz-button
                                                     nzType="link"
                                                     nzSize="small"
@@ -399,6 +412,15 @@
                             nzShowIcon
                             class="alerta-pendientes"
                             nzMessage="Todos tienen al menos una gestión">
+                        </nz-alert>
+
+                        <nz-alert
+                            *ngIf="resumenCanceladosPorCartera.get(r.cartera)?.sinMontoRegistrado"
+                            nzType="error"
+                            nzShowIcon
+                            class="alerta-pendientes"
+                            [nzMessage]="resumenCanceladosPorCartera.get(r.cartera)!.sinMontoRegistrado + ' cancelado(s) del Excel sin monto registrado'"
+                            [nzDescription]="'Capital de referencia: ' + formatoMoneda(resumenCanceladosPorCartera.get(r.cartera)!.capitalCancelado)">
                         </nz-alert>
 
                         <a

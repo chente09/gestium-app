@@ -81,7 +81,30 @@ export interface ResumenRecuperacion {
   titulosCancelados: number; // pago_total
   titulosConAbono: number;
   montoCancelado: number;
-  honorarios: number;
+  honorarios: number; // total registrado (cobrado + por cobrar)
+  honorariosCobrados: number; // el IESS ya le pagó a la oficina
+  honorariosPorCobrar: number;
+}
+
+// Coactivado con títulos cancelados (del Excel o a mano) a los que todavía
+// no se les registró el monto/honorario real del pago.
+export interface CoactivadoPendienteDeRegistro {
+  cedula: string;
+  nombre: string;
+  titulosSinMonto: number;
+}
+
+// Cuántos títulos están cancelados en total (vengan del Excel o de
+// "Registrar pago") — separado de ResumenRecuperacion, que solo cuenta lo
+// que ya tiene monto/honorario reales. Este resumen sirve para encontrar
+// los que faltan por completar.
+export interface ResumenCancelados {
+  cartera: string;
+  totalCancelados: number;
+  conMontoRegistrado: number;
+  sinMontoRegistrado: number;
+  capitalCancelado: number;
+  pendientesDeRegistro: CoactivadoPendienteDeRegistro[];
 }
 
 @Injectable({
@@ -274,7 +297,9 @@ export class CoactivadosService {
   // ============================================
   async getResumenRecuperacion(cartera: string): Promise<ResumenRecuperacion> {
     const cedulas = await this.cedulasDeCartera(cartera);
-    if (cedulas.length === 0) return { cartera, titulosCancelados: 0, titulosConAbono: 0, montoCancelado: 0, honorarios: 0 };
+    if (cedulas.length === 0) {
+      return { cartera, titulosCancelados: 0, titulosConAbono: 0, montoCancelado: 0, honorarios: 0, honorariosCobrados: 0, honorariosPorCobrar: 0 };
+    }
 
     const ref = collection(this.firestore, COLECCION_TITULOS);
     const porChunk = await Promise.all(
@@ -286,17 +311,80 @@ export class CoactivadosService {
       )
     );
 
-    let titulosCancelados = 0, montoCancelado = 0, honorarios = 0, titulosConAbono = 0;
+    let titulosCancelados = 0, montoCancelado = 0, honorarios = 0, honorariosCobrados = 0, titulosConAbono = 0;
     for (const [snapPagoTotal, aggAbono] of porChunk) {
       snapPagoTotal.forEach(d => {
         const data = d.data() as TituloCredito;
         titulosCancelados++;
         montoCancelado += data.montoCancelado ?? 0;
         honorarios += data.honorario ?? 0;
+        if (data.honorarioCobrado) honorariosCobrados += data.honorario ?? 0;
       });
       titulosConAbono += aggAbono.data().n;
     }
 
-    return { cartera, titulosCancelados, titulosConAbono, montoCancelado, honorarios };
+    return {
+      cartera, titulosCancelados, titulosConAbono, montoCancelado, honorarios,
+      honorariosCobrados,
+      honorariosPorCobrar: Math.round((honorarios - honorariosCobrados) * 100) / 100
+    };
+  }
+
+  // ============================================
+  // 🚩 Cancelados en conjunto: incluye los que trae el Excel (solo tienen
+  // estadoIess='CANCELADO', sin monto real) además de los registrados a
+  // mano — para poder ubicarlos y completarles el monto/honorario.
+  //
+  // NOTA: busca por igualdad exacta estadoIess=='CANCELADO'. Hoy es
+  // correcto porque es el único valor que se genera (de la observación del
+  // Excel o de "Registrar pago"). Si en el futuro se importa una matriz de
+  // seguimiento con su propia columna de ESTADO IESS (texto libre del
+  // IESS, ej. "CANCELADO TRAMITE DE COACTIVA"), este filtro no la va a
+  // encontrar — habría que normalizar ese campo al importar.
+  // ============================================
+  async getResumenCancelados(cartera: string): Promise<ResumenCancelados> {
+    const refCoact = collection(this.firestore, this.collectionName);
+    const snapCoact = await getDocs(query(refCoact, where('cartera', '==', cartera)));
+    const coactivados = snapCoact.docs.map(d => d.data() as Coactivado);
+    if (coactivados.length === 0) {
+      return { cartera, totalCancelados: 0, conMontoRegistrado: 0, sinMontoRegistrado: 0, capitalCancelado: 0, pendientesDeRegistro: [] };
+    }
+
+    const porCedula = new Map(coactivados.map(c => [c.cedula, c]));
+    const cedulas = coactivados.map(c => c.cedula);
+    const refTit = collection(this.firestore, COLECCION_TITULOS);
+
+    const snaps = await Promise.all(
+      chunks(cedulas, TAM_CHUNK_IN).map(grupo =>
+        getDocs(query(refTit, where('coactivadoId', 'in', grupo), where('estadoIess', '==', 'CANCELADO')))
+      )
+    );
+
+    let totalCancelados = 0, conMontoRegistrado = 0, capitalCancelado = 0;
+    const sinMontoPorCoactivado = new Map<string, number>();
+
+    snaps.forEach(snap => snap.forEach(d => {
+      const t = d.data() as TituloCredito;
+      totalCancelados++;
+      capitalCancelado += t.capital;
+      if (t.tipoCancelacion === 'pago_total') {
+        conMontoRegistrado++;
+      } else {
+        sinMontoPorCoactivado.set(t.coactivadoId, (sinMontoPorCoactivado.get(t.coactivadoId) ?? 0) + 1);
+      }
+    }));
+
+    const pendientesDeRegistro = [...sinMontoPorCoactivado.entries()]
+      .map(([cedula, titulosSinMonto]) => ({ cedula, nombre: porCedula.get(cedula)?.nombre ?? cedula, titulosSinMonto }))
+      .sort((a, b) => b.titulosSinMonto - a.titulosSinMonto);
+
+    return {
+      cartera,
+      totalCancelados,
+      conMontoRegistrado,
+      sinMontoRegistrado: totalCancelados - conMontoRegistrado,
+      capitalCancelado: Math.round(capitalCancelado * 100) / 100,
+      pendientesDeRegistro
+    };
   }
 }

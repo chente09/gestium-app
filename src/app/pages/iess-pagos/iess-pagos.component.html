@@ -1,0 +1,179 @@
+<div class="pagos-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/iess/bitacora">Bitácora de Gestiones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Importar pagos cobrados</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <h1 class="page-title"><nz-icon nzType="dollar"></nz-icon> Importar pagos ya cobrados</h1>
+
+    <nz-alert
+        nzType="info"
+        nzShowIcon
+        class="info-importar"
+        nzMessage="Esto no escribe nada todavía"
+        nzDescription="Elige el archivo con los títulos ya cancelados y con el honorario cobrado por el IESS. Revisa el plan y recién al final confirmas.">
+    </nz-alert>
+
+    <!-- ================= PASO 1: ARCHIVO ================= -->
+    <nz-card nzTitle="1. Elegir archivo" class="paso-card">
+        <input
+            type="file"
+            id="archivo-pagos"
+            accept=".xlsx,.xls,.csv"
+            (change)="onArchivoSeleccionado($event)"
+            hidden />
+        <label for="archivo-pagos" nz-button nzType="dashed" class="btn-archivo">
+            <nz-icon nzType="file-excel"></nz-icon>
+            {{ archivo ? archivo.name : 'Seleccionar archivo de pagos (RUC, Título, Honorarios, Total cancelado)' }}
+        </label>
+
+        <nz-empty *ngIf="leyendo || analizando" [nzNotFoundContent]="leyendo ? 'Leyendo el archivo...' : 'Analizando contra lo que ya existe...'"></nz-empty>
+    </nz-card>
+
+    <!-- ================= PASO 2: PLAN ================= -->
+    <nz-card *ngIf="plan" nzTitle="2. Qué se va a hacer" class="paso-card">
+        <div class="resumen-plan">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.validos.length" nzTitle="Se van a marcar como pagados"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="plan.yaEstabanCobrados.length > 0">
+                <nz-statistic [nzValue]="plan.yaEstabanCobrados.length" nzTitle="Ya estaban marcados"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="plan.noEncontrados.length > 0">
+                <nz-statistic [nzValue]="plan.noEncontrados.length" nzTitle="Título no existe en el sistema"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="plan.conflictos.length > 0">
+                <nz-statistic [nzValue]="plan.conflictos.length" nzTitle="RUC no coincide"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="plan.invalidos.length > 0">
+                <nz-statistic [nzValue]="plan.invalidos.length" nzTitle="Filas inválidas"></nz-statistic>
+            </nz-card>
+        </div>
+
+        <p class="capital-plan" *ngIf="plan.validos.length > 0">
+            Monto cancelado: <b>{{ formatoMoneda(totalMontoValidos) }}</b> — Honorarios: <b>{{ formatoMoneda(totalHonorariosValidos) }}</b>
+        </p>
+
+        <nz-collapse *ngIf="plan.validos.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.validos.length + ' título(s) a marcar como pagados'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.validos" [nzPageSize]="15" [nzShowPagination]="plan.validos.length > 15" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>Título</th><th>RUC</th><th>Razón social</th><th>Monto</th><th>Honorario</th><th>Fecha</th><th>Comprobante</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let f of plan.validos; trackBy: trackByFila">
+                                <td>{{ f.numero }}</td><td>{{ f.ruc }}</td><td>{{ f.razon }}</td>
+                                <td>{{ formatoMoneda(f.montoCancelado) }}</td><td>{{ formatoMoneda(f.honorario) }}</td>
+                                <td class="nowrap">{{ fechaCorta(f.fecha) }}</td><td>{{ f.comprobante || '—' }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse *ngIf="plan.yaEstabanCobrados.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.yaEstabanCobrados.length + ' ya estaban marcados como cobrados (no se tocan)'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.yaEstabanCobrados" [nzPageSize]="15" [nzShowPagination]="plan.yaEstabanCobrados.length > 15" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>Título</th><th>RUC</th><th>Razón social</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let f of plan.yaEstabanCobrados; trackBy: trackByFila">
+                                <td>{{ f.numero }}</td><td>{{ f.ruc }}</td><td>{{ f.razon }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse *ngIf="plan.noEncontrados.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.noEncontrados.length + ' título(s) no encontrado(s) en el sistema'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.noEncontrados" [nzPageSize]="15" [nzShowPagination]="plan.noEncontrados.length > 15" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>Título</th><th>RUC</th><th>Razón social</th><th>Motivo</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let item of plan.noEncontrados">
+                                <td>{{ item.fila.numero }}</td><td>{{ item.fila.ruc }}</td><td>{{ item.fila.razon }}</td><td>{{ item.motivo }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse *ngIf="plan.conflictos.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.conflictos.length + ' conflicto(s) — no se van a tocar'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.conflictos" [nzPageSize]="15" [nzShowPagination]="plan.conflictos.length > 15" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>Título</th><th>RUC del archivo</th><th>Razón social</th><th>Motivo</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let item of plan.conflictos">
+                                <td>{{ item.fila.numero }}</td><td>{{ item.fila.ruc }}</td><td>{{ item.fila.razon }}</td><td>{{ item.motivo }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse *ngIf="plan.invalidos.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.invalidos.length + ' fila(s) inválida(s)'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.invalidos" [nzPageSize]="15" [nzShowPagination]="plan.invalidos.length > 15" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>Fila</th><th>Título</th><th>Motivo</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let i of plan.invalidos; trackBy: trackByInvalida">
+                                <td>{{ i.fila }}</td><td>{{ i.numero || '—' }}</td><td>{{ i.motivo }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <div class="acciones-confirmar">
+            <button
+                nz-button
+                nzType="primary"
+                nzDanger
+                class="btn-confirmar"
+                [disabled]="!puedeConfirmar"
+                [nzLoading]="confirmando"
+                (click)="confirmar()">
+                <nz-icon nzType="check"></nz-icon> Confirmar carga
+            </button>
+            <span *ngIf="!puedeConfirmar" class="nota-radio">
+                No hay nada nuevo que aplicar (todo ya estaba marcado, no se encontró, o quedó en conflicto).
+            </span>
+        </div>
+    </nz-card>
+
+    <!-- ================= HISTORIAL ================= -->
+    <nz-card nzTitle="Historial de cargas de pagos" [nzLoading]="cargandoHistorial" class="paso-card">
+        <nz-empty *ngIf="!cargandoHistorial && cargas.length === 0" nzNotFoundContent="Todavía no se ha importado nada"></nz-empty>
+        <div class="tabla-scroll" *ngIf="cargas.length > 0">
+            <nz-table [nzData]="cargas" [nzPageSize]="10" [nzShowPagination]="cargas.length > 10" nzSize="small" [nzBordered]="true">
+                <thead>
+                    <tr>
+                        <th>Fecha</th><th>Archivo</th><th>Aplicados</th><th>Ya estaban</th><th>No encontrados</th><th>Conflictos</th><th>Inválidos</th><th>Por</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let c of cargas; trackBy: trackByCarga">
+                        <td class="nowrap">{{ c.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ c.archivo }}</td>
+                        <td>{{ c.aplicados }}</td>
+                        <td>{{ c.yaEstabanCobrados }}</td>
+                        <td>{{ c.noEncontrados }}</td>
+                        <td>{{ c.conflictos }}</td>
+                        <td>{{ c.invalidos }}</td>
+                        <td class="nowrap">{{ c.realizadoPor.nombre }}</td>
+                    </tr>
+                </tbody>
+            </nz-table>
+        </div>
+    </nz-card>
+</div>

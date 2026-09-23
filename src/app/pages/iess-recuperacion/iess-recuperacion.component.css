@@ -48,6 +48,21 @@ nz-card.paso-card {
     font-weight: 600;
 }
 
+@media (min-width: 700px) {
+    .resumen-total-cobro {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 560px;
+    }
+}
+
+.carta-cobrado {
+    border-color: #b7eb8f !important;
+}
+
+.carta-por-cobrar {
+    border-color: #ffd591 !important;
+}
+
 .tabla-scroll {
     overflow-x: auto;
 }

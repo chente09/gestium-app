@@ -32,6 +32,7 @@ import {
   CoactivadosService,
   Coactivado,
   ResumenCartera,
+  ResumenCancelados,
   esCedulaValida,
   normalizarCedula
 } from '../../services/coactivados/coactivados.service';
@@ -138,6 +139,21 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     return this.titulos.filter(x => x.numero.includes(t) || (x.guia ?? '').toUpperCase().includes(t));
   }
 
+  cambiandoHonorarioNumero: string | null = null;
+
+  async toggleHonorarioCobrado(t: TituloCredito): Promise<void> {
+    if (this.cambiandoHonorarioNumero) return;
+    this.cambiandoHonorarioNumero = t.numero;
+    try {
+      await this.titulosService.marcarHonorarioCobrado(t.numero, !t.honorarioCobrado);
+    } catch (error) {
+      console.error('Error marcando el honorario cobrado:', error);
+      this.message.error('No se pudo actualizar el honorario.');
+    } finally {
+      this.cambiandoHonorarioNumero = null;
+    }
+  }
+
   // Registrar abono/pago total de un título (cualquiera del área).
   mostrarCancelacion = false;
   guardandoCancelacion = false;
@@ -148,6 +164,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   // carga cuando se aterriza en la vista vacía, no al abrir un coactivado
   // directo desde la agenda).
   resumenCarteras: ResumenCartera[] = [];
+  resumenCanceladosPorCartera = new Map<string, ResumenCancelados>();
   cargandoResumen = false;
 
   altaForm: FormGroup;
@@ -243,7 +260,12 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   private async cargarResumenCarteras(): Promise<void> {
     this.cargandoResumen = true;
     try {
-      this.resumenCarteras = await Promise.all(this.carteras.map(c => this.coactivadosService.getResumenCartera(c)));
+      const [resumenes, cancelados] = await Promise.all([
+        Promise.all(this.carteras.map(c => this.coactivadosService.getResumenCartera(c))),
+        Promise.all(this.carteras.map(c => this.coactivadosService.getResumenCancelados(c)))
+      ]);
+      this.resumenCarteras = resumenes;
+      this.resumenCanceladosPorCartera = new Map(cancelados.map(r => [r.cartera, r]));
     } catch (error) {
       console.error('Error cargando el panel de carteras:', error);
     } finally {

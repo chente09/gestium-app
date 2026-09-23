@@ -17,7 +17,9 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import {
   CoactivadosService,
   CoactivadoConEstado,
+  CoactivadoPendienteDeRegistro,
   ResumenCartera,
+  ResumenCancelados,
   normalizarBusqueda
 } from '../../services/coactivados/coactivados.service';
 import { formatoMoneda } from '../../services/titulosCredito/titulos-credito.util';
@@ -46,6 +48,7 @@ import { formatoMoneda } from '../../services/titulosCredito/titulos-credito.uti
 export class IessCarteraComponent implements OnInit {
   cartera = '';
   resumen: ResumenCartera | null = null;
+  resumenCancelados: ResumenCancelados | null = null;
   cargando = false;
   filtro = '';
   readonly formatoMoneda = formatoMoneda;
@@ -65,7 +68,10 @@ export class IessCarteraComponent implements OnInit {
     if (!this.cartera) return;
     this.cargando = true;
     try {
-      this.resumen = await this.coactivadosService.getResumenCartera(this.cartera);
+      [this.resumen, this.resumenCancelados] = await Promise.all([
+        this.coactivadosService.getResumenCartera(this.cartera),
+        this.coactivadosService.getResumenCancelados(this.cartera)
+      ]);
     } catch (error) {
       console.error('Error cargando la cartera:', error);
     } finally {
@@ -79,11 +85,11 @@ export class IessCarteraComponent implements OnInit {
     return t ? this.resumen.todos.filter(c => c.nombreBusqueda.includes(t)) : this.resumen.todos;
   }
 
-  abrirFicha(c: CoactivadoConEstado): void {
+  abrirFicha(c: { cedula: string }): void {
     this.router.navigate(['/iess/bitacora'], { queryParams: { cedula: c.cedula } });
   }
 
-  trackByCedula(index: number, c: CoactivadoConEstado): string {
+  trackByCedula(index: number, c: { cedula: string }): string {
     return c.cedula;
   }
 }

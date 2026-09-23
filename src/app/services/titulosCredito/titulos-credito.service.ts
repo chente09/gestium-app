@@ -22,9 +22,11 @@ import { COLECCION_COACTIVADOS, normalizarBusqueda } from '../coactivados/coacti
 import { COLECCION_GESTIONES } from '../gestionesCoactivado/gestiones-coactivado.service';
 import { TipoCancelacion, TituloCredito } from './titulos-credito.util';
 import { claveGestionHistorica, Existente, FilaTitulo, GestionHistorica, PlanCarga } from './importador-titulos.util';
+import { FilaPago, PlanPagos, TituloExistente } from './pagos-titulos.util';
 
 export const COLECCION_TITULOS = 'titulos_credito';
 export const COLECCION_CARGAS = 'cargas_titulos';
+export const COLECCION_CARGAS_PAGOS = 'cargas_pagos_honorarios';
 
 // Firestore 'in' admite hasta 30 valores por consulta.
 const TAM_CHUNK_IN = 30;
@@ -50,6 +52,20 @@ export interface CargaTitulos {
   invalidos: number;
   // Opcional: las cargas hechas antes de esta funcionalidad no lo tienen.
   gestionesHistoricas?: number;
+  realizadoPor: { uid: string; nombre: string };
+  fecha: Date | any;
+}
+
+// Registro de auditoría de cada carga masiva de pagos ya cobrados: nunca se
+// edita ni se borra.
+export interface CargaPagos {
+  id?: string;
+  archivo: string;
+  aplicados: number;
+  yaEstabanCobrados: number;
+  noEncontrados: number;
+  conflictos: number;
+  invalidos: number;
   realizadoPor: { uid: string; nombre: string };
   fecha: Date | any;
 }
@@ -122,8 +138,31 @@ export class TitulosCreditoService {
       montoCancelado: deleteField(),
       honorario: deleteField(),
       canceladoPor: deleteField(),
-      fechaCancelacion: deleteField()
+      fechaCancelacion: deleteField(),
+      honorarioCobrado: deleteField(),
+      honorarioCobradoPor: deleteField(),
+      fechaCobroHonorario: deleteField()
     });
+  }
+
+  // Que el título esté cancelado y que el IESS ya le haya pagado el
+  // honorario a la oficina son cosas distintas — cualquiera del área lo
+  // puede marcar, igual que registrarCancelacion.
+  async marcarHonorarioCobrado(numero: string, cobrado: boolean): Promise<void> {
+    const user = this.usersService.getCurrentUser();
+    const register = this.registersService.getCurrentRegister();
+    if (!user || !register) throw new Error('🔒 Usuario no autenticado');
+
+    const patch: Record<string, any> = { honorarioCobrado: cobrado };
+    if (cobrado) {
+      patch['honorarioCobradoPor'] = { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' };
+      patch['fechaCobroHonorario'] = new Date();
+    } else {
+      patch['honorarioCobradoPor'] = deleteField();
+      patch['fechaCobroHonorario'] = deleteField();
+    }
+
+    await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), patch);
   }
 
   // ============================================
@@ -320,6 +359,82 @@ export class TitulosCreditoService {
     const snap = await getDocs(collection(this.firestore, COLECCION_CARGAS));
     return snap.docs
       .map(d => ({ id: d.id, ...(d.data() as Omit<CargaTitulos, 'id'>) }))
+      .map(c => ({ ...c, fecha: (c.fecha as any)?.toDate ? (c.fecha as any).toDate() : c.fecha }))
+      .sort((a, b) => (b.fecha as Date).getTime() - (a.fecha as Date).getTime());
+  }
+
+  // ============================================
+  // 💰 Carga masiva de pagos ya cobrados (solo admin)
+  // ============================================
+
+  // Se busca por número de título (documentId), no por RUC — acá ya
+  // sabemos exactamente qué títulos trae el archivo.
+  async getTitulosPorNumeros(numeros: string[]): Promise<Map<string, TituloExistente>> {
+    const distintos = [...new Set(numeros)];
+    const ref = collection(this.firestore, this.collectionName);
+
+    const snaps = await Promise.all(
+      chunks(distintos, TAM_CHUNK_IN).map(grupo => getDocs(query(ref, where(documentId(), 'in', grupo))))
+    );
+    const resultado = new Map<string, TituloExistente>();
+    snaps.forEach(snap => snap.forEach(d => {
+      const data = d.data() as TituloCredito;
+      resultado.set(d.id, { numero: d.id, coactivadoId: data.coactivadoId, yaEstabaCobrado: !!data.honorarioCobrado });
+    }));
+    return resultado;
+  }
+
+  async confirmarPagos(plan: PlanPagos, archivo: string): Promise<string> {
+    const user = this.usersService.getCurrentUser();
+    const register = this.registersService.getCurrentRegister();
+    if (!user || !register) throw new Error('🔒 Usuario no autenticado');
+    const realizadoPor = { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' };
+
+    const carga: Omit<CargaPagos, 'id'> = {
+      archivo,
+      aplicados: plan.validos.length,
+      yaEstabanCobrados: plan.yaEstabanCobrados.length,
+      noEncontrados: plan.noEncontrados.length,
+      conflictos: plan.conflictos.length,
+      invalidos: plan.invalidos.length,
+      realizadoPor,
+      fecha: new Date()
+    };
+    const cargaRef = await addDoc(collection(this.firestore, COLECCION_CARGAS_PAGOS), carga);
+
+    const escrituras: EscrituraLote[] = plan.validos.map(f => ({
+      ref: doc(this.firestore, `${this.collectionName}/${f.numero}`),
+      tipo: 'update',
+      data: this.camposPago(f, realizadoPor, cargaRef.id)
+    }));
+
+    await escribirEnLotes(this.firestore, escrituras);
+    return cargaRef.id;
+  }
+
+  private camposPago(f: FilaPago, realizadoPor: { uid: string; nombre: string }, cargaId: string): Record<string, any> {
+    const [y, m, d] = f.fecha ? f.fecha.split('-').map(Number) : [];
+    const fechaCancelacion = y ? new Date(y, m - 1, d, 12, 0, 0) : new Date();
+    const data: Record<string, any> = {
+      tipoCancelacion: 'pago_total',
+      estadoIess: 'CANCELADO',
+      montoCancelado: f.montoCancelado,
+      honorario: f.honorario,
+      canceladoPor: realizadoPor,
+      fechaCancelacion,
+      honorarioCobrado: true,
+      honorarioCobradoPor: realizadoPor,
+      fechaCobroHonorario: fechaCancelacion,
+      cargaPagosId: cargaId
+    };
+    if (f.comprobante) data['comprobantePago'] = f.comprobante;
+    return data;
+  }
+
+  async getCargasPagos(): Promise<CargaPagos[]> {
+    const snap = await getDocs(collection(this.firestore, COLECCION_CARGAS_PAGOS));
+    return snap.docs
+      .map(d => ({ id: d.id, ...(d.data() as Omit<CargaPagos, 'id'>) }))
       .map(c => ({ ...c, fecha: (c.fecha as any)?.toDate ? (c.fecha as any).toDate() : c.fecha }))
       .sort((a, b) => (b.fecha as Date).getTime() - (a.fecha as Date).getTime());
   }

@@ -24,6 +24,50 @@
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.pendientes.length" nzTitle="Sin gestión todavía"></nz-statistic></nz-card>
         </div>
 
+        <div class="resumen-stats" *ngIf="resumenCancelados && resumenCancelados.totalCancelados > 0">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumenCancelados.totalCancelados" nzTitle="Títulos cancelados"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumenCancelados.conMontoRegistrado" nzTitle="Con monto registrado"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="resumenCancelados.sinMontoRegistrado > 0">
+                <nz-statistic [nzValue]="resumenCancelados.sinMontoRegistrado" nzTitle="Sin monto (del Excel)"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-capital">
+                <div class="stat-titulo">Capital cancelado</div>
+                <div class="stat-valor">{{ formatoMoneda(resumenCancelados.capitalCancelado) }}</div>
+            </nz-card>
+        </div>
+
+        <nz-card
+            *ngIf="resumenCancelados && resumenCancelados.pendientesDeRegistro.length > 0"
+            nzTitle="Cancelados sin monto/honorario registrado"
+            class="paso-card">
+            <p class="nota-cancelados">
+                Vienen marcados como cancelados desde el Excel, pero todavía no tienen el monto y honorario real —
+                entra a cada uno y usa "Registrar pago" en su título para completarlo.
+            </p>
+            <div class="tabla-scroll">
+                <nz-table
+                    [nzData]="resumenCancelados.pendientesDeRegistro"
+                    [nzPageSize]="20"
+                    [nzShowPagination]="resumenCancelados.pendientesDeRegistro.length > 20"
+                    nzSize="small"
+                    [nzBordered]="true">
+                    <thead>
+                        <tr><th>Nombre</th><th>Cédula</th><th>Título(s) sin monto</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            *ngFor="let p of resumenCancelados.pendientesDeRegistro; trackBy: trackByCedula"
+                            class="fila-caso"
+                            (click)="abrirFicha(p)">
+                            <td>{{ p.nombre }}</td>
+                            <td class="nowrap">{{ p.cedula }}</td>
+                            <td>{{ p.titulosSinMonto }}</td>
+                        </tr>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
+
         <nz-card class="paso-card">
             <input
                 nz-input

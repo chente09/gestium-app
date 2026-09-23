@@ -207,10 +207,25 @@ service cloud.firestore {
                          .hasOnly(['tipoCancelacion', 'estadoIess', 'montoCancelado', 'honorario', 'canceladoPor', 'fechaCancelacion']) &&
                        request.resource.data.tipoCancelacion in ['abono', 'pago_total'] &&
                        request.resource.data.canceladoPor.uid == request.auth.uid;
+
+      // Que el IESS ya haya pagado el honorario es un evento aparte de la
+      // cancelación — cualquiera del área lo puede marcar/desmarcar, sin
+      // importar quién registró la cancelación original.
+      allow update: if esDelAreaIess() &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['honorarioCobrado', 'honorarioCobradoPor', 'fechaCobroHonorario']);
     }
 
     // Auditoría de cada importación: se crea, nunca se edita ni se borra.
     match /cargas_titulos/{cargaId} {
+      allow read: if esDelAreaIess();
+      allow create: if isAdmin() && request.resource.data.realizadoPor.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Auditoría de cada carga masiva de pagos ya cobrados: se crea, nunca
+    // se edita ni se borra.
+    match /cargas_pagos_honorarios/{cargaId} {
       allow read: if esDelAreaIess();
       allow create: if isAdmin() && request.resource.data.realizadoPor.uid == request.auth.uid;
       allow update, delete: if false;

@@ -15,6 +15,11 @@ export type TipoCancelacion = 'abono' | 'pago_total';
 export interface TituloCredito {
   numero: string; // también es el ID del documento
   coactivadoId: string; // RUC/cédula normalizado
+  // La cartera del título en sí (a qué abogado se lo sorteó el IESS), no
+  // necesariamente la del coactivado: el mismo RUC puede caer en dos
+  // carteras distintas por error del IESS, con guías y títulos distintos.
+  // Se graba solo al crear el título — una re-carga no lo cambia.
+  cartera?: string;
   capital: number;
   estadoEntrega: EstadoEntrega;
   estadoIess?: string; // ej. TRANSFERIDO A TRAMITE COACTIVA / CANCELADO TRAMITE DE COACTIVA

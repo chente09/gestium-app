@@ -185,6 +185,13 @@
                                                 <nz-tag [nzColor]="esCancelado(t) ? 'red' : t.estadoEntrega === 'entregado' ? 'green' : 'gold'">
                                                     {{ esCancelado(t) ? 'Cancelado' : (t.estadoEntrega === 'entregado' ? 'Entregado' : 'No entregado') }}
                                                 </nz-tag>
+                                                <nz-tag
+                                                    *ngIf="t.cartera && seleccionado && t.cartera !== seleccionado.cartera"
+                                                    nzColor="purple"
+                                                    nz-tooltip
+                                                    nzTooltipTitle="El IESS sorteó este título a otro abogado, aunque el coactivado está en esta cartera">
+                                                    De {{ t.cartera }}
+                                                </nz-tag>
                                                 <nz-tag *ngIf="t.tipoCancelacion === 'abono'" nzColor="blue">Abono</nz-tag>
                                                 <nz-tag
                                                     *ngIf="t.tipoCancelacion === 'pago_total'"

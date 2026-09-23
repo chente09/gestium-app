@@ -134,6 +134,14 @@
             </nz-collapse-panel>
         </nz-collapse>
 
+        <div class="pregunta-honorario" *ngIf="plan.validos.length > 0">
+            <p class="pregunta-honorario-titulo">¿El IESS ya pagó el honorario de estos títulos?</p>
+            <nz-radio-group [(ngModel)]="honorarioYaCobrado">
+                <label nz-radio [nzValue]="true">Sí, ya cobramos el honorario</label>
+                <label nz-radio [nzValue]="false">No, el cliente pagó pero aún no hemos cobrado el honorario</label>
+            </nz-radio-group>
+        </div>
+
         <div class="acciones-confirmar">
             <button
                 nz-button
@@ -158,13 +166,18 @@
             <nz-table [nzData]="cargas" [nzPageSize]="10" [nzShowPagination]="cargas.length > 10" nzSize="small" [nzBordered]="true">
                 <thead>
                     <tr>
-                        <th>Fecha</th><th>Archivo</th><th>Aplicados</th><th>Ya estaban</th><th>No encontrados</th><th>Conflictos</th><th>Inválidos</th><th>Por</th>
+                        <th>Fecha</th><th>Archivo</th><th>Honorario</th><th>Aplicados</th><th>Ya estaban</th><th>No encontrados</th><th>Conflictos</th><th>Inválidos</th><th>Por</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr *ngFor="let c of cargas; trackBy: trackByCarga">
                         <td class="nowrap">{{ c.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
                         <td>{{ c.archivo }}</td>
+                        <td class="nowrap">
+                            <nz-tag [nzColor]="c.honorarioYaCobrado !== false ? 'green' : 'orange'">
+                                {{ c.honorarioYaCobrado !== false ? 'Cobrado' : 'Pendiente' }}
+                            </nz-tag>
+                        </td>
                         <td>{{ c.aplicados }}</td>
                         <td>{{ c.yaEstabanCobrados }}</td>
                         <td>{{ c.noEncontrados }}</td>

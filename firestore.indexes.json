@@ -23,6 +23,14 @@
         { "fieldPath": "coactivadoId", "order": "ASCENDING" },
         { "fieldPath": "capital", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "titulos_credito",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cartera", "order": "ASCENDING" },
+        { "fieldPath": "capital", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -12,6 +13,8 @@ import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { TitulosCreditoService, CargaPagos } from '../../services/titulosCredito/titulos-credito.service';
 import { formatoMoneda, fechaCorta } from '../../services/titulosCredito/titulos-credito.util';
@@ -24,6 +27,7 @@ import { leerArchivoTablas } from '../iess-titulos/lector-archivo.util';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterModule,
     NzCardModule,
     NzButtonModule,
@@ -33,7 +37,9 @@ import { leerArchivoTablas } from '../iess-titulos/lector-archivo.util';
     NzAlertModule,
     NzEmptyModule,
     NzCollapseModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    NzRadioModule,
+    NzTagModule
   ],
   templateUrl: './iess-pagos.component.html',
   styleUrl: './iess-pagos.component.css'
@@ -47,6 +53,7 @@ export class IessPagosComponent implements OnInit {
   analizando = false;
   confirmando = false;
   plan: PlanPagos | null = null;
+  honorarioYaCobrado = true;
 
   cargas: CargaPagos[] = [];
   cargandoHistorial = false;
@@ -74,6 +81,7 @@ export class IessPagosComponent implements OnInit {
   private reiniciar(): void {
     this.archivo = null;
     this.plan = null;
+    this.honorarioYaCobrado = true;
   }
 
   async onArchivoSeleccionado(event: Event): Promise<void> {
@@ -124,8 +132,9 @@ export class IessPagosComponent implements OnInit {
 
     this.confirmando = true;
     try {
-      await this.titulosService.confirmarPagos(this.plan, this.archivo.name);
-      this.message.success(`Se aplicaron ${this.plan.validos.length} pago(s) — título marcado como cancelado con honorario cobrado.`);
+      await this.titulosService.confirmarPagos(this.plan, this.archivo.name, this.honorarioYaCobrado);
+      const detalleHonorario = this.honorarioYaCobrado ? 'con honorario cobrado' : 'con honorario aún pendiente de cobrar';
+      this.message.success(`Se aplicaron ${this.plan.validos.length} pago(s) — título marcado como cancelado, ${detalleHonorario}.`);
       this.reiniciar();
       await this.cargarHistorial();
     } catch (error) {

@@ -45,6 +45,9 @@ export interface FilaTitulo {
   fechaEmision?: string;
   juez?: string;
   abogado?: string;
+  // Cartera ya resuelta para esta fila (se llena en planificarCarga, no al
+  // leer el archivo) — solo se usa al crear un título nuevo.
+  cartera?: string;
   observacion?: string;
   observacionGeneral?: string;
   personaLlama?: string;
@@ -490,12 +493,6 @@ export function planificarCarga(
     const carteraArchivo = carteraDeFila(f);
     const enBase = coactivados.get(f.ruc);
 
-    // Un coactivado pertenece a UNA cartera: si el archivo dice otra, no se pisa.
-    if (enBase && carteraArchivo && enBase.cartera !== carteraArchivo) {
-      plan.conflictos.push({ fila: f, motivo: `El coactivado ya pertenece a la cartera ${enBase.cartera} (el archivo dice ${carteraArchivo})` });
-      continue;
-    }
-
     const existente = existentes.get(f.numero);
     if (existente) {
       if (existente.coactivadoId !== f.ruc) {
@@ -510,7 +507,11 @@ export function planificarCarga(
       continue;
     }
 
-    // Título nuevo: si el coactivado tampoco existe, hay que crearlo.
+    // Título nuevo: si el coactivado tampoco existe, hay que crearlo (y
+    // decidir su cartera). Si el coactivado ya existe pero en otra cartera,
+    // el título se cuelga de él igual — el mismo RUC puede caer en dos
+    // carteras distintas por error del IESS (guías y títulos distintos);
+    // cada título guarda su propia cartera, no la hereda a ciegas del RUC.
     if (!enBase) {
       const candidatas = carterasPorRuc.get(f.ruc);
       if (candidatas && candidatas.size > 1) {
@@ -530,6 +531,7 @@ export function planificarCarga(
         creados.set(f.ruc, { ruc: f.ruc, nombre: f.razon, cartera });
       }
     }
+    f.cartera = carteraArchivo ?? enBase?.cartera ?? creados.get(f.ruc)?.cartera;
     plan.nuevos.push(f);
   }
 

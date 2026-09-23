@@ -85,3 +85,22 @@ nz-card.paso-card {
     flex-wrap: wrap;
     margin-top: 8px;
 }
+
+.pregunta-honorario {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+    border-radius: 6px;
+}
+
+.pregunta-honorario-titulo {
+    margin: 0 0 8px;
+    font-weight: 500;
+}
+
+.pregunta-honorario nz-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}

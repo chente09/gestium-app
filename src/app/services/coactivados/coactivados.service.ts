@@ -5,6 +5,7 @@ import {
   collection,
   count,
   doc,
+  documentId,
   getAggregateFromServer,
   getDoc,
   getDocs,
@@ -208,30 +209,39 @@ export class CoactivadosService {
     return snaps.flatMap(snap => snap.docs.map(d => d.ref));
   }
 
+  // Los títulos se buscan por su propia cartera, no por el RUC del
+  // coactivado: el mismo RUC puede tener títulos en dos carteras distintas
+  // (el IESS sortea el mismo caso a dos abogados por error) — cada título ya
+  // guarda a cuál pertenece.
+  private async refsTitulosPorCartera(cartera: string): Promise<DocumentReference[]> {
+    const ref = collection(this.firestore, COLECCION_TITULOS);
+    const snap = await getDocs(query(ref, where('cartera', '==', cartera)));
+    return snap.docs.map(d => d.ref);
+  }
+
   async contarCartera(cartera: string): Promise<{ coactivados: number; titulos: number; gestiones: number }> {
     const cedulas = await this.cedulasDeCartera(cartera);
-    if (cedulas.length === 0) return { coactivados: 0, titulos: 0, gestiones: 0 };
-    const [titulos, gestiones] = await Promise.all([
-      this.refsPorCoactivados(COLECCION_TITULOS, cedulas),
-      this.refsPorCoactivados(COLECCION_GESTIONES, cedulas)
+    const [refsTitulos, refsGestiones] = await Promise.all([
+      this.refsTitulosPorCartera(cartera),
+      cedulas.length ? this.refsPorCoactivados(COLECCION_GESTIONES, cedulas) : Promise.resolve([])
     ]);
-    return { coactivados: cedulas.length, titulos: titulos.length, gestiones: gestiones.length };
+    return { coactivados: cedulas.length, titulos: refsTitulos.length, gestiones: refsGestiones.length };
   }
 
   async eliminarCartera(cartera: string): Promise<{ coactivados: number; titulos: number; gestiones: number }> {
     const cedulas = await this.cedulasDeCartera(cartera);
-    if (cedulas.length === 0) return { coactivados: 0, titulos: 0, gestiones: 0 };
-
     const [refsTitulos, refsGestiones] = await Promise.all([
-      this.refsPorCoactivados(COLECCION_TITULOS, cedulas),
-      this.refsPorCoactivados(COLECCION_GESTIONES, cedulas)
+      this.refsTitulosPorCartera(cartera),
+      cedulas.length ? this.refsPorCoactivados(COLECCION_GESTIONES, cedulas) : Promise.resolve([])
     ]);
 
     // Gestiones y títulos primero (cuelgan del coactivado); los coactivados
     // al final — si algo falla a la mitad, no quedan huérfanos sin dueño.
     await borrarEnLotes(this.firestore, refsGestiones);
     await borrarEnLotes(this.firestore, refsTitulos);
-    await borrarEnLotes(this.firestore, cedulas.map(c => doc(this.firestore, `${this.collectionName}/${c}`)));
+    if (cedulas.length) {
+      await borrarEnLotes(this.firestore, cedulas.map(c => doc(this.firestore, `${this.collectionName}/${c}`)));
+    }
 
     return { coactivados: cedulas.length, titulos: refsTitulos.length, gestiones: refsGestiones.length };
   }
@@ -241,17 +251,10 @@ export class CoactivadosService {
   // consultas agregadas (count/sum) para el capital — así no hay que
   // descargar cada título completo solo para sumarlo.
   // ============================================
-  private async totalesTitulos(cedulas: string[]): Promise<{ titulos: number; capital: number }> {
+  private async totalesTitulosPorCartera(cartera: string): Promise<{ titulos: number; capital: number }> {
     const ref = collection(this.firestore, COLECCION_TITULOS);
-    const aggs = await Promise.all(
-      chunks(cedulas, TAM_CHUNK_IN).map(grupo =>
-        getAggregateFromServer(query(ref, where('coactivadoId', 'in', grupo)), { titulos: count(), capital: sum('capital') })
-      )
-    );
-    return aggs.reduce(
-      (acc, agg) => ({ titulos: acc.titulos + agg.data().titulos, capital: acc.capital + agg.data().capital }),
-      { titulos: 0, capital: 0 }
-    );
+    const agg = await getAggregateFromServer(query(ref, where('cartera', '==', cartera)), { titulos: count(), capital: sum('capital') });
+    return { titulos: agg.data().titulos, capital: agg.data().capital };
   }
 
   // Cédulas que ya tienen al menos una gestión (incluye las migradas del
@@ -274,7 +277,7 @@ export class CoactivadosService {
 
     const cedulas = coactivados.map(c => c.cedula);
     const [totales, conGestion] = await Promise.all([
-      this.totalesTitulos(cedulas),
+      this.totalesTitulosPorCartera(cartera),
       this.cedulasConGestion(cedulas)
     ]);
 
@@ -296,32 +299,21 @@ export class CoactivadosService {
   // cada campo (monto y honorario).
   // ============================================
   async getResumenRecuperacion(cartera: string): Promise<ResumenRecuperacion> {
-    const cedulas = await this.cedulasDeCartera(cartera);
-    if (cedulas.length === 0) {
-      return { cartera, titulosCancelados: 0, titulosConAbono: 0, montoCancelado: 0, honorarios: 0, honorariosCobrados: 0, honorariosPorCobrar: 0 };
-    }
-
     const ref = collection(this.firestore, COLECCION_TITULOS);
-    const porChunk = await Promise.all(
-      chunks(cedulas, TAM_CHUNK_IN).map(grupo =>
-        Promise.all([
-          getDocs(query(ref, where('coactivadoId', 'in', grupo), where('tipoCancelacion', '==', 'pago_total'))),
-          getAggregateFromServer(query(ref, where('coactivadoId', 'in', grupo), where('tipoCancelacion', '==', 'abono')), { n: count() })
-        ])
-      )
-    );
+    const [snapPagoTotal, aggAbono] = await Promise.all([
+      getDocs(query(ref, where('cartera', '==', cartera), where('tipoCancelacion', '==', 'pago_total'))),
+      getAggregateFromServer(query(ref, where('cartera', '==', cartera), where('tipoCancelacion', '==', 'abono')), { n: count() })
+    ]);
 
-    let titulosCancelados = 0, montoCancelado = 0, honorarios = 0, honorariosCobrados = 0, titulosConAbono = 0;
-    for (const [snapPagoTotal, aggAbono] of porChunk) {
-      snapPagoTotal.forEach(d => {
-        const data = d.data() as TituloCredito;
-        titulosCancelados++;
-        montoCancelado += data.montoCancelado ?? 0;
-        honorarios += data.honorario ?? 0;
-        if (data.honorarioCobrado) honorariosCobrados += data.honorario ?? 0;
-      });
-      titulosConAbono += aggAbono.data().n;
-    }
+    let titulosCancelados = 0, montoCancelado = 0, honorarios = 0, honorariosCobrados = 0;
+    snapPagoTotal.forEach(d => {
+      const data = d.data() as TituloCredito;
+      titulosCancelados++;
+      montoCancelado += data.montoCancelado ?? 0;
+      honorarios += data.honorario ?? 0;
+      if (data.honorarioCobrado) honorariosCobrados += data.honorario ?? 0;
+    });
+    const titulosConAbono = aggAbono.data().n;
 
     return {
       cartera, titulosCancelados, titulosConAbono, montoCancelado, honorarios,
@@ -343,27 +335,13 @@ export class CoactivadosService {
   // encontrar — habría que normalizar ese campo al importar.
   // ============================================
   async getResumenCancelados(cartera: string): Promise<ResumenCancelados> {
-    const refCoact = collection(this.firestore, this.collectionName);
-    const snapCoact = await getDocs(query(refCoact, where('cartera', '==', cartera)));
-    const coactivados = snapCoact.docs.map(d => d.data() as Coactivado);
-    if (coactivados.length === 0) {
-      return { cartera, totalCancelados: 0, conMontoRegistrado: 0, sinMontoRegistrado: 0, capitalCancelado: 0, pendientesDeRegistro: [] };
-    }
-
-    const porCedula = new Map(coactivados.map(c => [c.cedula, c]));
-    const cedulas = coactivados.map(c => c.cedula);
     const refTit = collection(this.firestore, COLECCION_TITULOS);
-
-    const snaps = await Promise.all(
-      chunks(cedulas, TAM_CHUNK_IN).map(grupo =>
-        getDocs(query(refTit, where('coactivadoId', 'in', grupo), where('estadoIess', '==', 'CANCELADO')))
-      )
-    );
+    const snap = await getDocs(query(refTit, where('cartera', '==', cartera), where('estadoIess', '==', 'CANCELADO')));
 
     let totalCancelados = 0, conMontoRegistrado = 0, capitalCancelado = 0;
     const sinMontoPorCoactivado = new Map<string, number>();
 
-    snaps.forEach(snap => snap.forEach(d => {
+    snap.forEach(d => {
       const t = d.data() as TituloCredito;
       totalCancelados++;
       capitalCancelado += t.capital;
@@ -372,7 +350,23 @@ export class CoactivadosService {
       } else {
         sinMontoPorCoactivado.set(t.coactivadoId, (sinMontoPorCoactivado.get(t.coactivadoId) ?? 0) + 1);
       }
-    }));
+    });
+
+    if (totalCancelados === 0) {
+      return { cartera, totalCancelados: 0, conMontoRegistrado: 0, sinMontoRegistrado: 0, capitalCancelado: 0, pendientesDeRegistro: [] };
+    }
+
+    // Nombres de los pendientes: se piden solo esas cédulas puntuales (no
+    // "todos los coactivados de la cartera") porque el RUC puede vivir en
+    // el coactivado de otra cartera si quedó compartido entre dos abogados.
+    const refCoact = collection(this.firestore, this.collectionName);
+    const snapsCoact = await Promise.all(
+      chunks([...sinMontoPorCoactivado.keys()], TAM_CHUNK_IN).map(grupo =>
+        getDocs(query(refCoact, where(documentId(), 'in', grupo)))
+      )
+    );
+    const porCedula = new Map<string, Coactivado>();
+    snapsCoact.forEach(s => s.forEach(d => porCedula.set(d.id, d.data() as Coactivado)));
 
     const pendientesDeRegistro = [...sinMontoPorCoactivado.entries()]
       .map(([cedula, titulosSinMonto]) => ({ cedula, nombre: porCedula.get(cedula)?.nombre ?? cedula, titulosSinMonto }))

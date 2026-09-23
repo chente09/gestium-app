@@ -66,6 +66,10 @@ export interface CargaPagos {
   noEncontrados: number;
   conflictos: number;
   invalidos: number;
+  // Si el archivo representaba títulos con el honorario ya cobrado del IESS,
+  // o solo títulos cancelados por el cliente pero con el honorario aún
+  // pendiente de solicitar/cobrar.
+  honorarioYaCobrado: boolean;
   realizadoPor: { uid: string; nombre: string };
   fecha: Date | any;
 }
@@ -334,6 +338,7 @@ export class TitulosCreditoService {
       capital: f.capital,
       estadoEntrega: f.estadoEntrega
     };
+    if (f.cartera) data['cartera'] = f.cartera;
     if (f.estadoIess) data['estadoIess'] = f.estadoIess;
     if (f.guia) data['guia'] = f.guia;
     if (f.guiaCoactiva) data['guiaCoactiva'] = f.guiaCoactiva;
@@ -384,7 +389,7 @@ export class TitulosCreditoService {
     return resultado;
   }
 
-  async confirmarPagos(plan: PlanPagos, archivo: string): Promise<string> {
+  async confirmarPagos(plan: PlanPagos, archivo: string, honorarioYaCobrado: boolean): Promise<string> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();
     if (!user || !register) throw new Error('🔒 Usuario no autenticado');
@@ -397,6 +402,7 @@ export class TitulosCreditoService {
       noEncontrados: plan.noEncontrados.length,
       conflictos: plan.conflictos.length,
       invalidos: plan.invalidos.length,
+      honorarioYaCobrado,
       realizadoPor,
       fecha: new Date()
     };
@@ -405,14 +411,19 @@ export class TitulosCreditoService {
     const escrituras: EscrituraLote[] = plan.validos.map(f => ({
       ref: doc(this.firestore, `${this.collectionName}/${f.numero}`),
       tipo: 'update',
-      data: this.camposPago(f, realizadoPor, cargaRef.id)
+      data: this.camposPago(f, realizadoPor, cargaRef.id, honorarioYaCobrado)
     }));
 
     await escribirEnLotes(this.firestore, escrituras);
     return cargaRef.id;
   }
 
-  private camposPago(f: FilaPago, realizadoPor: { uid: string; nombre: string }, cargaId: string): Record<string, any> {
+  private camposPago(
+    f: FilaPago,
+    realizadoPor: { uid: string; nombre: string },
+    cargaId: string,
+    honorarioYaCobrado: boolean
+  ): Record<string, any> {
     const [y, m, d] = f.fecha ? f.fecha.split('-').map(Number) : [];
     const fechaCancelacion = y ? new Date(y, m - 1, d, 12, 0, 0) : new Date();
     const data: Record<string, any> = {
@@ -422,11 +433,15 @@ export class TitulosCreditoService {
       honorario: f.honorario,
       canceladoPor: realizadoPor,
       fechaCancelacion,
-      honorarioCobrado: true,
-      honorarioCobradoPor: realizadoPor,
-      fechaCobroHonorario: fechaCancelacion,
       cargaPagosId: cargaId
     };
+    // El cliente ya canceló el título en ambos casos; el honorario del IESS
+    // a la oficina es un cobro aparte que puede no haberse solicitado aún.
+    if (honorarioYaCobrado) {
+      data['honorarioCobrado'] = true;
+      data['honorarioCobradoPor'] = realizadoPor;
+      data['fechaCobroHonorario'] = fechaCancelacion;
+    }
     if (f.comprobante) data['comprobantePago'] = f.comprobante;
     return data;
   }

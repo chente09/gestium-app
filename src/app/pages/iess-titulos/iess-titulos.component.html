@@ -108,6 +108,7 @@
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.coactivadosNuevos.length" nzTitle="Coactivados nuevos"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.transiciones.length" nzTitle="Pasan a entregado"></nz-statistic></nz-card>
             <nz-card *ngIf="plan.actualizaciones.length > 0" [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.actualizaciones.length" nzTitle="Actualizan su estado (ej. cancelado)"></nz-statistic></nz-card>
+            <nz-card *ngIf="plan.contactosCompletados.length > 0" [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.contactosCompletados.length" nzTitle="Completan representante/teléfono/correo"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="plan.duplicados.length" nzTitle="Ya estaban cargados"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="plan.conflictos.length > 0">
                 <nz-statistic [nzValue]="plan.conflictos.length" nzTitle="Conflictos (no se tocan)"></nz-statistic>
@@ -132,6 +133,21 @@
                         <tbody>
                             <tr *ngFor="let c of plan.coactivadosNuevos">
                                 <td>{{ c.ruc }}</td><td>{{ c.nombre }}</td><td>{{ c.cartera }}</td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse *ngIf="plan.contactosCompletados.length > 0" class="detalle-plan">
+            <nz-collapse-panel [nzHeader]="plan.contactosCompletados.length + ' coactivado(s) a los que se les completa el contacto'" [nzActive]="false">
+                <div class="tabla-scroll">
+                    <nz-table [nzData]="plan.contactosCompletados" [nzPageSize]="10" [nzShowPagination]="plan.contactosCompletados.length > 10" nzSize="small" [nzBordered]="true">
+                        <thead><tr><th>RUC</th><th>Representante legal</th><th>Teléfono</th><th>Correo</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let c of plan.contactosCompletados">
+                                <td>{{ c.ruc }}</td><td>{{ c.representanteLegal || '—' }}</td><td>{{ c.telefono || '—' }}</td><td>{{ c.correo || '—' }}</td>
                             </tr>
                         </tbody>
                     </nz-table>
@@ -219,7 +235,7 @@
                 <thead>
                     <tr>
                         <th>Fecha</th><th>Archivo</th><th>Cartera</th><th>Nuevos</th><th>Coactivados</th>
-                        <th>Entregados</th><th>Actualizados</th><th>Duplicados</th><th>Conflictos</th><th>Migradas</th><th>Por</th><th></th>
+                        <th>Entregados</th><th>Actualizados</th><th>Duplicados</th><th>Conflictos</th><th>Migradas</th><th>Contactos</th><th>Por</th><th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -234,6 +250,7 @@
                         <td>{{ c.duplicados }}</td>
                         <td>{{ c.conflictos }}</td>
                         <td>{{ c.gestionesHistoricas ?? 0 }}</td>
+                        <td>{{ c.contactosCompletados ?? 0 }}</td>
                         <td class="nowrap">{{ c.realizadoPor.nombre }}</td>
                         <td class="nowrap">
                             <button

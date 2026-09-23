@@ -18,7 +18,10 @@ export type Campo =
   | 'fechaSorteo' | 'fechaEntrega' | 'fechaEmision' | 'juez' | 'abogado'
   // Solo presentes en la matriz de llamadas (entregados y no entregados):
   // se usan nada más para migrar la gestión histórica en la carga inicial.
-  | 'observacion' | 'observacionGeneral' | 'personaLlama' | 'fechaLlamada';
+  | 'observacion' | 'observacionGeneral' | 'personaLlama' | 'fechaLlamada'
+  // Datos de contacto del coactivado: la matriz sí los trae, pero son del
+  // coactivado (RUC), no del título — se usan para completar su ficha.
+  | 'representanteLegal' | 'telefono' | 'correo';
 
 export interface FormatoDetectado {
   hoja: string;
@@ -52,6 +55,9 @@ export interface FilaTitulo {
   observacionGeneral?: string;
   personaLlama?: string;
   fechaLlamada?: string;
+  representanteLegal?: string;
+  telefono?: string;
+  correo?: string;
 }
 
 export interface FilaInvalida {
@@ -123,7 +129,10 @@ const CAMPOS_EXACTOS: Record<string, Campo> = {
   // nombre de columna distinto.
   'observacion': 'observacion', 'observacion general': 'observacionGeneral',
   'persona que llama': 'personaLlama', 'nombre quien llama': 'personaLlama',
-  'fecha 1era llamada': 'fechaLlamada', 'primera llamada': 'fechaLlamada'
+  'fecha 1era llamada': 'fechaLlamada', 'primera llamada': 'fechaLlamada',
+  'representante legal': 'representanteLegal',
+  'telefono': 'telefono',
+  'e mail': 'correo', 'correo': 'correo'
 };
 
 // Encabezados largos de la matriz de seguimiento ("Razón social/ Nombre del
@@ -293,6 +302,9 @@ export function extraerFilas(
     if (c.observacionGeneral !== undefined) fila.observacionGeneral = notaOpcional(r[c.observacionGeneral]);
     if (c.personaLlama !== undefined) fila.personaLlama = textoOpcional(r[c.personaLlama]);
     if (c.fechaLlamada !== undefined) fila.fechaLlamada = parseFechaISO(r[c.fechaLlamada]);
+    if (c.representanteLegal !== undefined) fila.representanteLegal = textoOpcional(r[c.representanteLegal]);
+    if (c.telefono !== undefined) fila.telefono = notaOpcional(r[c.telefono]);
+    if (c.correo !== undefined) fila.correo = notaOpcional(r[c.correo]);
 
     // La matriz de llamadas no tiene columna de estado: lo único que marca un
     // título cancelado es la palabra "CANCELADO" al final de la observación
@@ -378,6 +390,19 @@ export interface CoactivadoNuevo {
   ruc: string;
   nombre: string;
   cartera: string;
+  representanteLegal?: string;
+  telefono?: string;
+  correo?: string;
+}
+
+// Coactivado que ya existía pero le faltaba representante legal, teléfono o
+// correo — la matriz sí los trae, así que una re-carga los completa (nunca
+// pisa un dato que el coactivado ya tenía).
+export interface ContactoCompletado {
+  ruc: string;
+  representanteLegal?: string;
+  telefono?: string;
+  correo?: string;
 }
 
 export interface PlanCarga {
@@ -388,6 +413,7 @@ export interface PlanCarga {
   // carga posterior). Se actualiza sin contarlo como una entrega nueva.
   actualizaciones: FilaTitulo[];
   coactivadosNuevos: CoactivadoNuevo[];
+  contactosCompletados: ContactoCompletado[];
   duplicados: ItemPlan[];
   conflictos: ItemPlan[];
   invalidos: FilaInvalida[];
@@ -456,7 +482,7 @@ export function planificarCarga(
   filas: FilaTitulo[],
   invalidos: FilaInvalida[],
   existentes: Map<string, Existente>,
-  coactivados: Map<string, { cartera: string }>,
+  coactivados: Map<string, { cartera: string; representanteLegal?: string; telefono?: string; correo?: string }>,
   opciones: OpcionesCarga
 ): PlanCarga {
   const carteraDeFila = (f: FilaTitulo): string | null =>
@@ -472,7 +498,8 @@ export function planificarCarga(
   }
 
   const plan: PlanCarga = {
-    nuevos: [], transiciones: [], actualizaciones: [], coactivadosNuevos: [], duplicados: [], conflictos: [],
+    nuevos: [], transiciones: [], actualizaciones: [], coactivadosNuevos: [], contactosCompletados: [],
+    duplicados: [], conflictos: [],
     invalidos, rucSinCartera: [],
     gestionesHistoricas: opciones.migrarObservaciones
       ? extraerGestionesHistoricas(filas, opciones.notasHistoricasExistentes ?? new Set())
@@ -482,6 +509,26 @@ export function planificarCarga(
   const vistos = new Set<string>();
   const creados = new Map<string, CoactivadoNuevo>();
   const sinCartera = new Set<string>();
+  const contactos = new Map<string, ContactoCompletado>();
+
+  // Un coactivado ya existente puede estarle faltando representante/teléfono/
+  // correo (no se pedían al importar antes) — la matriz sí los trae, así que
+  // se completan solos con una re-carga, sin pisar lo que ya tenía.
+  const completarContacto = (ruc: string, base: { representanteLegal?: string; telefono?: string; correo?: string }, f: FilaTitulo) => {
+    const pendiente = contactos.get(ruc);
+    const falta = {
+      representanteLegal: !base.representanteLegal && !pendiente?.representanteLegal && f.representanteLegal ? f.representanteLegal : undefined,
+      telefono: !base.telefono && !pendiente?.telefono && f.telefono ? f.telefono : undefined,
+      correo: !base.correo && !pendiente?.correo && f.correo ? f.correo : undefined
+    };
+    if (!falta.representanteLegal && !falta.telefono && !falta.correo) return;
+    contactos.set(ruc, {
+      ruc,
+      representanteLegal: falta.representanteLegal ?? pendiente?.representanteLegal,
+      telefono: falta.telefono ?? pendiente?.telefono,
+      correo: falta.correo ?? pendiente?.correo
+    });
+  };
 
   for (const f of filas) {
     if (vistos.has(f.numero)) {
@@ -492,6 +539,7 @@ export function planificarCarga(
 
     const carteraArchivo = carteraDeFila(f);
     const enBase = coactivados.get(f.ruc);
+    if (enBase) completarContacto(f.ruc, enBase, f);
 
     const existente = existentes.get(f.numero);
     if (existente) {
@@ -528,7 +576,14 @@ export function planificarCarga(
           plan.conflictos.push({ fila: f, motivo: 'Coactivado nuevo sin razón social' });
           continue;
         }
-        creados.set(f.ruc, { ruc: f.ruc, nombre: f.razon, cartera });
+        creados.set(f.ruc, {
+          ruc: f.ruc,
+          nombre: f.razon,
+          cartera,
+          representanteLegal: f.representanteLegal,
+          telefono: f.telefono,
+          correo: f.correo
+        });
       }
     }
     f.cartera = carteraArchivo ?? enBase?.cartera ?? creados.get(f.ruc)?.cartera;
@@ -536,6 +591,7 @@ export function planificarCarga(
   }
 
   plan.coactivadosNuevos = [...creados.values()];
+  plan.contactosCompletados = [...contactos.values()];
   plan.rucSinCartera = [...sinCartera];
   return plan;
 }

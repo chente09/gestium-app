@@ -52,6 +52,8 @@ export interface CargaTitulos {
   invalidos: number;
   // Opcional: las cargas hechas antes de esta funcionalidad no lo tienen.
   gestionesHistoricas?: number;
+  // Opcional: las cargas hechas antes de esta funcionalidad no lo tienen.
+  contactosCompletados?: number;
   realizadoPor: { uid: string; nombre: string };
   fecha: Date | any;
 }
@@ -192,15 +194,20 @@ export class TitulosCreditoService {
     return resultado;
   }
 
-  async getCoactivadosParaRucs(rucs: string[]): Promise<Map<string, { cartera: string }>> {
+  async getCoactivadosParaRucs(
+    rucs: string[]
+  ): Promise<Map<string, { cartera: string; representanteLegal?: string; telefono?: string; correo?: string }>> {
     const distintos = [...new Set(rucs)];
     const ref = collection(this.firestore, COLECCION_COACTIVADOS);
 
     const snaps = await Promise.all(
       chunks(distintos, TAM_CHUNK_IN).map(grupo => getDocs(query(ref, where(documentId(), 'in', grupo))))
     );
-    const resultado = new Map<string, { cartera: string }>();
-    snaps.forEach(snap => snap.forEach(d => resultado.set(d.id, { cartera: (d.data() as { cartera: string }).cartera })));
+    const resultado = new Map<string, { cartera: string; representanteLegal?: string; telefono?: string; correo?: string }>();
+    snaps.forEach(snap => snap.forEach(d => {
+      const data = d.data() as { cartera: string; representanteLegal?: string; telefono?: string; correo?: string };
+      resultado.set(d.id, { cartera: data.cartera, representanteLegal: data.representanteLegal, telefono: data.telefono, correo: data.correo });
+    }));
     return resultado;
   }
 
@@ -246,6 +253,7 @@ export class TitulosCreditoService {
       conflictos: plan.conflictos.length,
       invalidos: plan.invalidos.length,
       gestionesHistoricas: plan.gestionesHistoricas.length,
+      contactosCompletados: plan.contactosCompletados.length,
       realizadoPor,
       fecha: new Date()
     };
@@ -254,17 +262,35 @@ export class TitulosCreditoService {
     const escrituras: EscrituraLote[] = [];
 
     for (const c of plan.coactivadosNuevos) {
+      const datosCoactivado: Record<string, unknown> = {
+        cedula: c.ruc,
+        nombre: c.nombre,
+        nombreBusqueda: normalizarBusqueda(c.nombre),
+        cartera: c.cartera,
+        creadoPor: realizadoPor,
+        fechaCreacion: new Date()
+      };
+      if (c.representanteLegal) datosCoactivado['representanteLegal'] = c.representanteLegal;
+      if (c.telefono) datosCoactivado['telefono'] = c.telefono;
+      if (c.correo) datosCoactivado['correo'] = c.correo;
       escrituras.push({
         ref: doc(this.firestore, `${COLECCION_COACTIVADOS}/${c.ruc}`),
         tipo: 'set',
-        data: {
-          cedula: c.ruc,
-          nombre: c.nombre,
-          nombreBusqueda: normalizarBusqueda(c.nombre),
-          cartera: c.cartera,
-          creadoPor: realizadoPor,
-          fechaCreacion: new Date()
-        }
+        data: datosCoactivado
+      });
+    }
+
+    // Coactivados ya existentes a los que la matriz les completa un dato de
+    // contacto que no tenían — nunca pisa lo que ya estaba guardado.
+    for (const c of plan.contactosCompletados) {
+      const patch: Record<string, unknown> = {};
+      if (c.representanteLegal) patch['representanteLegal'] = c.representanteLegal;
+      if (c.telefono) patch['telefono'] = c.telefono;
+      if (c.correo) patch['correo'] = c.correo;
+      escrituras.push({
+        ref: doc(this.firestore, `${COLECCION_COACTIVADOS}/${c.ruc}`),
+        tipo: 'update',
+        data: patch
       });
     }
 

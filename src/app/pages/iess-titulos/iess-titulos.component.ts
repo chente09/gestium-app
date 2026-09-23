@@ -235,7 +235,8 @@ export class IessTitulosComponent implements OnInit {
   // ============================================
   get puedeConfirmar(): boolean {
     if (!this.plan || this.plan.rucSinCartera.length > 0) return false;
-    return this.plan.nuevos.length + this.plan.transiciones.length + this.plan.actualizaciones.length + this.plan.gestionesHistoricas.length > 0;
+    return this.plan.nuevos.length + this.plan.transiciones.length + this.plan.actualizaciones.length +
+      this.plan.gestionesHistoricas.length + this.plan.contactosCompletados.length > 0;
   }
 
   async confirmar(): Promise<void> {
@@ -247,12 +248,14 @@ export class IessTitulosComponent implements OnInit {
       await this.titulosService.confirmarCarga(this.plan, cartera, this.archivo.name);
       const gestiones = this.plan.gestionesHistoricas.length;
       const actualizaciones = this.plan.actualizaciones.length;
+      const contactos = this.plan.contactosCompletados.length;
       this.message.success(
         `Carga aplicada: ${this.plan.nuevos.length} título(s) nuevo(s), ` +
         `${this.plan.coactivadosNuevos.length} coactivado(s) nuevo(s), ` +
         `${this.plan.transiciones.length} pasaron a entregado(s)` +
         `${actualizaciones ? `, ${actualizaciones} actualizado(s) de estado` : ''}` +
-        `${gestiones ? `, ${gestiones} gestión(es) histórica(s) migrada(s)` : ''}.`
+        `${gestiones ? `, ${gestiones} gestión(es) histórica(s) migrada(s)` : ''}` +
+        `${contactos ? `, ${contactos} contacto(s) completado(s)` : ''}.`
       );
       this.reiniciar();
       await this.cargarHistorial();

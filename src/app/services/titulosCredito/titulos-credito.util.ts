@@ -78,6 +78,10 @@ export interface ResumenTitulos {
   capitalEntregado: number;
   capitalNoEntregado: number;
   capitalCancelado: number;
+  // Lo realmente cobrado (pago_total), no el capital nominal del título —
+  // para ver de un vistazo cuánto se ha recuperado de este caso puntual.
+  montoRecuperado: number;
+  honorarios: number;
 }
 
 const redondear = (n: number) => Math.round(n * 100) / 100;
@@ -85,7 +89,8 @@ const redondear = (n: number) => Math.round(n * 100) / 100;
 export function resumirTitulos(titulos: TituloCredito[]): ResumenTitulos {
   const r: ResumenTitulos = {
     total: titulos.length, entregados: 0, noEntregados: 0, cancelados: 0,
-    capitalTotal: 0, capitalEntregado: 0, capitalNoEntregado: 0, capitalCancelado: 0
+    capitalTotal: 0, capitalEntregado: 0, capitalNoEntregado: 0, capitalCancelado: 0,
+    montoRecuperado: 0, honorarios: 0
   };
 
   for (const t of titulos) {
@@ -93,12 +98,18 @@ export function resumirTitulos(titulos: TituloCredito[]): ResumenTitulos {
     if (t.estadoEntrega === 'entregado') { r.entregados++; r.capitalEntregado += t.capital; }
     else { r.noEntregados++; r.capitalNoEntregado += t.capital; }
     if (esCancelado(t)) { r.cancelados++; r.capitalCancelado += t.capital; }
+    if (t.tipoCancelacion === 'pago_total') {
+      r.montoRecuperado += t.montoCancelado ?? 0;
+      r.honorarios += t.honorario ?? 0;
+    }
   }
 
   r.capitalTotal = redondear(r.capitalTotal);
   r.capitalEntregado = redondear(r.capitalEntregado);
   r.capitalNoEntregado = redondear(r.capitalNoEntregado);
   r.capitalCancelado = redondear(r.capitalCancelado);
+  r.montoRecuperado = redondear(r.montoRecuperado);
+  r.honorarios = redondear(r.honorarios);
   return r;
 }
 

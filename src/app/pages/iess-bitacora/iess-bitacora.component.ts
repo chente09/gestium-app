@@ -203,12 +203,18 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.altaForm = this.fb.group({
       cedula: ['', [Validators.required, Validators.pattern(/^(\d{10}|\d{13})$/)]],
       nombre: ['', [Validators.required, Validators.pattern(/\S/)]],
-      cartera: [null, Validators.required]
+      cartera: [null, Validators.required],
+      representanteLegal: [''],
+      telefono: [''],
+      correo: ['', Validators.email]
     });
 
     this.edicionForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.pattern(/\S/)]],
-      cartera: [null, Validators.required]
+      cartera: [null, Validators.required],
+      representanteLegal: [''],
+      telefono: [''],
+      correo: ['', Validators.email]
     });
 
     this.gestionForm = this.fb.group({
@@ -502,11 +508,17 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   }
 
   // ============================================
-  // ✏️ Edición (nombre / cartera)
+  // ✏️ Edición (nombre / cartera / datos de contacto)
   // ============================================
   abrirEdicion(): void {
     if (!this.seleccionado) return;
-    this.edicionForm.reset({ nombre: this.seleccionado.nombre, cartera: this.seleccionado.cartera });
+    this.edicionForm.reset({
+      nombre: this.seleccionado.nombre,
+      cartera: this.seleccionado.cartera,
+      representanteLegal: this.seleccionado.representanteLegal ?? '',
+      telefono: this.seleccionado.telefono ?? '',
+      correo: this.seleccionado.correo ?? ''
+    });
     this.mostrarEdicion = true;
   }
 

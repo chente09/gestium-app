@@ -111,6 +111,29 @@
                         </nz-form-control>
                     </nz-form-item>
 
+                    <nz-form-item>
+                        <nz-form-label>Representante legal</nz-form-label>
+                        <nz-form-control>
+                            <input nz-input formControlName="representanteLegal" placeholder="Opcional" />
+                        </nz-form-control>
+                    </nz-form-item>
+
+                    <div class="alta-grid">
+                        <nz-form-item>
+                            <nz-form-label>Teléfono</nz-form-label>
+                            <nz-form-control>
+                                <input nz-input formControlName="telefono" placeholder="Opcional" />
+                            </nz-form-control>
+                        </nz-form-item>
+
+                        <nz-form-item>
+                            <nz-form-label>Correo</nz-form-label>
+                            <nz-form-control nzErrorTip="Correo inválido">
+                                <input nz-input formControlName="correo" placeholder="Opcional" />
+                            </nz-form-control>
+                        </nz-form-item>
+                    </div>
+
                     <div class="acciones-form">
                         <button nz-button type="button" (click)="cancelarAlta()">Cancelar</button>
                         <button nz-button nzType="primary" class="brand-btn" type="submit" [nzLoading]="guardandoCoactivado">
@@ -127,6 +150,11 @@
                         <div>
                             <h2 class="ficha-nombre">{{ seleccionado.nombre }}</h2>
                             <span class="ficha-cedula">{{ seleccionado.cedula }}</span>
+                            <div class="ficha-contacto" *ngIf="seleccionado.representanteLegal || seleccionado.telefono || seleccionado.correo">
+                                <span *ngIf="seleccionado.representanteLegal"><nz-icon nzType="user"></nz-icon> {{ seleccionado.representanteLegal }}</span>
+                                <span *ngIf="seleccionado.telefono"><nz-icon nzType="phone"></nz-icon> {{ seleccionado.telefono }}</span>
+                                <span *ngIf="seleccionado.correo"><nz-icon nzType="mail"></nz-icon> {{ seleccionado.correo }}</span>
+                            </div>
                         </div>
                         <div class="ficha-cartera">
                             <nz-tag nzColor="blue">Cartera: {{ seleccionado.cartera }}</nz-tag>
@@ -229,6 +257,20 @@
                                             </td>
                                         </tr>
                                     </tbody>
+                                    <tfoot>
+                                        <tr class="fila-totales">
+                                            <td>Total</td>
+                                            <td>{{ formatoMoneda(resumenTitulos.capitalTotal) }}</td>
+                                            <td colspan="4"></td>
+                                        </tr>
+                                        <tr *ngIf="resumenTitulos.cancelados > 0" class="fila-totales fila-recuperado">
+                                            <td colspan="2">Recuperado ({{ resumenTitulos.cancelados }} cancelado(s))</td>
+                                            <td colspan="4">
+                                                {{ formatoMoneda(resumenTitulos.montoRecuperado) }} cobrado al cliente
+                                                — {{ formatoMoneda(resumenTitulos.honorarios) }} de honorario
+                                            </td>
+                                        </tr>
+                                    </tfoot>
                                 </nz-table>
                             </div>
                         </nz-collapse-panel>
@@ -536,6 +578,24 @@
                     <nz-select formControlName="cartera">
                         <nz-option *ngFor="let cartera of carteras" [nzValue]="cartera" [nzLabel]="cartera"></nz-option>
                     </nz-select>
+                </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+                <nz-form-label>Representante legal</nz-form-label>
+                <nz-form-control>
+                    <input nz-input formControlName="representanteLegal" placeholder="Opcional" />
+                </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+                <nz-form-label>Teléfono</nz-form-label>
+                <nz-form-control>
+                    <input nz-input formControlName="telefono" placeholder="Opcional" />
+                </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+                <nz-form-label>Correo</nz-form-label>
+                <nz-form-control nzErrorTip="Correo inválido">
+                    <input nz-input formControlName="correo" placeholder="Opcional" />
                 </nz-form-control>
             </nz-form-item>
         </form>

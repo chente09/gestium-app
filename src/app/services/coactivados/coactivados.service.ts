@@ -11,6 +11,7 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
+  deleteField,
   runTransaction,
   query,
   sum,
@@ -53,6 +54,10 @@ export interface Coactivado {
   nombre: string;
   nombreBusqueda: string; // MAYÚSCULAS sin tildes, para buscar por prefijo
   cartera: string;
+  // El Excel del IESS no trae esto — se completa a mano cuando se conoce.
+  representanteLegal?: string;
+  telefono?: string;
+  correo?: string;
   creadoPor: { uid: string; nombre: string };
   fechaCreacion: Date | any;
 }
@@ -142,7 +147,14 @@ export class CoactivadosService {
   }
 
   // Lanza Error('YA_EXISTE') si esa cédula ya está registrada.
-  async crear(data: { cedula: string; nombre: string; cartera: string }): Promise<Coactivado> {
+  async crear(data: {
+    cedula: string;
+    nombre: string;
+    cartera: string;
+    representanteLegal?: string;
+    telefono?: string;
+    correo?: string;
+  }): Promise<Coactivado> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();
     if (!user || !register) throw new Error('🔒 Usuario no autenticado');
@@ -157,6 +169,9 @@ export class CoactivadosService {
       creadoPor: { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' },
       fechaCreacion: new Date()
     };
+    if (data.representanteLegal) coactivado.representanteLegal = data.representanteLegal;
+    if (data.telefono) coactivado.telefono = data.telefono;
+    if (data.correo) coactivado.correo = data.correo;
 
     const ref = doc(this.firestore, `${this.collectionName}/${cedula}`);
     await runTransaction(this.firestore, async tx => {
@@ -168,14 +183,31 @@ export class CoactivadosService {
     return coactivado;
   }
 
-  // Solo nombre y cartera son editables (las reglas de Firestore lo exigen).
-  async actualizar(actual: Coactivado, cambios: { nombre: string; cartera: string }): Promise<Coactivado> {
+  // Nombre, cartera, representante legal, teléfono y correo son editables
+  // (las reglas de Firestore lo exigen). Un campo de contacto vacío borra el
+  // dato guardado (deleteField), no lo deja con texto vacío.
+  async actualizar(
+    actual: Coactivado,
+    cambios: { nombre: string; cartera: string; representanteLegal?: string; telefono?: string; correo?: string }
+  ): Promise<Coactivado> {
     const nombre = normalizarNombre(cambios.nombre);
-    const patch = { nombre, nombreBusqueda: normalizarBusqueda(nombre), cartera: cambios.cartera };
+    const patch: Record<string, any> = { nombre, nombreBusqueda: normalizarBusqueda(nombre), cartera: cambios.cartera };
+    patch['representanteLegal'] = cambios.representanteLegal ? cambios.representanteLegal.trim() : deleteField();
+    patch['telefono'] = cambios.telefono ? cambios.telefono.trim() : deleteField();
+    patch['correo'] = cambios.correo ? cambios.correo.trim() : deleteField();
 
     const ref = doc(this.firestore, `${this.collectionName}/${actual.cedula}`);
     await updateDoc(ref, patch);
-    return { ...actual, ...patch };
+    const { representanteLegal, telefono, correo, ...resto } = actual;
+    return {
+      ...resto,
+      nombre,
+      nombreBusqueda: normalizarBusqueda(nombre),
+      cartera: cambios.cartera,
+      ...(cambios.representanteLegal ? { representanteLegal: cambios.representanteLegal.trim() } : {}),
+      ...(cambios.telefono ? { telefono: cambios.telefono.trim() } : {}),
+      ...(cambios.correo ? { correo: cambios.correo.trim() } : {})
+    };
   }
 
   // Solo admin (las reglas de Firestore lo exigen). Primero borra lo que

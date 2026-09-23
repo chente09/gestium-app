@@ -179,6 +179,15 @@ nz-card {
     color: rgba(0, 0, 0, 0.55);
 }
 
+.ficha-contacto {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin-top: 4px;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.65);
+}
+
 .ficha-cartera {
     display: flex;
     align-items: center;
@@ -258,6 +267,16 @@ nz-card {
 
 .tabla-titulos-scroll {
     overflow-x: auto;
+}
+
+.fila-totales {
+    font-weight: 600;
+    background: #fafafa;
+}
+
+.fila-recuperado {
+    color: #389e0d;
+    background: #f6ffed;
 }
 
 .confirmacion-texto {

@@ -157,10 +157,11 @@ service cloud.firestore {
                        request.resource.data.cartera is string &&
                        request.resource.data.creadoPor.uid == request.auth.uid;
 
-      // Solo nombre y cartera se pueden corregir; cédula y creador quedan fijos.
+      // Nombre, cartera y los datos de contacto se pueden corregir; cédula y
+      // creador quedan fijos.
       allow update: if esDelAreaIess() &&
                        request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['nombre', 'nombreBusqueda', 'cartera']);
+                         .hasOnly(['nombre', 'nombreBusqueda', 'cartera', 'representanteLegal', 'telefono', 'correo']);
 
       allow delete: if isAdmin();
     }

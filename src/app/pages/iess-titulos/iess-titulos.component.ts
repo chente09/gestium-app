@@ -21,6 +21,7 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 
 import { SharedDataService } from '../../services/sharedData/shared-data.service';
 import { CoactivadosService } from '../../services/coactivados/coactivados.service';
+import { GestionesCoactivadoService } from '../../services/gestionesCoactivado/gestiones-coactivado.service';
 import { TitulosCreditoService, CargaTitulos } from '../../services/titulosCredito/titulos-credito.service';
 import { EstadoEntrega, formatoMoneda, fechaCorta } from '../../services/titulosCredito/titulos-credito.util';
 import {
@@ -36,6 +37,7 @@ import {
 } from '../../services/titulosCredito/importador-titulos.util';
 import { planificarCarga } from '../../services/titulosCredito/importador-titulos.util';
 import { leerArchivoTablas } from './lector-archivo.util';
+import { exportarBaseTitulos } from './exportar-base.export';
 
 interface HojaCandidata {
   tabla: TablaHoja;
@@ -103,10 +105,16 @@ export class IessTitulosComponent implements OnInit {
   calculandoVaciado = false;
   vaciando = false;
 
+  // Exportar la base completa (todos los abogados, o uno en particular) al
+  // formato de las matrices del IESS, para armar informes fuera de la app.
+  carteraExportar: string | null = null; // null = todos los abogados
+  exportando = false;
+
   constructor(
     private sharedData: SharedDataService,
     private titulosService: TitulosCreditoService,
     private coactivadosService: CoactivadosService,
+    private gestionesService: GestionesCoactivadoService,
     private message: NzMessageService
   ) {
     this.carteras = this.sharedData.getCarterasIess();
@@ -306,6 +314,33 @@ export class IessTitulosComponent implements OnInit {
 
   trackByGestionHistorica(index: number, g: GestionHistorica): string {
     return g.ruc + '|' + g.descripcion;
+  }
+
+  // ============================================
+  // 📤 Exportar la base completa al formato de las matrices del IESS
+  // ============================================
+  async exportarBase(): Promise<void> {
+    this.exportando = true;
+    try {
+      const cartera = this.carteraExportar ?? undefined;
+      const [titulos, coactivados, ultimasGestiones] = await Promise.all([
+        this.titulosService.getTodosLosTitulos(cartera),
+        this.coactivadosService.getTodosLosCoactivados(cartera),
+        this.gestionesService.getUltimasGestionesPorCoactivado()
+      ]);
+      if (titulos.length === 0) {
+        this.message.warning('No hay títulos para exportar con ese filtro.');
+        return;
+      }
+      const porCedula = new Map(coactivados.map(c => [c.cedula, c]));
+      await exportarBaseTitulos(titulos, porCedula, ultimasGestiones, cartera);
+      this.message.success(`Base exportada: ${titulos.length} título(s).`);
+    } catch (error) {
+      console.error('Error exportando la base:', error);
+      this.message.error('No se pudo exportar la base.');
+    } finally {
+      this.exportando = false;
+    }
   }
 
   // ============================================

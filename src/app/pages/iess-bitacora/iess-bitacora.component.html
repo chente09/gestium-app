@@ -300,14 +300,30 @@
                                     <nz-icon nzType="user"></nz-icon> {{ r.responsableNombre }}
                                 </span>
                             </div>
-                            <button
-                                nz-button
-                                nzSize="small"
-                                type="button"
-                                [nzLoading]="completandoId === r.id"
-                                (click)="completarRecordatorio(r)">
-                                <nz-icon nzType="check-circle"></nz-icon> Completar
-                            </button>
+                            <div class="recordatorio-acciones">
+                                <button
+                                    nz-button
+                                    nzSize="small"
+                                    type="button"
+                                    (click)="editarGestionDeRecordatorio(r)">
+                                    <nz-icon nzType="edit"></nz-icon> Editar
+                                </button>
+                                <button
+                                    nz-button
+                                    nzSize="small"
+                                    type="button"
+                                    (click)="irAAgendaDelRecordatorio(r)">
+                                    <nz-icon nzType="calendar"></nz-icon> Ir a la agenda
+                                </button>
+                                <button
+                                    nz-button
+                                    nzSize="small"
+                                    type="button"
+                                    [nzLoading]="completandoId === r.id"
+                                    (click)="completarRecordatorio(r)">
+                                    <nz-icon nzType="check-circle"></nz-icon> Completar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </nz-card>

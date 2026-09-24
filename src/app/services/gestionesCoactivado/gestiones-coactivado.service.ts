@@ -104,6 +104,24 @@ export class GestionesCoactivadoService {
     return snap.docs.map(d => aGestion(d.id, d.data()));
   }
 
+  // Para exportar la base: la última gestión de cada coactivado (fecha y
+  // observación general), para armar el informe. Se trae toda la colección
+  // y se reduce en el cliente — es una acción puntual, no algo que corra seguido.
+  async getUltimasGestionesPorCoactivado(): Promise<Map<string, { fecha: Date; observacionGeneral?: string }>> {
+    const snap = await getDocs(collection(this.firestore, this.collectionName));
+    const ultimas = new Map<string, { fecha: Date; observacionGeneral?: string }>();
+
+    snap.forEach(d => {
+      const g = aGestion(d.id, d.data());
+      const actual = ultimas.get(g.coactivadoId);
+      if (!actual || g.fecha.getTime() > actual.fecha.getTime()) {
+        ultimas.set(g.coactivadoId, { fecha: g.fecha, observacionGeneral: g.observacionGeneral });
+      }
+    });
+
+    return ultimas;
+  }
+
   async registrarGestion(data: {
     coactivadoId: string;
     coactivadoNombre: string;

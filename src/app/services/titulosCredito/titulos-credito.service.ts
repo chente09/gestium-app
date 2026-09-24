@@ -405,6 +405,17 @@ export class TitulosCreditoService {
   }
 
   // ============================================
+  // 📤 Exportar base completa: todos los títulos (o los de una sola
+  // cartera), para armar el Excel en el mismo formato de las matrices
+  // originales del IESS.
+  // ============================================
+  async getTodosLosTitulos(cartera?: string): Promise<TituloCredito[]> {
+    const ref = collection(this.firestore, this.collectionName);
+    const snap = await getDocs(cartera ? query(ref, where('cartera', '==', cartera)) : ref);
+    return snap.docs.map(d => d.data() as TituloCredito);
+  }
+
+  // ============================================
   // 💰 Carga masiva de pagos ya cobrados (solo admin)
   // ============================================
 

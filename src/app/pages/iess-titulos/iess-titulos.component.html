@@ -273,6 +273,31 @@
         </div>
     </nz-card>
 
+    <!-- ================= EXPORTAR BASE ================= -->
+    <nz-card nzTitle="Exportar base completa" class="paso-card">
+        <p class="nota-radio">
+            Descarga TC, RUC, razón social y valor de cada título, más la observación general y la fecha de la
+            última gestión de ese coactivado — para armar los informes.
+        </p>
+
+        <nz-select
+            [(ngModel)]="carteraExportar"
+            nzPlaceHolder="Todos los abogados"
+            nzAllowClear
+            class="select-cartera">
+            <nz-option *ngFor="let c of carteras" [nzValue]="c" [nzLabel]="c"></nz-option>
+        </nz-select>
+
+        <button
+            nz-button
+            nzType="primary"
+            class="brand-btn btn-analizar"
+            [nzLoading]="exportando"
+            (click)="exportarBase()">
+            <nz-icon nzType="download"></nz-icon> Descargar Excel
+        </button>
+    </nz-card>
+
     <!-- ================= ZONA DE PELIGRO ================= -->
     <nz-card nzTitle="Zona de peligro" class="paso-card">
         <p class="nota-radio">

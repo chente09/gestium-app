@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule, formatDate } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -201,6 +201,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     private usersService: UsersService,
     private registersService: RegistersService,
     private route: ActivatedRoute,
+    private router: Router,
     private fb: FormBuilder,
     private message: NzMessageService
   ) {
@@ -447,6 +448,25 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     return new Date(recordatorio.fechaLimite) < hoy;
+  }
+
+  // Abre el mismo modal de "editar gestión" de la bitácora, para la gestión
+  // que originó este recordatorio (siempre debería estar en this.gestiones:
+  // se cargan para el mismo coactivado al abrir la ficha).
+  editarGestionDeRecordatorio(recordatorio: AreaActivity): void {
+    const gestion = this.gestiones.find(g => g.id === recordatorio.gestionId);
+    if (!gestion) {
+      this.message.warning('No se encontró la gestión asociada a este recordatorio.');
+      return;
+    }
+    this.abrirEdicionGestion(gestion);
+  }
+
+  // Lleva a la agenda compartida del área, abierta directo en el día del
+  // recordatorio (vista diaria) — para ver el resto de actividades de ese día.
+  irAAgendaDelRecordatorio(recordatorio: AreaActivity): void {
+    const fecha = formatDate(recordatorio.fechaLimite, 'yyyy-MM-dd', 'en-US');
+    this.router.navigate(['/area', AREA_IESS], { queryParams: { fecha } });
   }
 
   async completarRecordatorio(recordatorio: AreaActivity): Promise<void> {

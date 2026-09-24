@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   CdkDragDrop,
@@ -108,6 +108,7 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     private messageService: NzMessageService,
     private fb: FormBuilder,
     private router: Router,
+    private route: ActivatedRoute,
   ) {
     this.createForm = this.fb.group({
       titulo: ['', [Validators.required, Validators.maxLength(100)]],
@@ -128,10 +129,25 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.initializeWeek();
-    this.loadWeekActivities();
-    this.setupActivitySubscription();
     this.loadAreaUsers();
+    this.setupActivitySubscription();
+
+    // Si se llega con ?fecha=yyyy-MM-dd (ej. desde un recordatorio de la
+    // bitácora), abre directo la vista diaria de ese día en vez de la semana
+    // actual. new Date(y, m-1, d) para no correrse de día por la zona horaria.
+    const fechaParam = this.route.snapshot.queryParamMap.get('fecha');
+    const m = fechaParam?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    // initializeWeek() siempre: la suscripción de arriba la necesita para
+    // saber qué días son "la semana actual", sin importar qué vista se abra.
+    this.initializeWeek();
+    if (m) {
+      this.viewMode = 'daily';
+      this.selectedDate = new Date(+m[1], +m[2] - 1, +m[3]);
+      this.loadDayActivities(this.selectedDate);
+    } else {
+      this.loadWeekActivities();
+    }
   }
 
   ngOnDestroy(): void {
@@ -190,8 +206,10 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
 
   // 📊 Organizar actividades por día
   private organizeActivitiesByDay(activities: AreaActivity[]): void {
-    this.weekActivities = {};
-
+    // Solo pisa los días de currentWeek, no todo el objeto: la suscripción en
+    // tiempo real de "la semana actual" corre siempre, sin importar la vista
+    // — si se está viendo un día de OTRA semana (vista diaria llegada desde
+    // un recordatorio), no debe borrar esa entrada.
     this.currentWeek.forEach(date => {
       const dateKey = this.getDateKey(date);
       this.weekActivities[dateKey] = activities?.filter(activity => {

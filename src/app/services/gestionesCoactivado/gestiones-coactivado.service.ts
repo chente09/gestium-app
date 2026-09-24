@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Firestore, addDoc, collection, collectionData, deleteDoc, doc, getDocs, query, updateDoc, where } from '@angular/fire/firestore';
+import { Firestore, addDoc, collection, collectionData, deleteDoc, deleteField, doc, getDocs, query, updateDoc, where } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { RegistersService } from '../registers/registers.service';
@@ -110,6 +110,7 @@ export class GestionesCoactivadoService {
     cartera: string;
     tipo: TipoGestion;
     descripcion: string;
+    observacionGeneral?: string;
   }): Promise<string> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();
@@ -121,6 +122,8 @@ export class GestionesCoactivadoService {
       fecha: new Date(),
       registradoPor: { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' }
     };
+    if (data.observacionGeneral?.trim()) gestion.observacionGeneral = data.observacionGeneral.trim();
+    else delete gestion.observacionGeneral;
 
     const ref = collection(this.firestore, this.collectionName);
     const docRef = await addDoc(ref, gestion);
@@ -130,7 +133,7 @@ export class GestionesCoactivadoService {
   // Solo tipo y texto se pueden corregir; quién y cuándo la editó se sellan
   // solos (las reglas de Firestore lo exigen). El recordatorio que esa
   // gestión haya creado en la agenda queda como está.
-  async editarGestion(id: string, cambios: { tipo: TipoGestion; descripcion: string }): Promise<void> {
+  async editarGestion(id: string, cambios: { tipo: TipoGestion; descripcion: string; observacionGeneral?: string }): Promise<void> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();
     if (!user || !register) throw new Error('🔒 Usuario no autenticado');
@@ -138,6 +141,7 @@ export class GestionesCoactivadoService {
     await updateDoc(doc(this.firestore, `${this.collectionName}/${id}`), {
       tipo: cambios.tipo,
       descripcion: cambios.descripcion.trim(),
+      observacionGeneral: cambios.observacionGeneral?.trim() || deleteField(),
       editadoPor: { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' },
       fechaEdicion: new Date()
     });

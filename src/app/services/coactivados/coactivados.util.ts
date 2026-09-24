@@ -20,3 +20,10 @@ export function normalizarNombre(nombre: string): string {
 export function normalizarBusqueda(texto: string): string {
   return normalizarNombre(texto).normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
+
+// Palabras sueltas del nombre (MAYÚSCULAS sin tildes, sin repetidas) — para
+// poder buscar por una palabra intermedia (ej. "ANA" en "JIJON PINTO ANA
+// LUISA"), no solo por el prefijo del nombre completo.
+export function palabrasBusqueda(nombre: string): string[] {
+  return [...new Set(normalizarBusqueda(nombre).split(' ').filter(Boolean))];
+}

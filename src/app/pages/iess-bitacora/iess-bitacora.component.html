@@ -254,6 +254,16 @@
                                                     (nzOnConfirm)="deshacerCancelacion(t)">
                                                     Deshacer
                                                 </button>
+                                                <button
+                                                    *ngIf="esAdmin"
+                                                    nz-button
+                                                    nzType="link"
+                                                    nzSize="small"
+                                                    nz-tooltip
+                                                    nzTooltipTitle="El RUC de este título quedó mal digitado en el Excel original"
+                                                    (click)="abrirCorregirRuc(t)">
+                                                    Corregir RUC
+                                                </button>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -331,6 +341,21 @@
                                     formControlName="descripcion"
                                     rows="3"
                                     placeholder="Compromisos, fechas, datos de contacto..."></textarea>
+                            </nz-form-control>
+                        </nz-form-item>
+
+                        <nz-form-item>
+                            <nz-form-label
+                                nz-tooltip
+                                nzTooltipTitle="Es lo que se usa como base para el informe del IESS al descargar la información">
+                                Observación general (para el informe del IESS)
+                            </nz-form-label>
+                            <nz-form-control>
+                                <textarea
+                                    nz-input
+                                    formControlName="observacionGeneral"
+                                    rows="2"
+                                    placeholder="Opcional — ej. NOTIFICACION POR CORREO ELECTRONICO"></textarea>
                             </nz-form-control>
                         </nz-form-item>
 
@@ -510,6 +535,12 @@
                     <textarea nz-input formControlName="descripcion" rows="4"></textarea>
                 </nz-form-control>
             </nz-form-item>
+            <nz-form-item>
+                <nz-form-label>Observación general (para el informe del IESS)</nz-form-label>
+                <nz-form-control>
+                    <textarea nz-input formControlName="observacionGeneral" rows="2" placeholder="Opcional"></textarea>
+                </nz-form-control>
+            </nz-form-item>
         </form>
         <p class="nota-edicion">Se conserva quién la registró y cuándo; queda anotado que la editaste tú.</p>
     </ng-container>
@@ -610,6 +641,51 @@
             [disabled]="edicionForm.invalid"
             (click)="guardarEdicion()">
             Guardar
+        </button>
+    </ng-template>
+</nz-modal>
+
+<nz-modal
+    [(nzVisible)]="mostrarCorregirRuc"
+    nzTitle="Corregir RUC del título"
+    (nzOnCancel)="cerrarCorregirRuc()"
+    [nzFooter]="corregirRucFooter">
+    <ng-container *nzModalContent>
+        <p *ngIf="tituloCorrigiendoRuc" class="titulo-cancelando">
+            Título <b>{{ tituloCorrigiendoRuc.numero }}</b> — actualmente en RUC <b>{{ tituloCorrigiendoRuc.coactivadoId }}</b>
+        </p>
+        <nz-alert
+            nzType="warning"
+            nzShowIcon
+            class="info-importar"
+            nzMessage="Solo para errores de digitación reales"
+            nzDescription="Esto mueve el título a otro coactivado (existente o nuevo). No lo uses para cambiar de cartera — eso se hace desde 'Editar' en la ficha.">
+        </nz-alert>
+        <form nz-form [formGroup]="corregirRucForm" nzLayout="vertical">
+            <nz-form-item>
+                <nz-form-label nzRequired>RUC / cédula correcto</nz-form-label>
+                <nz-form-control nzErrorTip="10 dígitos (13 si es RUC), solo números">
+                    <input nz-input formControlName="ruc" maxlength="13" inputmode="numeric" />
+                </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+                <nz-form-label>Razón social (solo si ese RUC es nuevo en el sistema)</nz-form-label>
+                <nz-form-control>
+                    <input nz-input class="input-mayusculas" formControlName="razonNueva" placeholder="Solo si el RUC no existe todavía" />
+                </nz-form-control>
+            </nz-form-item>
+        </form>
+    </ng-container>
+    <ng-template #corregirRucFooter>
+        <button nz-button nzType="default" (click)="cerrarCorregirRuc()">Cancelar</button>
+        <button
+            nz-button
+            nzType="primary"
+            nzDanger
+            [nzLoading]="guardandoCorreccionRuc"
+            [disabled]="corregirRucForm.invalid"
+            (click)="guardarCorreccionRuc()">
+            Corregir
         </button>
     </ng-template>
 </nz-modal>

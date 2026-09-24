@@ -160,6 +160,12 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   tituloCancelando: TituloCredito | null = null;
   cancelacionForm: FormGroup;
 
+  // Corregir el RUC de un título mal digitado en el Excel original (solo admin).
+  mostrarCorregirRuc = false;
+  guardandoCorreccionRuc = false;
+  tituloCorrigiendoRuc: TituloCredito | null = null;
+  corregirRucForm: FormGroup;
+
   // Panel de carteras: para decidir por dónde seguir gestionando (solo se
   // carga cuando se aterriza en la vista vacía, no al abrir un coactivado
   // directo desde la agenda).
@@ -220,6 +226,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.gestionForm = this.fb.group({
       tipo: ['llamada', Validators.required],
       descripcion: ['', [Validators.required, Validators.pattern(/\S/)]],
+      observacionGeneral: [''],
       recordatorio: [false],
       fechaRecordatorio: [null],
       responsable: [this.uid]
@@ -227,13 +234,19 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
     this.edicionGestionForm = this.fb.group({
       tipo: ['llamada', Validators.required],
-      descripcion: ['', [Validators.required, Validators.pattern(/\S/)]]
+      descripcion: ['', [Validators.required, Validators.pattern(/\S/)]],
+      observacionGeneral: ['']
     });
 
     this.cancelacionForm = this.fb.group({
       tipo: ['abono', Validators.required],
       montoCancelado: [null],
       honorario: [null]
+    });
+
+    this.corregirRucForm = this.fb.group({
+      ruc: ['', [Validators.required, Validators.pattern(/^(\d{10}|\d{13})$/)]],
+      razonNueva: ['']
     });
 
     // La fecha solo es obligatoria si se pidió recordatorio.
@@ -328,16 +341,26 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     try {
       const digitos = normalizarCedula(termino);
       if (/^\d+$/.test(digitos)) {
-        if (!esCedulaValida(digitos)) {
-          this.message.warning('La cédula debe tener 10 dígitos (13 si es RUC).');
+        if (esCedulaValida(digitos)) {
+          const encontrado = await this.coactivadosService.getByCedula(digitos);
+          if (encontrado) this.seleccionar(encontrado);
+          else this.cedulaNoEncontrada = digitos;
           return;
         }
-        const encontrado = await this.coactivadosService.getByCedula(digitos);
-        if (encontrado) {
-          this.seleccionar(encontrado);
-        } else {
-          this.cedulaNoEncontrada = digitos;
+
+        // No mide como cédula/RUC — puede ser un número de título o una
+        // guía; se prueban antes de rendirse.
+        const titulo = await this.titulosService.getPorNumero(digitos);
+        if (titulo) {
+          const coactivado = await this.coactivadosService.getByCedula(titulo.coactivadoId);
+          if (coactivado) { this.seleccionar(coactivado); return; }
         }
+
+        const porGuia = await this.coactivadosService.getCoactivadosPorGuia(digitos);
+        if (porGuia.length === 1) { this.seleccionar(porGuia[0]); return; }
+        if (porGuia.length > 1) { this.resultados = porGuia; return; }
+
+        this.message.warning('No se encontró ningún coactivado, título ni guía con ese número.');
       } else {
         this.resultados = await this.coactivadosService.buscarPorNombre(termino);
       }
@@ -403,6 +426,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.gestionForm.reset({
       tipo,
       descripcion: '',
+      observacionGeneral: '',
       recordatorio: false,
       fechaRecordatorio: null,
       responsable: this.uid
@@ -585,13 +609,14 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
     this.guardandoGestion = true;
     try {
-      const { tipo, descripcion, recordatorio, fechaRecordatorio, responsable } = this.gestionForm.value;
+      const { tipo, descripcion, observacionGeneral, recordatorio, fechaRecordatorio, responsable } = this.gestionForm.value;
       const gestionId = await this.gestionesService.registrarGestion({
         coactivadoId: this.seleccionado.cedula,
         coactivadoNombre: this.seleccionado.nombre,
         cartera: this.seleccionado.cartera,
         tipo,
-        descripcion
+        descripcion,
+        observacionGeneral: observacionGeneral || undefined
       });
 
       if (recordatorio) {
@@ -635,7 +660,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   // ============================================
   abrirEdicionGestion(gestion: GestionCoactivado): void {
     this.gestionEditando = gestion;
-    this.edicionGestionForm.reset({ tipo: gestion.tipo, descripcion: gestion.descripcion });
+    this.edicionGestionForm.reset({ tipo: gestion.tipo, descripcion: gestion.descripcion, observacionGeneral: gestion.observacionGeneral ?? '' });
     this.mostrarEdicionGestion = true;
   }
 
@@ -725,6 +750,51 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   cerrarCancelacion(): void {
     this.mostrarCancelacion = false;
     this.tituloCancelando = null;
+  }
+
+  // ============================================
+  // 🔧 Corregir RUC de un título (solo admin)
+  // ============================================
+  abrirCorregirRuc(t: TituloCredito): void {
+    this.tituloCorrigiendoRuc = t;
+    this.corregirRucForm.reset({ ruc: '', razonNueva: '' });
+    this.mostrarCorregirRuc = true;
+  }
+
+  cerrarCorregirRuc(): void {
+    this.mostrarCorregirRuc = false;
+    this.tituloCorrigiendoRuc = null;
+  }
+
+  async guardarCorreccionRuc(): Promise<void> {
+    if (!this.tituloCorrigiendoRuc || this.corregirRucForm.invalid) return;
+
+    this.guardandoCorreccionRuc = true;
+    try {
+      const v = this.corregirRucForm.value;
+      const { coactivadoCreado } = await this.coactivadosService.corregirRucTitulo(
+        this.tituloCorrigiendoRuc.numero,
+        v.ruc,
+        v.razonNueva || undefined
+      );
+      this.message.success(
+        `Título reasignado al RUC ${v.ruc}${coactivadoCreado ? ' (coactivado nuevo creado)' : ''}.`
+      );
+      this.cerrarCorregirRuc();
+    } catch (error: any) {
+      if (error?.message === 'FALTA_RAZON_SOCIAL') {
+        this.message.warning('Ese RUC no existe todavía — completa la razón social para crearlo.');
+      } else if (error?.message === 'RUC_INVALIDO') {
+        this.message.warning('El RUC debe tener 10 dígitos (13 si es RUC).');
+      } else if (error?.message === 'TITULO_NO_EXISTE') {
+        this.message.error('Ese título ya no existe.');
+      } else {
+        console.error('Error corrigiendo RUC del título:', error);
+        this.message.error('No se pudo corregir el RUC.');
+      }
+    } finally {
+      this.guardandoCorreccionRuc = false;
+    }
   }
 
   async guardarCancelacion(): Promise<void> {

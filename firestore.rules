@@ -161,7 +161,7 @@ service cloud.firestore {
       // creador quedan fijos.
       allow update: if esDelAreaIess() &&
                        request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['nombre', 'nombreBusqueda', 'cartera', 'representanteLegal', 'telefono', 'correo']);
+                         .hasOnly(['nombre', 'nombreBusqueda', 'nombrePalabras', 'cartera', 'representanteLegal', 'telefono', 'correo']);
 
       allow delete: if isAdmin();
     }
@@ -183,7 +183,7 @@ service cloud.firestore {
       // salen las métricas de gestión por integrante.
       allow update: if esDelAreaIess() &&
                        request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['tipo', 'descripcion', 'editadoPor', 'fechaEdicion']) &&
+                         .hasOnly(['tipo', 'descripcion', 'observacionGeneral', 'editadoPor', 'fechaEdicion']) &&
                        request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro', 'migrado'] &&
                        request.resource.data.descripcion is string &&
                        request.resource.data.descripcion.size() > 0 &&

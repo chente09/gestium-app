@@ -7,6 +7,7 @@ import {
   deleteField,
   doc,
   documentId,
+  getDoc,
   getDocs,
   query,
   updateDoc,
@@ -18,7 +19,7 @@ import { map } from 'rxjs/operators';
 import { RegistersService } from '../registers/registers.service';
 import { UsersService } from '../users/users.service';
 import { borrarEnLotes, escribirEnLotes, EscrituraLote } from '../firestore-utils/batch-delete';
-import { COLECCION_COACTIVADOS, normalizarBusqueda } from '../coactivados/coactivados.util';
+import { COLECCION_COACTIVADOS, normalizarBusqueda, palabrasBusqueda } from '../coactivados/coactivados.util';
 import { COLECCION_GESTIONES } from '../gestionesCoactivado/gestiones-coactivado.service';
 import { TipoCancelacion, TituloCredito } from './titulos-credito.util';
 import { claveGestionHistorica, Existente, FilaTitulo, GestionHistorica, PlanCarga } from './importador-titulos.util';
@@ -98,6 +99,13 @@ export class TitulosCreditoService {
     return (collectionData(q) as Observable<TituloCredito[]>).pipe(
       map(lista => [...lista].sort((a, b) => a.numero.localeCompare(b.numero)))
     );
+  }
+
+  // Para el buscador principal: si lo que se escribió no es una cédula/RUC
+  // válido, puede ser un número de título — se busca directo por su ID.
+  async getPorNumero(numero: string): Promise<TituloCredito | null> {
+    const snap = await getDoc(doc(this.firestore, `${this.collectionName}/${numero}`));
+    return snap.exists() ? (snap.data() as TituloCredito) : null;
   }
 
   async eliminarPorCoactivado(coactivadoId: string): Promise<void> {
@@ -266,6 +274,7 @@ export class TitulosCreditoService {
         cedula: c.ruc,
         nombre: c.nombre,
         nombreBusqueda: normalizarBusqueda(c.nombre),
+        nombrePalabras: palabrasBusqueda(c.nombre),
         cartera: c.cartera,
         creadoPor: realizadoPor,
         fechaCreacion: new Date()

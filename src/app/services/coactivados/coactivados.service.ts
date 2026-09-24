@@ -31,7 +31,8 @@ import {
   esCedulaValida,
   normalizarBusqueda,
   normalizarCedula,
-  normalizarNombre
+  normalizarNombre,
+  palabrasBusqueda
 } from './coactivados.util';
 
 // Firestore 'in' admite hasta 30 valores por consulta.
@@ -53,6 +54,9 @@ export interface Coactivado {
   cedula: string;
   nombre: string;
   nombreBusqueda: string; // MAYÚSCULAS sin tildes, para buscar por prefijo
+  // Opcional: los coactivados creados antes de esta funcionalidad no lo
+  // tienen todavía (se rellena con la migración).
+  nombrePalabras?: string[]; // palabras sueltas del nombre, para buscar por una intermedia
   cartera: string;
   // El Excel del IESS no trae esto — se completa a mano cuando se conoce.
   representanteLegal?: string;
@@ -133,17 +137,50 @@ export class CoactivadosService {
     return snap.exists() ? (snap.data() as Coactivado) : null;
   }
 
-  // Prefijo sobre nombreBusqueda (los nombres van "APELLIDOS NOMBRES"): una
-  // sola condición de rango + limit, sin índice compuesto y sin traer toda
-  // la colección.
+  // Para el buscador principal: una guía puede agrupar títulos de varios
+  // coactivados (todo un lote de un sorteo) — se devuelven todos los que
+  // aparezcan, para que el que busca elija si hay más de uno.
+  async getCoactivadosPorGuia(guia: string): Promise<Coactivado[]> {
+    const refTit = collection(this.firestore, COLECCION_TITULOS);
+    const snapTit = await getDocs(query(refTit, where('guia', '==', guia)));
+    const rucs = [...new Set(snapTit.docs.map(d => (d.data() as TituloCredito).coactivadoId))];
+    if (rucs.length === 0) return [];
+
+    const refCoact = collection(this.firestore, this.collectionName);
+    const snapsCoact = await Promise.all(
+      chunks(rucs, TAM_CHUNK_IN).map(grupo => getDocs(query(refCoact, where(documentId(), 'in', grupo))))
+    );
+    return snapsCoact.flatMap(snap => snap.docs.map(d => d.data() as Coactivado));
+  }
+
+  // Combina dos búsquedas: prefijo sobre nombreBusqueda (los nombres van
+  // "APELLIDOS NOMBRES", así que esto encuentra por apellido) y coincidencia
+  // por palabra completa sobre nombrePalabras (encuentra un nombre de pila en
+  // medio, ej. "ANA" en "JIJON PINTO ANA LUISA"). Si se escriben varias
+  // palabras, la primera arma la consulta y el resto se exige en el cliente
+  // (Firestore no permite dos array-contains en una sola consulta).
   async buscarPorNombre(termino: string): Promise<Coactivado[]> {
-    const t = normalizarBusqueda(termino);
-    if (!t) return [];
+    const palabras = palabrasBusqueda(termino);
+    if (palabras.length === 0) return [];
+    const t = palabras.join(' ');
 
     const ref = collection(this.firestore, this.collectionName);
-    const q = query(ref, where('nombreBusqueda', '>=', t), where('nombreBusqueda', '<=', t + ''), limit(20));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => d.data() as Coactivado);
+    const [porPrefijo, porPalabra] = await Promise.all([
+      getDocs(query(ref, where('nombreBusqueda', '>=', t), where('nombreBusqueda', '<=', t + ''), limit(20))),
+      getDocs(query(ref, where('nombrePalabras', 'array-contains', palabras[0]), limit(20)))
+    ]);
+
+    const porCedula = new Map<string, Coactivado>();
+    porPrefijo.docs.forEach(d => porCedula.set(d.id, d.data() as Coactivado));
+    porPalabra.docs.forEach(d => {
+      if (porCedula.has(d.id)) return;
+      const c = d.data() as Coactivado;
+      if (palabras.every(p => c.nombrePalabras?.includes(p) ?? c.nombreBusqueda.includes(p))) {
+        porCedula.set(d.id, c);
+      }
+    });
+
+    return [...porCedula.values()];
   }
 
   // Lanza Error('YA_EXISTE') si esa cédula ya está registrada.
@@ -165,6 +202,7 @@ export class CoactivadosService {
       cedula,
       nombre,
       nombreBusqueda: normalizarBusqueda(nombre),
+      nombrePalabras: palabrasBusqueda(nombre),
       cartera: data.cartera,
       creadoPor: { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' },
       fechaCreacion: new Date()
@@ -191,7 +229,12 @@ export class CoactivadosService {
     cambios: { nombre: string; cartera: string; representanteLegal?: string; telefono?: string; correo?: string }
   ): Promise<Coactivado> {
     const nombre = normalizarNombre(cambios.nombre);
-    const patch: Record<string, any> = { nombre, nombreBusqueda: normalizarBusqueda(nombre), cartera: cambios.cartera };
+    const patch: Record<string, any> = {
+      nombre,
+      nombreBusqueda: normalizarBusqueda(nombre),
+      nombrePalabras: palabrasBusqueda(nombre),
+      cartera: cambios.cartera
+    };
     patch['representanteLegal'] = cambios.representanteLegal ? cambios.representanteLegal.trim() : deleteField();
     patch['telefono'] = cambios.telefono ? cambios.telefono.trim() : deleteField();
     patch['correo'] = cambios.correo ? cambios.correo.trim() : deleteField();
@@ -203,11 +246,61 @@ export class CoactivadosService {
       ...resto,
       nombre,
       nombreBusqueda: normalizarBusqueda(nombre),
+      nombrePalabras: palabrasBusqueda(nombre),
       cartera: cambios.cartera,
       ...(cambios.representanteLegal ? { representanteLegal: cambios.representanteLegal.trim() } : {}),
       ...(cambios.telefono ? { telefono: cambios.telefono.trim() } : {}),
       ...(cambios.correo ? { correo: cambios.correo.trim() } : {})
     };
+  }
+
+  // Corrige el RUC equivocado de UN título puntual (error de digitación en
+  // el Excel original, no algo que el importador deba adivinar). Si el RUC
+  // correcto ya existe como coactivado, el título se cuelga de él; si no,
+  // se crea uno nuevo con la razón social dada, en la misma cartera donde
+  // ya estaba el título. Solo admin — las reglas de Firestore lo exigen.
+  async corregirRucTitulo(
+    numero: string,
+    rucCorregido: string,
+    razonSiEsNuevo?: string
+  ): Promise<{ coactivadoCreado: boolean }> {
+    const user = this.usersService.getCurrentUser();
+    const register = this.registersService.getCurrentRegister();
+    if (!user || !register) throw new Error('🔒 Usuario no autenticado');
+    const realizadoPor = { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' };
+
+    const ruc = normalizarCedula(rucCorregido);
+    if (!esCedulaValida(ruc)) throw new Error('RUC_INVALIDO');
+
+    const tituloRef = doc(this.firestore, `${COLECCION_TITULOS}/${numero}`);
+    const coactivadoRef = doc(this.firestore, `${this.collectionName}/${ruc}`);
+
+    let coactivadoCreado = false;
+    await runTransaction(this.firestore, async tx => {
+      const tituloSnap = await tx.get(tituloRef);
+      if (!tituloSnap.exists()) throw new Error('TITULO_NO_EXISTE');
+
+      const coactivadoSnap = await tx.get(coactivadoRef);
+      if (!coactivadoSnap.exists()) {
+        if (!razonSiEsNuevo) throw new Error('FALTA_RAZON_SOCIAL');
+        const nombre = normalizarNombre(razonSiEsNuevo);
+        const cartera = (tituloSnap.data() as { cartera?: string }).cartera ?? '';
+        tx.set(coactivadoRef, {
+          cedula: ruc,
+          nombre,
+          nombreBusqueda: normalizarBusqueda(nombre),
+          nombrePalabras: palabrasBusqueda(nombre),
+          cartera,
+          creadoPor: realizadoPor,
+          fechaCreacion: new Date()
+        });
+        coactivadoCreado = true;
+      }
+
+      tx.update(tituloRef, { coactivadoId: ruc });
+    });
+
+    return { coactivadoCreado };
   }
 
   // Solo admin (las reglas de Firestore lo exigen). Primero borra lo que

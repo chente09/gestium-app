@@ -90,8 +90,9 @@ export interface ResumenRecuperacion {
   cartera: string;
   titulosCancelados: number; // pago_total
   titulosConAbono: number;
-  montoCancelado: number;
-  honorarios: number; // total registrado (cobrado + por cobrar)
+  montoCancelado: number; // pago_total
+  montoAbonado: number; // abono — lo pagado hasta ahora en títulos que siguen abiertos
+  honorarios: number; // total registrado (cobrado + por cobrar) — solo pago_total
   honorariosCobrados: number; // el IESS ya le pagó a la oficina
   honorariosPorCobrar: number;
 }
@@ -425,9 +426,9 @@ export class CoactivadosService {
   // ============================================
   async getResumenRecuperacion(cartera: string): Promise<ResumenRecuperacion> {
     const ref = collection(this.firestore, COLECCION_TITULOS);
-    const [snapPagoTotal, aggAbono] = await Promise.all([
+    const [snapPagoTotal, snapAbono] = await Promise.all([
       getDocs(query(ref, where('cartera', '==', cartera), where('tipoCancelacion', '==', 'pago_total'))),
-      getAggregateFromServer(query(ref, where('cartera', '==', cartera), where('tipoCancelacion', '==', 'abono')), { n: count() })
+      getDocs(query(ref, where('cartera', '==', cartera), where('tipoCancelacion', '==', 'abono')))
     ]);
 
     let titulosCancelados = 0, montoCancelado = 0, honorarios = 0, honorariosCobrados = 0;
@@ -438,10 +439,13 @@ export class CoactivadosService {
       honorarios += data.honorario ?? 0;
       if (data.honorarioCobrado) honorariosCobrados += data.honorario ?? 0;
     });
-    const titulosConAbono = aggAbono.data().n;
+
+    let montoAbonado = 0;
+    snapAbono.forEach(d => { montoAbonado += (d.data() as TituloCredito).montoCancelado ?? 0; });
+    const titulosConAbono = snapAbono.size;
 
     return {
-      cartera, titulosCancelados, titulosConAbono, montoCancelado, honorarios,
+      cartera, titulosCancelados, titulosConAbono, montoCancelado, montoAbonado, honorarios,
       honorariosCobrados,
       honorariosPorCobrar: Math.round((honorarios - honorariosCobrados) * 100) / 100
     };

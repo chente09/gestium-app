@@ -128,7 +128,7 @@
 
                         <nz-form-item>
                             <nz-form-label>Correo</nz-form-label>
-                            <nz-form-control nzErrorTip="Correo inválido">
+                            <nz-form-control>
                                 <input nz-input formControlName="correo" placeholder="Opcional" />
                             </nz-form-control>
                         </nz-form-item>
@@ -253,16 +253,6 @@
                                                     nzPopconfirmTitle="¿Deshacer esta cancelación/abono?"
                                                     (nzOnConfirm)="deshacerCancelacion(t)">
                                                     Deshacer
-                                                </button>
-                                                <button
-                                                    *ngIf="esAdmin"
-                                                    nz-button
-                                                    nzType="link"
-                                                    nzSize="small"
-                                                    nz-tooltip
-                                                    nzTooltipTitle="El RUC de este título quedó mal digitado en el Excel original"
-                                                    (click)="abrirCorregirRuc(t)">
-                                                    Corregir RUC
                                                 </button>
                                             </td>
                                         </tr>
@@ -625,11 +615,59 @@
             </nz-form-item>
             <nz-form-item>
                 <nz-form-label>Correo</nz-form-label>
-                <nz-form-control nzErrorTip="Correo inválido">
+                <nz-form-control>
                     <input nz-input formControlName="correo" placeholder="Opcional" />
                 </nz-form-control>
             </nz-form-item>
         </form>
+
+        <ng-container *ngIf="esAdmin && titulos.length > 0">
+            <nz-divider nzText="Corregir RUC de un título" nzOrientation="left"></nz-divider>
+            <nz-alert
+                nzType="warning"
+                nzShowIcon
+                class="info-importar"
+                nzMessage="Solo para errores de digitación reales"
+                nzDescription="Mueve un título de este coactivado a otro RUC (existente o nuevo). No lo uses para cambiar de cartera.">
+            </nz-alert>
+            <form nz-form [formGroup]="corregirRucForm" nzLayout="vertical">
+                <nz-form-item>
+                    <nz-form-label nzRequired>Título</nz-form-label>
+                    <nz-form-control>
+                        <nz-select formControlName="numero" nzPlaceHolder="Selecciona el título">
+                            <nz-option
+                                *ngFor="let t of titulos"
+                                [nzValue]="t.numero"
+                                [nzLabel]="t.numero + ' — ' + formatoMoneda(t.capital)">
+                            </nz-option>
+                        </nz-select>
+                    </nz-form-control>
+                </nz-form-item>
+                <nz-form-item>
+                    <nz-form-label nzRequired>RUC / cédula correcto</nz-form-label>
+                    <nz-form-control nzErrorTip="10 dígitos (13 si es RUC), solo números">
+                        <input nz-input formControlName="ruc" maxlength="13" inputmode="numeric" />
+                    </nz-form-control>
+                </nz-form-item>
+                <nz-form-item>
+                    <nz-form-label>Razón social (solo si ese RUC es nuevo en el sistema)</nz-form-label>
+                    <nz-form-control>
+                        <input nz-input class="input-mayusculas" formControlName="razonNueva" placeholder="Solo si el RUC no existe todavía" />
+                    </nz-form-control>
+                </nz-form-item>
+                <div class="acciones-form">
+                    <button
+                        nz-button
+                        nzType="primary"
+                        nzDanger
+                        [nzLoading]="guardandoCorreccionRuc"
+                        [disabled]="corregirRucForm.invalid"
+                        (click)="guardarCorreccionRuc()">
+                        Corregir RUC
+                    </button>
+                </div>
+            </form>
+        </ng-container>
     </ng-container>
     <ng-template #edicionFooter>
         <button nz-button nzType="default" (click)="mostrarEdicion = false">Cancelar</button>
@@ -641,51 +679,6 @@
             [disabled]="edicionForm.invalid"
             (click)="guardarEdicion()">
             Guardar
-        </button>
-    </ng-template>
-</nz-modal>
-
-<nz-modal
-    [(nzVisible)]="mostrarCorregirRuc"
-    nzTitle="Corregir RUC del título"
-    (nzOnCancel)="cerrarCorregirRuc()"
-    [nzFooter]="corregirRucFooter">
-    <ng-container *nzModalContent>
-        <p *ngIf="tituloCorrigiendoRuc" class="titulo-cancelando">
-            Título <b>{{ tituloCorrigiendoRuc.numero }}</b> — actualmente en RUC <b>{{ tituloCorrigiendoRuc.coactivadoId }}</b>
-        </p>
-        <nz-alert
-            nzType="warning"
-            nzShowIcon
-            class="info-importar"
-            nzMessage="Solo para errores de digitación reales"
-            nzDescription="Esto mueve el título a otro coactivado (existente o nuevo). No lo uses para cambiar de cartera — eso se hace desde 'Editar' en la ficha.">
-        </nz-alert>
-        <form nz-form [formGroup]="corregirRucForm" nzLayout="vertical">
-            <nz-form-item>
-                <nz-form-label nzRequired>RUC / cédula correcto</nz-form-label>
-                <nz-form-control nzErrorTip="10 dígitos (13 si es RUC), solo números">
-                    <input nz-input formControlName="ruc" maxlength="13" inputmode="numeric" />
-                </nz-form-control>
-            </nz-form-item>
-            <nz-form-item>
-                <nz-form-label>Razón social (solo si ese RUC es nuevo en el sistema)</nz-form-label>
-                <nz-form-control>
-                    <input nz-input class="input-mayusculas" formControlName="razonNueva" placeholder="Solo si el RUC no existe todavía" />
-                </nz-form-control>
-            </nz-form-item>
-        </form>
-    </ng-container>
-    <ng-template #corregirRucFooter>
-        <button nz-button nzType="default" (click)="cerrarCorregirRuc()">Cancelar</button>
-        <button
-            nz-button
-            nzType="primary"
-            nzDanger
-            [nzLoading]="guardandoCorreccionRuc"
-            [disabled]="corregirRucForm.invalid"
-            (click)="guardarCorreccionRuc()">
-            Corregir
         </button>
     </ng-template>
 </nz-modal>
@@ -710,20 +703,18 @@
                 </nz-form-control>
             </nz-form-item>
 
-            <ng-container *ngIf="cancelacionForm.value.tipo === 'pago_total'">
-                <nz-form-item>
-                    <nz-form-label nzRequired>Monto cancelado</nz-form-label>
-                    <nz-form-control nzErrorTip="Ingresa el monto cancelado">
-                        <input nz-input type="number" min="0" step="0.01" formControlName="montoCancelado" />
-                    </nz-form-control>
-                </nz-form-item>
-                <nz-form-item>
-                    <nz-form-label nzRequired>Honorario</nz-form-label>
-                    <nz-form-control nzErrorTip="Ingresa el honorario">
-                        <input nz-input type="number" min="0" step="0.01" formControlName="honorario" />
-                    </nz-form-control>
-                </nz-form-item>
-            </ng-container>
+            <nz-form-item>
+                <nz-form-label nzRequired>{{ cancelacionForm.value.tipo === 'pago_total' ? 'Monto cancelado' : 'Monto abonado' }}</nz-form-label>
+                <nz-form-control nzErrorTip="Ingresa el monto">
+                    <input nz-input type="number" min="0" step="0.01" formControlName="montoCancelado" />
+                </nz-form-control>
+            </nz-form-item>
+            <nz-form-item *ngIf="cancelacionForm.value.tipo === 'pago_total'">
+                <nz-form-label nzRequired>Honorario</nz-form-label>
+                <nz-form-control nzErrorTip="Ingresa el honorario">
+                    <input nz-input type="number" min="0" step="0.01" formControlName="honorario" />
+                </nz-form-control>
+            </nz-form-item>
         </form>
     </ng-container>
     <ng-template #cancelacionFooter>

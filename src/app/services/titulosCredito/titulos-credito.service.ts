@@ -116,12 +116,13 @@ export class TitulosCreditoService {
 
   // Cualquiera del área IESS puede registrarlo (lo exigen las reglas de
   // Firestore, que solo dejan tocar estos campos puntuales, no el resto del
-  // título). Un abono no cierra el título — solo un pago total lo marca
-  // como cancelado (estadoIess) y guarda el honorario, que es el dato real
-  // que interesa para la estadística de recuperación.
+  // título). Un abono no cierra el título (estadoIess no cambia) pero sí
+  // guarda cuánto se pagó hasta ahora; solo un pago total lo marca como
+  // cancelado y guarda el honorario, que es el dato real que interesa para
+  // la estadística de recuperación.
   async registrarCancelacion(
     numero: string,
-    datos: { tipo: TipoCancelacion; montoCancelado?: number; honorario?: number }
+    datos: { tipo: TipoCancelacion; montoCancelado: number; honorario?: number }
   ): Promise<void> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();
@@ -131,12 +132,12 @@ export class TitulosCreditoService {
     // SDK de Firestore para updateDoc en una referencia sin tipar.
     const patch: Record<string, any> = {
       tipoCancelacion: datos.tipo,
+      montoCancelado: datos.montoCancelado,
       canceladoPor: { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' },
       fechaCancelacion: new Date()
     };
     if (datos.tipo === 'pago_total') {
       patch['estadoIess'] = 'CANCELADO';
-      patch['montoCancelado'] = datos.montoCancelado ?? 0;
       patch['honorario'] = datos.honorario ?? 0;
     }
 

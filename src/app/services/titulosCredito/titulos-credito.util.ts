@@ -33,7 +33,7 @@ export interface TituloCredito {
   cargaId?: string;
   // Cancelación registrada a mano desde la ficha (no la que trae el Excel).
   tipoCancelacion?: TipoCancelacion;
-  montoCancelado?: number; // solo pago_total
+  montoCancelado?: number; // abono: lo pagado hasta ahora; pago_total: el monto final
   honorario?: number; // solo pago_total
   canceladoPor?: { uid: string; nombre: string };
   fechaCancelacion?: Date | any;
@@ -98,8 +98,10 @@ export function resumirTitulos(titulos: TituloCredito[]): ResumenTitulos {
     if (t.estadoEntrega === 'entregado') { r.entregados++; r.capitalEntregado += t.capital; }
     else { r.noEntregados++; r.capitalNoEntregado += t.capital; }
     if (esCancelado(t)) { r.cancelados++; r.capitalCancelado += t.capital; }
-    if (t.tipoCancelacion === 'pago_total') {
+    if (t.tipoCancelacion === 'abono' || t.tipoCancelacion === 'pago_total') {
       r.montoRecuperado += t.montoCancelado ?? 0;
+    }
+    if (t.tipoCancelacion === 'pago_total') {
       r.honorarios += t.honorario ?? 0;
     }
   }

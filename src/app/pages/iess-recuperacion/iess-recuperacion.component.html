@@ -11,8 +11,8 @@
 
     <h1 class="page-title"><nz-icon nzType="dollar"></nz-icon> Recuperación de cartera</h1>
     <p class="page-subtitulo">
-        Solo cuenta lo registrado como "pago por totalidad" (honorario y monto cancelado reales).
-        Los abonos se cuentan aparte porque el título todavía sigue abierto.
+        El honorario solo aplica a "pago por totalidad" (el título queda cerrado). Los abonos suman su propio
+        monto aparte, porque el título todavía sigue abierto.
     </p>
 
     <nz-card *ngIf="cargando" [nzLoading]="true" [nzBodyStyle]="{ padding: '32px 16px' }"></nz-card>
@@ -22,8 +22,12 @@
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="totalCancelados" nzTitle="Títulos cancelados (pago total)"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="totalAbonos" nzTitle="Títulos con abono"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-monto">
-                <div class="stat-titulo">Monto cancelado</div>
+                <div class="stat-titulo">Monto cancelado (pago total)</div>
                 <div class="stat-valor">{{ formatoMoneda(totalMontoCancelado) }}</div>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-monto">
+                <div class="stat-titulo">Monto abonado</div>
+                <div class="stat-valor">{{ formatoMoneda(totalMontoAbonado) }}</div>
             </nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-monto">
                 <div class="stat-titulo">Honorarios (total registrado)</div>
@@ -51,6 +55,7 @@
                             <th>Cancelados</th>
                             <th>Con abono</th>
                             <th>Monto cancelado</th>
+                            <th>Monto abonado</th>
                             <th>Honorarios</th>
                             <th>Cobrados</th>
                             <th>Por cobrar</th>
@@ -62,6 +67,7 @@
                             <td>{{ r.titulosCancelados }}</td>
                             <td>{{ r.titulosConAbono }}</td>
                             <td>{{ formatoMoneda(r.montoCancelado) }}</td>
+                            <td>{{ formatoMoneda(r.montoAbonado) }}</td>
                             <td>{{ formatoMoneda(r.honorarios) }}</td>
                             <td>{{ formatoMoneda(r.honorariosCobrados) }}</td>
                             <td>{{ formatoMoneda(r.honorariosPorCobrar) }}</td>

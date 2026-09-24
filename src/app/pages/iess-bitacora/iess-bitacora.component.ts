@@ -19,6 +19,7 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
+import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -78,6 +79,7 @@ import {
     NzPopconfirmModule,
     NzEmptyModule,
     NzAlertModule,
+    NzDividerModule,
     NzCollapseModule,
     NzTableModule,
     NzBreadCrumbModule
@@ -160,10 +162,9 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   tituloCancelando: TituloCredito | null = null;
   cancelacionForm: FormGroup;
 
-  // Corregir el RUC de un título mal digitado en el Excel original (solo admin).
-  mostrarCorregirRuc = false;
+  // Corregir el RUC de un título mal digitado en el Excel original (solo
+  // admin) — vive dentro del modal "Editar coactivado", no en cada fila.
   guardandoCorreccionRuc = false;
-  tituloCorrigiendoRuc: TituloCredito | null = null;
   corregirRucForm: FormGroup;
 
   // Panel de carteras: para decidir por dónde seguir gestionando (solo se
@@ -206,13 +207,16 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.carteras = this.sharedData.getCarterasIess();
     this.uid = this.usersService.getCurrentUser()?.uid ?? null;
 
+    // Sin Validators.email: el Excel real trae varios correos separados por
+    // coma en el mismo campo ("uno@x.com, otro@y.com") — un validador de un
+    // solo correo lo marcaría inválido y bloquearía "Guardar" sin motivo.
     this.altaForm = this.fb.group({
       cedula: ['', [Validators.required, Validators.pattern(/^(\d{10}|\d{13})$/)]],
       nombre: ['', [Validators.required, Validators.pattern(/\S/)]],
       cartera: [null, Validators.required],
       representanteLegal: [''],
       telefono: [''],
-      correo: ['', Validators.email]
+      correo: ['']
     });
 
     this.edicionForm = this.fb.group({
@@ -220,7 +224,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       cartera: [null, Validators.required],
       representanteLegal: [''],
       telefono: [''],
-      correo: ['', Validators.email]
+      correo: ['']
     });
 
     this.gestionForm = this.fb.group({
@@ -240,11 +244,12 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
     this.cancelacionForm = this.fb.group({
       tipo: ['abono', Validators.required],
-      montoCancelado: [null],
+      montoCancelado: [null, [Validators.required, Validators.min(0.01)]],
       honorario: [null]
     });
 
     this.corregirRucForm = this.fb.group({
+      numero: ['', Validators.required],
       ruc: ['', [Validators.required, Validators.pattern(/^(\d{10}|\d{13})$/)]],
       razonNueva: ['']
     });
@@ -257,11 +262,11 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     });
 
     // Monto y honorario solo son obligatorios si es pago total.
+    // El monto es obligatorio en ambos casos (es lo que de verdad se cobró);
+    // el honorario solo aplica cuando el título queda cerrado del todo.
     this.cancelacionForm.get('tipo')!.valueChanges.subscribe((tipo: TipoCancelacion) => {
       const requerido = tipo === 'pago_total' ? [Validators.required, Validators.min(0.01)] : [];
-      this.cancelacionForm.get('montoCancelado')!.setValidators(requerido);
       this.cancelacionForm.get('honorario')!.setValidators(requerido);
-      this.cancelacionForm.get('montoCancelado')!.updateValueAndValidity();
       this.cancelacionForm.get('honorario')!.updateValueAndValidity();
     });
   }
@@ -543,6 +548,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       telefono: this.seleccionado.telefono ?? '',
       correo: this.seleccionado.correo ?? ''
     });
+    this.corregirRucForm.reset({ numero: '', ruc: '', razonNueva: '' });
     this.mostrarEdicion = true;
   }
 
@@ -753,34 +759,24 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   }
 
   // ============================================
-  // 🔧 Corregir RUC de un título (solo admin)
+  // 🔧 Corregir RUC de un título (solo admin) — desde el modal "Editar
+  // coactivado": se elige cuál de sus títulos mover y a qué RUC.
   // ============================================
-  abrirCorregirRuc(t: TituloCredito): void {
-    this.tituloCorrigiendoRuc = t;
-    this.corregirRucForm.reset({ ruc: '', razonNueva: '' });
-    this.mostrarCorregirRuc = true;
-  }
-
-  cerrarCorregirRuc(): void {
-    this.mostrarCorregirRuc = false;
-    this.tituloCorrigiendoRuc = null;
-  }
-
   async guardarCorreccionRuc(): Promise<void> {
-    if (!this.tituloCorrigiendoRuc || this.corregirRucForm.invalid) return;
+    if (this.corregirRucForm.invalid) return;
 
     this.guardandoCorreccionRuc = true;
     try {
       const v = this.corregirRucForm.value;
       const { coactivadoCreado } = await this.coactivadosService.corregirRucTitulo(
-        this.tituloCorrigiendoRuc.numero,
+        v.numero,
         v.ruc,
         v.razonNueva || undefined
       );
       this.message.success(
-        `Título reasignado al RUC ${v.ruc}${coactivadoCreado ? ' (coactivado nuevo creado)' : ''}.`
+        `Título ${v.numero} reasignado al RUC ${v.ruc}${coactivadoCreado ? ' (coactivado nuevo creado)' : ''}.`
       );
-      this.cerrarCorregirRuc();
+      this.corregirRucForm.reset({ numero: '', ruc: '', razonNueva: '' });
     } catch (error: any) {
       if (error?.message === 'FALTA_RAZON_SOCIAL') {
         this.message.warning('Ese RUC no existe todavía — completa la razón social para crearlo.');
@@ -798,8 +794,10 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   }
 
   async guardarCancelacion(): Promise<void> {
-    if (!this.tituloCancelando || this.cancelacionForm.invalid) {
+    if (!this.tituloCancelando) return;
+    if (this.cancelacionForm.invalid) {
       this.cancelacionForm.markAllAsTouched();
+      this.message.warning('Completa el monto antes de guardar.');
       return;
     }
 
@@ -808,7 +806,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       const v = this.cancelacionForm.value;
       await this.titulosService.registrarCancelacion(this.tituloCancelando.numero, {
         tipo: v.tipo,
-        montoCancelado: v.tipo === 'pago_total' ? v.montoCancelado : undefined,
+        montoCancelado: v.montoCancelado,
         honorario: v.tipo === 'pago_total' ? v.honorario : undefined
       });
       this.message.success('Cancelación registrada.');

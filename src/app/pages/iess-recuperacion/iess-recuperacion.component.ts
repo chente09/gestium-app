@@ -71,6 +71,10 @@ export class IessRecuperacionComponent implements OnInit {
     return this.resumenes.reduce((s, r) => s + r.titulosConAbono, 0);
   }
 
+  get totalMontoAbonado(): number {
+    return this.resumenes.reduce((s, r) => s + r.montoAbonado, 0);
+  }
+
   get totalHonorariosCobrados(): number {
     return this.resumenes.reduce((s, r) => s + r.honorariosCobrados, 0);
   }

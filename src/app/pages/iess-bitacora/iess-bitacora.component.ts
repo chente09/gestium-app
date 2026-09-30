@@ -135,11 +135,28 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   readonly formatoMoneda = formatoMoneda;
   readonly esCancelado = esCancelado;
 
+  // Agrupados por guía por defecto: un mismo lote del IESS trae varios
+  // títulos con la misma guía, y verlos juntos (en vez del orden en que se
+  // cargaron) hace mucho más fácil revisarlos de un vistazo.
   get titulosFiltrados(): TituloCredito[] {
     const t = this.filtroTitulos.trim().toUpperCase();
-    if (!t) return this.titulos;
-    return this.titulos.filter(x => x.numero.includes(t) || (x.guia ?? '').toUpperCase().includes(t));
+    const base = t
+      ? this.titulos.filter(x => x.numero.includes(t) || (x.guia ?? '').toUpperCase().includes(t))
+      : this.titulos;
+    return [...base].sort((a, b) => (a.guia ?? '').localeCompare(b.guia ?? '') || a.numero.localeCompare(b.numero));
   }
+
+  // Para el clic en el encabezado "Estado" de la tabla de títulos: alterna
+  // entre ver primero los pendientes o primero los cancelados.
+  sortPorEstado = (a: TituloCredito, b: TituloCredito): number => {
+    const rango = (t: TituloCredito) => (esCancelado(t) ? 1 : 0);
+    return rango(a) - rango(b) || (a.guia ?? '').localeCompare(b.guia ?? '');
+  };
+
+  // Para el clic en el encabezado "Guía": mismo criterio que el orden por
+  // defecto, pero con el toggle ascendente/descendente de la tabla.
+  sortPorGuia = (a: TituloCredito, b: TituloCredito): number =>
+    (a.guia ?? '').localeCompare(b.guia ?? '') || a.numero.localeCompare(b.numero);
 
   cambiandoHonorarioNumero: string | null = null;
 

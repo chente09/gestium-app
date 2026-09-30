@@ -197,16 +197,18 @@
                                     [nzBordered]="true">
                                     <thead>
                                         <tr>
+                                            <th>#</th>
                                             <th>Número</th>
                                             <th>Capital</th>
-                                            <th>Estado</th>
-                                            <th>Guía</th>
+                                            <th [nzSortFn]="sortPorEstado" [nzSortDirections]="['ascend','descend']">Estado</th>
+                                            <th [nzSortFn]="sortPorGuia" [nzSortDirections]="['ascend','descend']">Guía</th>
                                             <th>Fecha sorteo</th>
                                             <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr *ngFor="let t of tablaTitulos.data; trackBy: trackByTitulo">
+                                        <tr *ngFor="let t of tablaTitulos.data; let i = index; trackBy: trackByTitulo">
+                                            <td class="nowrap">{{ i + 1 }}</td>
                                             <td>{{ t.numero }}</td>
                                             <td>{{ formatoMoneda(t.capital) }}</td>
                                             <td>
@@ -259,11 +261,13 @@
                                     </tbody>
                                     <tfoot>
                                         <tr class="fila-totales">
+                                            <td></td>
                                             <td>Total</td>
                                             <td>{{ formatoMoneda(resumenTitulos.capitalTotal) }}</td>
                                             <td colspan="4"></td>
                                         </tr>
                                         <tr *ngIf="resumenTitulos.cancelados > 0" class="fila-totales fila-recuperado">
+                                            <td></td>
                                             <td colspan="2">Recuperado ({{ resumenTitulos.cancelados }} cancelado(s))</td>
                                             <td colspan="4">
                                                 {{ formatoMoneda(resumenTitulos.montoRecuperado) }} cobrado al cliente

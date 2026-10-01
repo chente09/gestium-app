@@ -61,11 +61,12 @@ export class SharedDataService {
   ];
 
   // Carteras del área IESS: abogado dueño de cada coactivado. Lista fija —
-  // para sumar o quitar a alguien basta editarla acá.
+  // para sumar o quitar a alguien basta editarla acá. En orden alfabético:
+  // se usa tal cual en todos los selectores de cartera de la app.
   readonly carterasIess: string[] = [
+    'Jessica Ordoñez',
     'Jose Luis Rueda',
     'Marcelo Mena',
-    'Jessica Ordoñez',
     'Mayra Ordoñez'
   ];
 

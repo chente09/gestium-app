@@ -17,6 +17,8 @@
         <div class="resumen-stats">
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.coactivados" nzTitle="Coactivados"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulos" nzTitle="Títulos"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosEntregados" nzTitle="TC entregados"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosNoEntregados" nzTitle="TC no entregados"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-capital">
                 <div class="stat-titulo">Capital</div>
                 <div class="stat-valor">{{ formatoMoneda(resumen.capital) }}</div>

@@ -76,6 +76,8 @@ export interface ResumenCartera {
   cartera: string;
   coactivados: number;
   titulos: number;
+  titulosEntregados: number;
+  titulosNoEntregados: number;
   capital: number;
   // Coactivados sin ninguna gestión registrada todavía (ni siquiera migrada).
   pendientes: Coactivado[];
@@ -377,10 +379,13 @@ export class CoactivadosService {
   // consultas agregadas (count/sum) para el capital — así no hay que
   // descargar cada título completo solo para sumarlo.
   // ============================================
-  private async totalesTitulosPorCartera(cartera: string): Promise<{ titulos: number; capital: number }> {
+  private async totalesTitulosPorCartera(cartera: string): Promise<{ titulos: number; capital: number; entregados: number }> {
     const ref = collection(this.firestore, COLECCION_TITULOS);
-    const agg = await getAggregateFromServer(query(ref, where('cartera', '==', cartera)), { titulos: count(), capital: sum('capital') });
-    return { titulos: agg.data().titulos, capital: agg.data().capital };
+    const [agg, aggEntregados] = await Promise.all([
+      getAggregateFromServer(query(ref, where('cartera', '==', cartera)), { titulos: count(), capital: sum('capital') }),
+      getAggregateFromServer(query(ref, where('cartera', '==', cartera), where('estadoEntrega', '==', 'entregado')), { entregados: count() })
+    ]);
+    return { titulos: agg.data().titulos, capital: agg.data().capital, entregados: aggEntregados.data().entregados };
   }
 
   // Cédulas que ya tienen al menos una gestión (incluye las migradas del
@@ -399,7 +404,9 @@ export class CoactivadosService {
     const ref = collection(this.firestore, this.collectionName);
     const snap = await getDocs(query(ref, where('cartera', '==', cartera)));
     const coactivados = snap.docs.map(d => d.data() as Coactivado);
-    if (coactivados.length === 0) return { cartera, coactivados: 0, titulos: 0, capital: 0, pendientes: [], todos: [] };
+    if (coactivados.length === 0) {
+      return { cartera, coactivados: 0, titulos: 0, titulosEntregados: 0, titulosNoEntregados: 0, capital: 0, pendientes: [], todos: [] };
+    }
 
     const cedulas = coactivados.map(c => c.cedula);
     const [totales, conGestion] = await Promise.all([
@@ -415,7 +422,16 @@ export class CoactivadosService {
 
     const pendientes = todos.filter(c => !c.tieneGestion);
 
-    return { cartera, coactivados: coactivados.length, titulos: totales.titulos, capital: totales.capital, pendientes, todos };
+    return {
+      cartera,
+      coactivados: coactivados.length,
+      titulos: totales.titulos,
+      titulosEntregados: totales.entregados,
+      titulosNoEntregados: totales.titulos - totales.entregados,
+      capital: totales.capital,
+      pendientes,
+      todos
+    };
   }
 
   // ============================================

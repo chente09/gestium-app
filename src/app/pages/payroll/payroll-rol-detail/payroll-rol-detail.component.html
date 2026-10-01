@@ -62,7 +62,15 @@
     </nz-row>
 
     <nz-card class="main-card">
-        <nz-table [nzData]="rol.lineas" [nzBordered]="true" [nzShowPagination]="false">
+        <input
+            nz-input
+            [(ngModel)]="buscarTrabajador"
+            placeholder="Buscar por nombre o cédula..."
+            class="buscar-trabajador" />
+
+        <nz-empty *ngIf="lineasFiltradas.length === 0" nzNotFoundContent="Sin resultados para ese filtro."></nz-empty>
+
+        <nz-table *ngIf="lineasFiltradas.length > 0" [nzData]="lineasFiltradas" [nzBordered]="true" [nzShowPagination]="false">
             <thead>
                 <tr>
                     <th [nzWidth]="'40px'"></th>
@@ -75,7 +83,7 @@
                 </tr>
             </thead>
             <tbody>
-                <ng-container *ngFor="let linea of rol.lineas; trackBy: trackByEmployeeId">
+                <ng-container *ngFor="let linea of lineasFiltradas; trackBy: trackByEmployeeId">
                     <tr class="linea-row" (click)="toggleExpand(linea.payrollEmployeeId)">
                         <td class="expand-cell">
                             <nz-icon [nzType]="isExpanded(linea.payrollEmployeeId) ? 'down' : 'right'"></nz-icon>

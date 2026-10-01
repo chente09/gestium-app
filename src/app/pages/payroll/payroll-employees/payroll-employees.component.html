@@ -146,6 +146,13 @@
                 </nz-form-control>
             </nz-form-item>
 
+            <nz-form-item *ngIf="!esPasante">
+                <nz-form-label>Remuneración mensual propia</nz-form-label>
+                <nz-form-control nzExtra="Solo si gana más que el SBU vigente. Vacío = usa el SBU del año, como el resto de afiliados.">
+                    <nz-input-number formControlName="remuneracionMensual" [nzMin]="0" [nzStep]="10" nzPlaceHolder="SBU vigente"></nz-input-number>
+                </nz-form-control>
+            </nz-form-item>
+
             <nz-form-item>
                 <nz-form-label nzRequired>Empleador</nz-form-label>
                 <nz-form-control>

@@ -86,7 +86,8 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       empleadorRuc: [EMPLEADORES[0].ruc, Validators.required],
       activo: [true],
       uid: [null],
-      saldoVacacionesDisponible: [null]
+      saldoVacacionesDisponible: [null],
+      remuneracionMensual: [null, Validators.min(0)]
     });
   }
 
@@ -147,7 +148,7 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
   openCreateModal(): void {
     this.editingId = null;
     this.esPasante = false;
-    this.form.reset({ empleadorRuc: EMPLEADORES[0].ruc, activo: true, uid: null, saldoVacacionesDisponible: null });
+    this.form.reset({ empleadorRuc: EMPLEADORES[0].ruc, activo: true, uid: null, saldoVacacionesDisponible: null, remuneracionMensual: null });
     this.showModal = true;
   }
 
@@ -162,7 +163,8 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       empleadorRuc: employee.empleadorRuc,
       activo: employee.activo,
       uid: employee.uid || null,
-      saldoVacacionesDisponible: employee.saldoVacacionesDisponible ?? null
+      saldoVacacionesDisponible: employee.saldoVacacionesDisponible ?? null,
+      remuneracionMensual: employee.remuneracionMensual ?? null
     });
     this.showModal = true;
   }
@@ -170,7 +172,7 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
   onEsPasanteChange(value: boolean): void {
     this.esPasante = value;
     if (value) {
-      this.form.patchValue({ fechaAfiliacionIESS: '' });
+      this.form.patchValue({ fechaAfiliacionIESS: '', remuneracionMensual: null });
     }
   }
 
@@ -197,7 +199,8 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       empleadorRuc: empleador.ruc,
       activo: value.activo,
       uid: value.uid || null,
-      saldoVacacionesDisponible: value.saldoVacacionesDisponible ?? null
+      saldoVacacionesDisponible: value.saldoVacacionesDisponible ?? null,
+      remuneracionMensual: this.esPasante ? null : (value.remuneracionMensual || null)
     };
 
     try {

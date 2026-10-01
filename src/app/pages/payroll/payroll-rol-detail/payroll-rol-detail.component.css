@@ -2,6 +2,11 @@
     padding: 24px;
 }
 
+.buscar-trabajador {
+    max-width: 360px;
+    margin-bottom: 12px;
+}
+
 .header-row {
     display: flex;
     align-items: center;

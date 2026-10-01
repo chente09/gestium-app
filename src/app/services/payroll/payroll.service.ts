@@ -47,6 +47,10 @@ export interface PayrollEmployee {
   // días. Lo carga y ajusta el admin a mano; no hay migración de saldos
   // previos a la puesta en marcha del módulo de Permisos.
   saldoVacacionesDisponible?: number | null;
+  // Remuneración mensual propia, si gana más que el SBU vigente (ej. un
+  // cargo con sueldo pactado aparte). Vacío/null = usa el SBU del año, como
+  // el resto de afiliados. No aplica a pasantes (siempre $300 fijo).
+  remuneracionMensual?: number | null;
 }
 
 // Mismo shape para bonos (ingreso extra) y descuentos (ej. quirografario) —
@@ -234,7 +238,7 @@ export class PayrollService {
     descuentosVarios: DescuentoVario[]
   ): LineaRolPago {
     const esPasante = !employee.fechaAfiliacionIESS;
-    const remuneracionBase = esPasante ? PASANTE_REMUNERACION : sbu;
+    const remuneracionBase = esPasante ? PASANTE_REMUNERACION : (employee.remuneracionMensual || sbu);
     const proporcion = this.proporcionDiasTrabajados(diasTrabajados);
     const remuneracion = round2(remuneracionBase * proporcion);
 
@@ -245,9 +249,12 @@ export class PayrollService {
     // (misma regla que Vacaciones, Art. 196 y Art. 69 respectivamente).
     const elegibleFondosReserva = this.esElegibleVacaciones(employee, fechaCorte);
 
+    // Sobre remuneracionBase (no el SBU a secas): así un sueldo propio por
+    // encima del SBU también se refleja en el décimo cuarto y los fondos de
+    // reserva, igual que ya lo hace recalcularLinea.
     const decimoTercero = elegibleDecimos ? round2(remuneracion / 12) : 0;
-    const decimoCuarto = elegibleDecimos ? round2((sbu / 12) * proporcion) : 0;
-    const fondosReserva = elegibleFondosReserva ? round2((sbu / 12) * proporcion) : 0;
+    const decimoCuarto = elegibleDecimos ? round2((remuneracionBase / 12) * proporcion) : 0;
+    const fondosReserva = elegibleFondosReserva ? round2((remuneracionBase / 12) * proporcion) : 0;
     const descuentoIESS = esPasante ? 0 : round2(remuneracion * IESS_PORCENTAJE);
 
     const totalBonosVarios = bonosVarios.reduce((sum, b) => sum + b.monto, 0);

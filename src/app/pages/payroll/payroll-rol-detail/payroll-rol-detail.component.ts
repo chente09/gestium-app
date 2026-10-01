@@ -16,6 +16,7 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzEmptyModule } from 'ng-zorro-antd/empty';
 
 import jsPDF from 'jspdf';
 
@@ -45,7 +46,8 @@ const MESES = [
     NzBreadCrumbModule,
     NzGridModule,
     NzStatisticModule,
-    NzToolTipModule
+    NzToolTipModule,
+    NzEmptyModule
   ],
   templateUrl: './payroll-rol-detail.component.html',
   styleUrl: './payroll-rol-detail.component.css'
@@ -61,6 +63,14 @@ export class PayrollRolDetailComponent implements OnInit {
   agregandoFaltantes = false;
 
   private expandedIds = new Set<string>();
+
+  buscarTrabajador = '';
+
+  get lineasFiltradas(): LineaRolPago[] {
+    const t = this.buscarTrabajador.trim().toLowerCase();
+    if (!t) return this.rol?.lineas ?? [];
+    return (this.rol?.lineas ?? []).filter(l => l.nombre.toLowerCase().includes(t) || l.cedula.includes(t));
+  }
 
   constructor(
     private route: ActivatedRoute,

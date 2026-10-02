@@ -256,6 +256,18 @@
                                                     (nzOnConfirm)="deshacerCancelacion(t)">
                                                     Deshacer
                                                 </button>
+                                                <button
+                                                    *ngIf="esAdmin && !t.tipoCancelacion && esCancelado(t)"
+                                                    nz-button
+                                                    nzType="link"
+                                                    nzDanger
+                                                    nzSize="small"
+                                                    nz-popconfirm
+                                                    nzPopconfirmTitle="¿Quitar la marca de cancelado? Viene del Excel y no tiene ningún pago registrado desde la app."
+                                                    nzPopconfirmPlacement="left"
+                                                    (nzOnConfirm)="revertirEstadoCancelado(t)">
+                                                    Revertir estado
+                                                </button>
                                             </td>
                                         </tr>
                                     </tbody>

@@ -144,6 +144,15 @@ export class TitulosCreditoService {
     await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), patch);
   }
 
+  // Solo admin: quita la marca de "Cancelado" que trae el Excel
+  // (estadoIess) cuando el título NUNCA tuvo un pago real registrado desde
+  // la app (tipoCancelacion vacío) — ej. un error de digitación en la
+  // matriz del IESS. deshacerCancelacion es para el otro caso (sí se
+  // registró un pago/abono y hay que deshacerlo).
+  async revertirEstadoCancelado(numero: string): Promise<void> {
+    await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), { estadoIess: deleteField() });
+  }
+
   // Solo admin: deshace una cancelación registrada por error (usa la regla
   // general de admin, no la de campos restringidos — por eso solo admin).
   async deshacerCancelacion(numero: string): Promise<void> {

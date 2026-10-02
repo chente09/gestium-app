@@ -866,4 +866,17 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       this.message.error('No se pudo deshacer la cancelación.');
     }
   }
+
+  // Solo admin: quita la marca de "Cancelado" que trae el Excel cuando el
+  // título nunca tuvo un pago real registrado (error de digitación en la
+  // matriz del IESS).
+  async revertirEstadoCancelado(t: TituloCredito): Promise<void> {
+    try {
+      await this.titulosService.revertirEstadoCancelado(t.numero);
+      this.message.success('Estado revertido.');
+    } catch (error) {
+      console.error('Error revirtiendo el estado:', error);
+      this.message.error('No se pudo revertir el estado.');
+    }
+  }
 }

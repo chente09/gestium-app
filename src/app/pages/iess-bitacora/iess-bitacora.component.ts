@@ -22,6 +22,8 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 
@@ -50,7 +52,12 @@ import {
   TituloCredito,
   TipoCancelacion,
   ResumenTitulos,
+  ESTADO_ANULADO,
+  ESTADO_CONVENIO,
+  esAnulado,
   esCancelado,
+  esEnConvenio,
+  estadoVisual,
   fechaCorta,
   formatoMoneda,
   resumirTitulos
@@ -82,6 +89,8 @@ import {
     NzDividerModule,
     NzCollapseModule,
     NzTableModule,
+    NzDropDownModule,
+    NzMenuModule,
     NzBreadCrumbModule
   ],
   templateUrl: './iess-bitacora.component.html',
@@ -134,6 +143,11 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   filtroTitulos = '';
   readonly formatoMoneda = formatoMoneda;
   readonly esCancelado = esCancelado;
+  readonly esAnulado = esAnulado;
+  readonly esEnConvenio = esEnConvenio;
+  readonly estadoVisual = estadoVisual;
+  readonly ESTADO_CONVENIO = ESTADO_CONVENIO;
+  readonly ESTADO_ANULADO = ESTADO_ANULADO;
 
   // Agrupados por guía por defecto: un mismo lote del IESS trae varios
   // títulos con la misma guía, y verlos juntos (en vez del orden en que se
@@ -147,9 +161,10 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   }
 
   // Para el clic en el encabezado "Estado" de la tabla de títulos: alterna
-  // entre ver primero los pendientes o primero los cancelados.
+  // entre ver primero los pendientes o primero los cancelados / convenio /
+  // anulados.
   sortPorEstado = (a: TituloCredito, b: TituloCredito): number => {
-    const rango = (t: TituloCredito) => (esCancelado(t) ? 1 : 0);
+    const rango = (t: TituloCredito) => (esAnulado(t) ? 3 : esEnConvenio(t) ? 2 : esCancelado(t) ? 1 : 0);
     return rango(a) - rango(b) || (a.guia ?? '').localeCompare(b.guia ?? '');
   };
 
@@ -864,6 +879,18 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error deshaciendo la cancelación:', error);
       this.message.error('No se pudo deshacer la cancelación.');
+    }
+  }
+
+  // Solo admin: marca un título sin pago registrado como "cancelado en
+  // convenio" o "anulado" (no cuentan como pagados, ver titulos-credito.util).
+  async marcarEstadoTitulo(t: TituloCredito, estado: typeof ESTADO_CONVENIO | typeof ESTADO_ANULADO): Promise<void> {
+    try {
+      await this.titulosService.marcarEstadoTitulo(t.numero, estado);
+      this.message.success(estado === ESTADO_ANULADO ? 'Título marcado como anulado.' : 'Título marcado como cancelado en convenio.');
+    } catch (error) {
+      console.error('Error marcando el estado:', error);
+      this.message.error('No se pudo marcar el estado.');
     }
   }
 

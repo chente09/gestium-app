@@ -26,6 +26,15 @@
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.pendientes.length" nzTitle="Sin gestión todavía"></nz-statistic></nz-card>
         </div>
 
+        <div class="resumen-stats" *ngIf="resumen.titulosConvenio > 0 || resumen.titulosAnulados > 0">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosConvenio" nzTitle="Cancelados en convenio"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosAnulados" nzTitle="Anulados (no cuentan en el capital)"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-capital">
+                <div class="stat-titulo">Capital anulado</div>
+                <div class="stat-valor">{{ formatoMoneda(resumen.capitalAnulado) }}</div>
+            </nz-card>
+        </div>
+
         <div class="resumen-stats" *ngIf="resumenCancelados && resumenCancelados.totalCancelados > 0">
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumenCancelados.totalCancelados" nzTitle="Títulos cancelados"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumenCancelados.conMontoRegistrado" nzTitle="Con monto registrado"></nz-statistic></nz-card>

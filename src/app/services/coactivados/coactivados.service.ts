@@ -24,7 +24,7 @@ import { GestionesCoactivadoService } from '../gestionesCoactivado/gestiones-coa
 import { COLECCION_GESTIONES } from '../gestionesCoactivado/gestiones-coactivado.service';
 import { TitulosCreditoService } from '../titulosCredito/titulos-credito.service';
 import { COLECCION_TITULOS } from '../titulosCredito/titulos-credito.service';
-import { TituloCredito } from '../titulosCredito/titulos-credito.util';
+import { ESTADO_ANULADO, ESTADO_CONVENIO, TituloCredito } from '../titulosCredito/titulos-credito.util';
 import { borrarEnLotes } from '../firestore-utils/batch-delete';
 import {
   COLECCION_COACTIVADOS,
@@ -75,10 +75,16 @@ export interface CoactivadoConEstado extends Coactivado {
 export interface ResumenCartera {
   cartera: string;
   coactivados: number;
+  // Sin los anulados (no son capital a recuperar): titulos, entregados, no
+  // entregados y capital. Los anulados y los cancelados en convenio se
+  // cuentan aparte.
   titulos: number;
   titulosEntregados: number;
   titulosNoEntregados: number;
   capital: number;
+  titulosAnulados: number;
+  capitalAnulado: number;
+  titulosConvenio: number;
   // Coactivados sin ninguna gestión registrada todavía (ni siquiera migrada).
   pendientes: Coactivado[];
   // Todos los coactivados de la cartera, pendientes primero — para revisar
@@ -97,6 +103,28 @@ export interface ResumenRecuperacion {
   honorarios: number; // total registrado (cobrado + por cobrar) — solo pago_total
   honorariosCobrados: number; // el IESS ya le pagó a la oficina
   honorariosPorCobrar: number;
+}
+
+// Un título pagado por el cliente (pago total) cuyo honorario el IESS todavía
+// no le ha pagado a la oficina.
+export interface TituloHonorarioPorCobrar {
+  numero: string;
+  guia?: string;
+  cartera?: string; // el abogado del título
+  montoCancelado: number;
+  honorario: number;
+  fechaCancelacion?: Date;
+  comprobante?: string;
+}
+
+// Los títulos pendientes de un coactivado juntos: así se arma la carpeta de
+// una vez en vez de buscar título por título.
+export interface GrupoHonorarioPorCobrar {
+  cedula: string;
+  nombre: string;
+  titulos: TituloHonorarioPorCobrar[];
+  totalMonto: number;
+  totalHonorario: number;
 }
 
 // Coactivado con títulos cancelados (del Excel o a mano) a los que todavía
@@ -379,13 +407,37 @@ export class CoactivadosService {
   // consultas agregadas (count/sum) para el capital — así no hay que
   // descargar cada título completo solo para sumarlo.
   // ============================================
-  private async totalesTitulosPorCartera(cartera: string): Promise<{ titulos: number; capital: number; entregados: number }> {
+  private async totalesTitulosPorCartera(cartera: string): Promise<{
+    titulos: number; capital: number; entregados: number; anulados: number; capitalAnulado: number; convenio: number;
+  }> {
     const ref = collection(this.firestore, COLECCION_TITULOS);
-    const [agg, aggEntregados] = await Promise.all([
-      getAggregateFromServer(query(ref, where('cartera', '==', cartera)), { titulos: count(), capital: sum('capital') }),
-      getAggregateFromServer(query(ref, where('cartera', '==', cartera), where('estadoEntrega', '==', 'entregado')), { entregados: count() })
+    const deCartera = where('cartera', '==', cartera);
+    // Los anulados se leen completos (son muy pocos): una suma de capital
+    // filtrada por estado exigiría un índice compuesto nuevo.
+    const [agg, aggEntregados, snapAnulados, aggConvenio] = await Promise.all([
+      getAggregateFromServer(query(ref, deCartera), { titulos: count(), capital: sum('capital') }),
+      getAggregateFromServer(query(ref, deCartera, where('estadoEntrega', '==', 'entregado')), { entregados: count() }),
+      getDocs(query(ref, deCartera, where('estadoIess', '==', ESTADO_ANULADO))),
+      getAggregateFromServer(query(ref, deCartera, where('estadoIess', '==', ESTADO_CONVENIO)), { convenio: count() })
     ]);
-    return { titulos: agg.data().titulos, capital: agg.data().capital, entregados: aggEntregados.data().entregados };
+
+    let anulados = 0, capitalAnulado = 0, anuladosEntregados = 0;
+    snapAnulados.forEach(d => {
+      const t = d.data() as TituloCredito;
+      anulados++;
+      capitalAnulado += t.capital;
+      if (t.estadoEntrega === 'entregado') anuladosEntregados++;
+    });
+    capitalAnulado = Math.round(capitalAnulado * 100) / 100;
+
+    return {
+      titulos: agg.data().titulos - anulados,
+      capital: Math.round((agg.data().capital - capitalAnulado) * 100) / 100,
+      entregados: aggEntregados.data().entregados - anuladosEntregados,
+      anulados,
+      capitalAnulado,
+      convenio: aggConvenio.data().convenio
+    };
   }
 
   // Cédulas que ya tienen al menos una gestión (incluye las migradas del
@@ -405,7 +457,10 @@ export class CoactivadosService {
     const snap = await getDocs(query(ref, where('cartera', '==', cartera)));
     const coactivados = snap.docs.map(d => d.data() as Coactivado);
     if (coactivados.length === 0) {
-      return { cartera, coactivados: 0, titulos: 0, titulosEntregados: 0, titulosNoEntregados: 0, capital: 0, pendientes: [], todos: [] };
+      return {
+        cartera, coactivados: 0, titulos: 0, titulosEntregados: 0, titulosNoEntregados: 0, capital: 0,
+        titulosAnulados: 0, capitalAnulado: 0, titulosConvenio: 0, pendientes: [], todos: []
+      };
     }
 
     const cedulas = coactivados.map(c => c.cedula);
@@ -429,6 +484,9 @@ export class CoactivadosService {
       titulosEntregados: totales.entregados,
       titulosNoEntregados: totales.titulos - totales.entregados,
       capital: totales.capital,
+      titulosAnulados: totales.anulados,
+      capitalAnulado: totales.capitalAnulado,
+      titulosConvenio: totales.convenio,
       pendientes,
       todos
     };
@@ -465,6 +523,60 @@ export class CoactivadosService {
       honorariosCobrados,
       honorariosPorCobrar: Math.round((honorarios - honorariosCobrados) * 100) / 100
     };
+  }
+
+  // ============================================
+  // 🧾 TC con honorario por cobrar: los pago_total cuyo honorario aún no se
+  // marcó como cobrado — la misma definición de "por cobrar" del resumen de
+  // recuperación. Se consulta bajo demanda (no al abrir la página): puede ser
+  // un millar de títulos.
+  // ============================================
+  async getHonorariosPorCobrar(cartera?: string): Promise<GrupoHonorarioPorCobrar[]> {
+    const ref = collection(this.firestore, COLECCION_TITULOS);
+    const snap = await getDocs(
+      cartera
+        ? query(ref, where('cartera', '==', cartera), where('tipoCancelacion', '==', 'pago_total'))
+        : query(ref, where('tipoCancelacion', '==', 'pago_total'))
+    );
+
+    const pendientes = snap.docs
+      .map(d => ({ id: d.id, ...(d.data() as TituloCredito) }))
+      .filter(t => !t.honorarioCobrado);
+    if (pendientes.length === 0) return [];
+
+    const cedulas = [...new Set(pendientes.map(t => t.coactivadoId))];
+    const refCoact = collection(this.firestore, this.collectionName);
+    const snapsCoact = await Promise.all(
+      chunks(cedulas, TAM_CHUNK_IN).map(grupo => getDocs(query(refCoact, where(documentId(), 'in', grupo))))
+    );
+    const nombres = new Map<string, string>();
+    snapsCoact.forEach(s => s.forEach(d => nombres.set(d.id, (d.data() as Coactivado).nombre)));
+
+    const redondear = (n: number) => Math.round(n * 100) / 100;
+    const grupos = new Map<string, GrupoHonorarioPorCobrar>();
+    for (const t of pendientes) {
+      const grupo = grupos.get(t.coactivadoId) ?? {
+        cedula: t.coactivadoId, nombre: nombres.get(t.coactivadoId) ?? t.coactivadoId,
+        titulos: [], totalMonto: 0, totalHonorario: 0
+      };
+      const fecha = (t.fechaCancelacion as any)?.toDate ? (t.fechaCancelacion as any).toDate() : t.fechaCancelacion;
+      grupo.titulos.push({
+        numero: t.numero ?? t.id,
+        guia: t.guia,
+        cartera: t.cartera,
+        montoCancelado: t.montoCancelado ?? 0,
+        honorario: t.honorario ?? 0,
+        fechaCancelacion: fecha,
+        comprobante: t.comprobantePago
+      });
+      grupo.totalMonto = redondear(grupo.totalMonto + (t.montoCancelado ?? 0));
+      grupo.totalHonorario = redondear(grupo.totalHonorario + (t.honorario ?? 0));
+      grupos.set(t.coactivadoId, grupo);
+    }
+
+    return [...grupos.values()]
+      .map(g => ({ ...g, titulos: g.titulos.sort((a, b) => a.numero.localeCompare(b.numero)) }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
   }
 
   // ============================================

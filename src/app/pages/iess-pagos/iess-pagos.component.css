@@ -22,6 +22,11 @@ nz-card.paso-card {
     margin-bottom: 16px;
 }
 
+.btn-plantilla {
+    display: block;
+    margin-bottom: 16px;
+}
+
 .btn-archivo {
     display: inline-flex;
     align-items: center;

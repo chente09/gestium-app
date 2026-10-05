@@ -21,7 +21,7 @@ import { UsersService } from '../users/users.service';
 import { borrarEnLotes, escribirEnLotes, EscrituraLote } from '../firestore-utils/batch-delete';
 import { COLECCION_COACTIVADOS, normalizarBusqueda, palabrasBusqueda } from '../coactivados/coactivados.util';
 import { COLECCION_GESTIONES } from '../gestionesCoactivado/gestiones-coactivado.service';
-import { TipoCancelacion, TituloCredito } from './titulos-credito.util';
+import { ESTADO_ANULADO, ESTADO_CONVENIO, TipoCancelacion, TituloCredito } from './titulos-credito.util';
 import { claveGestionHistorica, Existente, FilaTitulo, GestionHistorica, PlanCarga } from './importador-titulos.util';
 import { FilaPago, PlanPagos, TituloExistente } from './pagos-titulos.util';
 
@@ -69,10 +69,13 @@ export interface CargaPagos {
   noEncontrados: number;
   conflictos: number;
   invalidos: number;
-  // Si el archivo representaba títulos con el honorario ya cobrado del IESS,
-  // o solo títulos cancelados por el cliente pero con el honorario aún
-  // pendiente de solicitar/cobrar.
+  // Si todos los títulos aplicados tenían el honorario ya cobrado del IESS
+  // (false = alguno o todos quedaron con el honorario aún pendiente de
+  // solicitar/cobrar).
   honorarioYaCobrado: boolean;
+  // Cuántos de los aplicados quedaron con honorario cobrado. Las cargas
+  // anteriores no lo guardaban (ahí manda honorarioYaCobrado).
+  honorariosCobrados?: number;
   realizadoPor: { uid: string; nombre: string };
   fecha: Date | any;
 }
@@ -150,7 +153,31 @@ export class TitulosCreditoService {
   // matriz del IESS. deshacerCancelacion es para el otro caso (sí se
   // registró un pago/abono y hay que deshacerlo).
   async revertirEstadoCancelado(numero: string): Promise<void> {
-    await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), { estadoIess: deleteField() });
+    await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), {
+      estadoIess: deleteField(),
+      ...this.sellarEstadoManual()
+    });
+  }
+
+  // Solo admin: marca un título como "cancelado en convenio" o "anulado".
+  // Solo para títulos sin pago registrado desde la app (con pago, primero se
+  // deshace). Queda sellado como manual: las matrices no lo pisan.
+  async marcarEstadoTitulo(numero: string, estado: typeof ESTADO_CONVENIO | typeof ESTADO_ANULADO): Promise<void> {
+    await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), {
+      estadoIess: estado,
+      ...this.sellarEstadoManual()
+    });
+  }
+
+  private sellarEstadoManual(): Record<string, any> {
+    const user = this.usersService.getCurrentUser();
+    const register = this.registersService.getCurrentRegister();
+    if (!user || !register) throw new Error('🔒 Usuario no autenticado');
+    return {
+      estadoManual: true,
+      estadoModificadoPor: { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' },
+      fechaEstadoModificado: new Date()
+    };
   }
 
   // Solo admin: deshace una cancelación registrada por error (usa la regla
@@ -207,7 +234,10 @@ export class TitulosCreditoService {
     const resultado = new Map<string, Existente>();
     snaps.forEach(snap => snap.forEach(d => {
       const data = d.data() as TituloCredito;
-      resultado.set(d.id, { numero: d.id, coactivadoId: data.coactivadoId, estadoEntrega: data.estadoEntrega, estadoIess: data.estadoIess });
+      resultado.set(d.id, {
+        numero: d.id, coactivadoId: data.coactivadoId, estadoEntrega: data.estadoEntrega,
+        estadoIess: data.estadoIess, estadoManual: data.estadoManual
+      });
     }));
     return resultado;
   }
@@ -440,7 +470,7 @@ export class TitulosCreditoService {
     const resultado = new Map<string, TituloExistente>();
     snaps.forEach(snap => snap.forEach(d => {
       const data = d.data() as TituloCredito;
-      resultado.set(d.id, { numero: d.id, coactivadoId: data.coactivadoId, yaEstabaCobrado: !!data.honorarioCobrado });
+      resultado.set(d.id, { numero: d.id, coactivadoId: data.coactivadoId, cartera: data.cartera, yaEstabaCobrado: !!data.honorarioCobrado });
     }));
     return resultado;
   }
@@ -451,6 +481,11 @@ export class TitulosCreditoService {
     if (!user || !register) throw new Error('🔒 Usuario no autenticado');
     const realizadoPor = { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' };
 
+    // El archivo puede traer el estado del honorario fila por fila ("Estado
+    // honorario"); si una fila no lo dice, vale la respuesta del admin.
+    const cobrado = (f: FilaPago) => f.honorarioCobrado ?? honorarioYaCobrado;
+    const honorariosCobrados = plan.validos.filter(cobrado).length;
+
     const carga: Omit<CargaPagos, 'id'> = {
       archivo,
       aplicados: plan.validos.length,
@@ -458,7 +493,8 @@ export class TitulosCreditoService {
       noEncontrados: plan.noEncontrados.length,
       conflictos: plan.conflictos.length,
       invalidos: plan.invalidos.length,
-      honorarioYaCobrado,
+      honorarioYaCobrado: honorariosCobrados === plan.validos.length,
+      honorariosCobrados,
       realizadoPor,
       fecha: new Date()
     };
@@ -467,7 +503,7 @@ export class TitulosCreditoService {
     const escrituras: EscrituraLote[] = plan.validos.map(f => ({
       ref: doc(this.firestore, `${this.collectionName}/${f.numero}`),
       tipo: 'update',
-      data: this.camposPago(f, realizadoPor, cargaRef.id, honorarioYaCobrado)
+      data: this.camposPago(f, realizadoPor, cargaRef.id, cobrado(f))
     }));
 
     await escribirEnLotes(this.firestore, escrituras);

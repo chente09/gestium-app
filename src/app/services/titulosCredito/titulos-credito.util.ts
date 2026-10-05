@@ -22,7 +22,12 @@ export interface TituloCredito {
   cartera?: string;
   capital: number;
   estadoEntrega: EstadoEntrega;
-  estadoIess?: string; // ej. TRANSFERIDO A TRAMITE COACTIVA / CANCELADO TRAMITE DE COACTIVA
+  estadoIess?: string; // ej. TRANSFERIDO A TRAMITE COACTIVA / CANCELADO TRAMITE DE COACTIVA / CANCELADO EN CONVENIO / ANULADO
+  // Un admin lo marcó (o lo revirtió) a mano: una nueva carga de matrices no
+  // lo pisa con lo que infiere de las observaciones.
+  estadoManual?: boolean;
+  estadoModificadoPor?: { uid: string; nombre: string };
+  fechaEstadoModificado?: Date | any;
   guia?: string; // guía de legalización
   guiaCoactiva?: string;
   // Fechas como "yyyy-MM-dd" (son fechas de calendario, sin hora).
@@ -65,8 +70,41 @@ export function esRucValido(ruc: string): boolean {
   return /^(\d{10}|\d{13})$/.test(ruc);
 }
 
+export const ESTADO_CONVENIO = 'CANCELADO EN CONVENIO';
+export const ESTADO_ANULADO = 'ANULADO';
+
+// Convenio y anulado son estados aparte: "cancelado en convenio" contiene la
+// palabra "cancelado" pero NO es un título pagado, así que no cuenta como tal.
+export function esAnulado(titulo: { estadoIess?: string }): boolean {
+  return /anulad/i.test(titulo.estadoIess ?? '');
+}
+
+export function esEnConvenio(titulo: { estadoIess?: string }): boolean {
+  return /convenio/i.test(titulo.estadoIess ?? '');
+}
+
 export function esCancelado(titulo: { estadoIess?: string }): boolean {
-  return /cancelad/i.test(titulo.estadoIess ?? '');
+  const estado = titulo.estadoIess ?? '';
+  return /cancelad/i.test(estado) && !esEnConvenio(titulo);
+}
+
+// Unifica el texto libre del IESS ("CANCELADO EN CONVENIO DE PURGA…",
+// "ANULADA") a los dos valores fijos, para poder contarlos por igualdad.
+export function normalizarEstadoIess(texto: string): string {
+  const t = texto.trim().toUpperCase();
+  if (/ANULAD/.test(t)) return ESTADO_ANULADO;
+  if (/CONVENIO/.test(t)) return ESTADO_CONVENIO;
+  return t;
+}
+
+// Cómo se ve un título en la tabla: una sola etiqueta con su color.
+export function estadoVisual(t: { estadoIess?: string; estadoEntrega: EstadoEntrega }): { texto: string; color: string } {
+  if (esAnulado(t)) return { texto: 'Anulado', color: 'default' };
+  if (esEnConvenio(t)) return { texto: 'En convenio', color: 'cyan' };
+  if (esCancelado(t)) return { texto: 'Cancelado', color: 'red' };
+  return t.estadoEntrega === 'entregado'
+    ? { texto: 'Entregado', color: 'green' }
+    : { texto: 'No entregado', color: 'gold' };
 }
 
 export interface ResumenTitulos {
@@ -78,6 +116,13 @@ export interface ResumenTitulos {
   capitalEntregado: number;
   capitalNoEntregado: number;
   capitalCancelado: number;
+  // Aparte: un anulado no es capital a recuperar (total, entregados, no
+  // entregados y capital no lo cuentan); un convenio es un estado propio, no
+  // un pago.
+  anulados: number;
+  capitalAnulado: number;
+  enConvenio: number;
+  capitalConvenio: number;
   // Lo realmente cobrado (pago_total), no el capital nominal del título —
   // para ver de un vistazo cuánto se ha recuperado de este caso puntual.
   montoRecuperado: number;
@@ -90,13 +135,20 @@ export function resumirTitulos(titulos: TituloCredito[]): ResumenTitulos {
   const r: ResumenTitulos = {
     total: titulos.length, entregados: 0, noEntregados: 0, cancelados: 0,
     capitalTotal: 0, capitalEntregado: 0, capitalNoEntregado: 0, capitalCancelado: 0,
+    anulados: 0, capitalAnulado: 0, enConvenio: 0, capitalConvenio: 0,
     montoRecuperado: 0, honorarios: 0
   };
 
   for (const t of titulos) {
+    if (esAnulado(t)) {
+      // Anulado: no es capital a recuperar ni está pendiente.
+      r.anulados++; r.capitalAnulado += t.capital;
+      continue;
+    }
     r.capitalTotal += t.capital;
     if (t.estadoEntrega === 'entregado') { r.entregados++; r.capitalEntregado += t.capital; }
     else { r.noEntregados++; r.capitalNoEntregado += t.capital; }
+    if (esEnConvenio(t)) { r.enConvenio++; r.capitalConvenio += t.capital; }
     if (esCancelado(t)) { r.cancelados++; r.capitalCancelado += t.capital; }
     if (t.tipoCancelacion === 'abono' || t.tipoCancelacion === 'pago_total') {
       r.montoRecuperado += t.montoCancelado ?? 0;
@@ -110,6 +162,8 @@ export function resumirTitulos(titulos: TituloCredito[]): ResumenTitulos {
   r.capitalEntregado = redondear(r.capitalEntregado);
   r.capitalNoEntregado = redondear(r.capitalNoEntregado);
   r.capitalCancelado = redondear(r.capitalCancelado);
+  r.capitalAnulado = redondear(r.capitalAnulado);
+  r.capitalConvenio = redondear(r.capitalConvenio);
   r.montoRecuperado = redondear(r.montoRecuperado);
   r.honorarios = redondear(r.honorarios);
   return r;

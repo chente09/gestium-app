@@ -76,5 +76,86 @@
                 </nz-table>
             </div>
         </nz-card>
+
+        <!-- ================= DETALLE: TC CON HONORARIO POR COBRAR ================= -->
+        <nz-card nzTitle="Honorarios por cobrar — detalle de TC" class="paso-card">
+            <p class="nota-detalle">
+                Títulos que el cliente ya pagó pero cuyo honorario el IESS todavía no paga a la oficina, agrupados por
+                coactivado. Sirve para cotejar con las carpetas y ver cuáles están listas para la firma.
+            </p>
+
+            <div class="detalle-controles">
+                <nz-select [(ngModel)]="carteraDetalle" nzAllowClear nzPlaceHolder="Todos los abogados" class="select-detalle">
+                    <nz-option *ngFor="let c of carteras" [nzValue]="c" [nzLabel]="c"></nz-option>
+                </nz-select>
+                <button nz-button nzType="primary" class="brand-btn" [nzLoading]="cargandoDetalle" (click)="cargarDetalle()">
+                    <nz-icon nzType="search"></nz-icon> Ver detalle
+                </button>
+                <button nz-button *ngIf="grupos && grupos.length > 0" [nzLoading]="exportando" (click)="exportarDetalle()">
+                    <nz-icon nzType="download"></nz-icon> Descargar Excel
+                </button>
+            </div>
+
+            <ng-container *ngIf="grupos">
+                <nz-empty *ngIf="grupos.length === 0" nzNotFoundContent="No hay honorarios por cobrar con ese filtro."></nz-empty>
+
+                <ng-container *ngIf="grupos.length > 0">
+                    <p class="resumen-detalle">
+                        <b>{{ grupos.length }}</b> coactivado(s), <b>{{ totalTitulosDetalle }}</b> TC —
+                        honorario por cobrar: <b>{{ formatoMoneda(totalHonorarioDetalle) }}</b>
+                    </p>
+
+                    <input nz-input [(ngModel)]="filtroDetalle" placeholder="Filtrar por nombre o RUC..." class="filtro-detalle" />
+
+                    <nz-empty *ngIf="gruposFiltrados.length === 0" nzNotFoundContent="Sin resultados para ese filtro."></nz-empty>
+
+                    <div class="tabla-scroll" *ngIf="gruposFiltrados.length > 0">
+                        <nz-table #tablaGrupos [nzData]="gruposFiltrados" [nzPageSize]="20" [nzShowPagination]="gruposFiltrados.length > 20" nzSize="small" [nzBordered]="true">
+                            <thead>
+                                <tr>
+                                    <th nzWidth="40px"></th>
+                                    <th>Coactivado</th>
+                                    <th>RUC</th>
+                                    <th>TC</th>
+                                    <th>Honorario por cobrar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <ng-container *ngFor="let g of tablaGrupos.data; trackBy: trackByGrupo">
+                                    <tr>
+                                        <td [nzExpand]="estaExpandido(g.cedula)" (nzExpandChange)="alternarExpandido(g.cedula, $event)"></td>
+                                        <td>{{ g.nombre }}</td>
+                                        <td class="nowrap">{{ g.cedula }}</td>
+                                        <td>{{ g.titulos.length }}</td>
+                                        <td class="nowrap">{{ formatoMoneda(g.totalHonorario) }}</td>
+                                    </tr>
+                                    <tr [nzExpand]="estaExpandido(g.cedula)">
+                                        <td></td>
+                                        <td colspan="4">
+                                            <nz-table [nzData]="g.titulos" [nzShowPagination]="false" nzSize="small" [nzBordered]="true">
+                                                <thead>
+                                                    <tr><th>TC</th><th>Guía</th><th>Abogado</th><th>Monto</th><th>Honorario</th><th>Fecha</th><th>Comprobante</th></tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr *ngFor="let t of g.titulos">
+                                                        <td>{{ t.numero }}</td>
+                                                        <td>{{ t.guia || '—' }}</td>
+                                                        <td>{{ t.cartera || '—' }}</td>
+                                                        <td class="nowrap">{{ formatoMoneda(t.montoCancelado) }}</td>
+                                                        <td class="nowrap">{{ formatoMoneda(t.honorario) }}</td>
+                                                        <td class="nowrap">{{ t.fechaCancelacion ? (t.fechaCancelacion | date:'dd/MM/yyyy') : '—' }}</td>
+                                                        <td>{{ t.comprobante || '—' }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </nz-table>
+                                        </td>
+                                    </tr>
+                                </ng-container>
+                            </tbody>
+                        </nz-table>
+                    </div>
+                </ng-container>
+            </ng-container>
+        </nz-card>
     </ng-container>
 </div>

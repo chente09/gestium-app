@@ -177,6 +177,12 @@
                         <span class="chip-titulos cancelado" *ngIf="resumenTitulos.cancelados > 0">
                             {{ resumenTitulos.cancelados }} cancelado(s) ({{ formatoMoneda(resumenTitulos.capitalCancelado) }})
                         </span>
+                        <span class="chip-titulos" *ngIf="resumenTitulos.enConvenio > 0">
+                            {{ resumenTitulos.enConvenio }} en convenio ({{ formatoMoneda(resumenTitulos.capitalConvenio) }})
+                        </span>
+                        <span class="chip-titulos" *ngIf="resumenTitulos.anulados > 0">
+                            {{ resumenTitulos.anulados }} anulado(s) ({{ formatoMoneda(resumenTitulos.capitalAnulado) }}, no cuentan en el capital)
+                        </span>
                     </div>
 
                     <nz-collapse *ngIf="!cargandoTitulos && titulos.length > 0" class="collapse-titulos">
@@ -212,9 +218,7 @@
                                             <td>{{ t.numero }}</td>
                                             <td>{{ formatoMoneda(t.capital) }}</td>
                                             <td>
-                                                <nz-tag [nzColor]="esCancelado(t) ? 'red' : t.estadoEntrega === 'entregado' ? 'green' : 'gold'">
-                                                    {{ esCancelado(t) ? 'Cancelado' : (t.estadoEntrega === 'entregado' ? 'Entregado' : 'No entregado') }}
-                                                </nz-tag>
+                                                <nz-tag [nzColor]="estadoVisual(t).color">{{ estadoVisual(t).texto }}</nz-tag>
                                                 <nz-tag
                                                     *ngIf="t.cartera && seleccionado && t.cartera !== seleccionado.cartera"
                                                     nzColor="purple"
@@ -238,7 +242,7 @@
                                             <td class="nowrap">{{ fechaCorta(t.fechaSorteo) }}</td>
                                             <td class="nowrap">
                                                 <button
-                                                    *ngIf="!t.tipoCancelacion"
+                                                    *ngIf="!t.tipoCancelacion && !esAnulado(t) && !esEnConvenio(t)"
                                                     nz-button
                                                     nzType="link"
                                                     nzSize="small"
@@ -257,17 +261,34 @@
                                                     Deshacer
                                                 </button>
                                                 <button
-                                                    *ngIf="esAdmin && !t.tipoCancelacion && esCancelado(t)"
+                                                    *ngIf="esAdmin && !t.tipoCancelacion && (esCancelado(t) || esEnConvenio(t) || esAnulado(t))"
                                                     nz-button
                                                     nzType="link"
                                                     nzDanger
                                                     nzSize="small"
                                                     nz-popconfirm
-                                                    nzPopconfirmTitle="¿Quitar la marca de cancelado? Viene del Excel y no tiene ningún pago registrado desde la app."
+                                                    nzPopconfirmTitle="¿Quitar el estado marcado? No tiene ningún pago registrado desde la app."
                                                     nzPopconfirmPlacement="left"
                                                     (nzOnConfirm)="revertirEstadoCancelado(t)">
                                                     Revertir estado
                                                 </button>
+                                                <ng-container *ngIf="esAdmin && !t.tipoCancelacion && !esAnulado(t) && !esEnConvenio(t)">
+                                                    <button
+                                                        nz-button
+                                                        nzType="link"
+                                                        nzSize="small"
+                                                        nz-dropdown
+                                                        [nzDropdownMenu]="menuMarcarEstado"
+                                                        nzTrigger="click">
+                                                        Marcar como <nz-icon nzType="down"></nz-icon>
+                                                    </button>
+                                                    <nz-dropdown-menu #menuMarcarEstado="nzDropdownMenu">
+                                                        <ul nz-menu>
+                                                            <li nz-menu-item (click)="marcarEstadoTitulo(t, ESTADO_CONVENIO)">Cancelado en convenio</li>
+                                                            <li nz-menu-item (click)="marcarEstadoTitulo(t, ESTADO_ANULADO)">Anulado</li>
+                                                        </ul>
+                                                    </nz-dropdown-menu>
+                                                </ng-container>
                                             </td>
                                         </tr>
                                     </tbody>

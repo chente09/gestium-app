@@ -66,3 +66,29 @@ nz-card.paso-card {
 .tabla-scroll {
     overflow-x: auto;
 }
+
+.nota-detalle {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.detalle-controles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.select-detalle {
+    min-width: 220px;
+}
+
+.resumen-detalle {
+    margin-bottom: 12px;
+}
+
+.filtro-detalle {
+    max-width: 360px;
+    margin-bottom: 12px;
+}

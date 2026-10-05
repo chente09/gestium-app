@@ -4,7 +4,14 @@
 // Firestore) para probarlas con los archivos reales.
 
 import { normalizarNombre } from '../coactivados/coactivados.util';
-import { EstadoEntrega, esRucValido, normalizarRuc } from './titulos-credito.util';
+import {
+  ESTADO_ANULADO,
+  ESTADO_CONVENIO,
+  EstadoEntrega,
+  esRucValido,
+  normalizarEstadoIess,
+  normalizarRuc
+} from './titulos-credito.util';
 
 export type Celda = string | number | Date | null | undefined;
 
@@ -256,6 +263,15 @@ function notaOpcional(celda: Celda): string | undefined {
   return t || undefined;
 }
 
+// Estado que sugiere el texto de las observaciones (la matriz de llamadas no
+// trae columna de estado). "Cancelado en convenio" y "anulado" son estados
+// propios: no se confunden con un título cancelado (pagado).
+export function estadoDesdeObservacion(texto: string): string | undefined {
+  if (/\banulad[oa]s?\b/i.test(texto)) return ESTADO_ANULADO;
+  if (/cancelad/i.test(texto)) return /convenio/i.test(texto) ? ESTADO_CONVENIO : 'CANCELADO';
+  return undefined;
+}
+
 export function extraerFilas(
   hoja: TablaHoja,
   formato: FormatoDetectado
@@ -290,7 +306,10 @@ export function extraerFilas(
       capital,
       estadoEntrega: formato.estadoEntrega
     };
-    if (c.estadoIess !== undefined) fila.estadoIess = textoOpcional(r[c.estadoIess]);
+    if (c.estadoIess !== undefined) {
+      const estado = textoOpcional(r[c.estadoIess]);
+      fila.estadoIess = estado ? normalizarEstadoIess(estado) : undefined;
+    }
     if (c.guia !== undefined) fila.guia = normalizarGuia(r[c.guia]);
     if (c.guiaCoactiva !== undefined) fila.guiaCoactiva = normalizarGuia(r[c.guiaCoactiva]);
     if (c.fechaSorteo !== undefined) fila.fechaSorteo = parseFechaISO(r[c.fechaSorteo]);
@@ -310,8 +329,8 @@ export function extraerFilas(
     // título cancelado es la palabra "CANCELADO" al final de la observación
     // (en Excel además se pinta la fila de rojo, pero eso es solo un aviso
     // visual — el texto es el dato real).
-    if (!fila.estadoIess && /cancelad/i.test(`${fila.observacion ?? ''} ${fila.observacionGeneral ?? ''}`)) {
-      fila.estadoIess = 'CANCELADO';
+    if (!fila.estadoIess) {
+      fila.estadoIess = estadoDesdeObservacion(`${fila.observacion ?? ''} ${fila.observacionGeneral ?? ''}`);
     }
 
     filas.push(fila);
@@ -348,6 +367,8 @@ export interface Existente {
   coactivadoId: string;
   estadoEntrega: EstadoEntrega;
   estadoIess?: string;
+  // Un admin marcó/revirtió el estado a mano: no se pisa al cargar matrices.
+  estadoManual?: boolean;
 }
 
 export interface OpcionesCarga {
@@ -543,12 +564,14 @@ export function planificarCarga(
 
     const existente = existentes.get(f.numero);
     if (existente) {
+      // Si un admin fijó el estado a mano, lo que infiere el archivo no lo pisa.
+      const fila = existente.estadoManual ? { ...f, estadoIess: undefined } : f;
       if (existente.coactivadoId !== f.ruc) {
         plan.conflictos.push({ fila: f, motivo: `El título ya está registrado con otro RUC (${existente.coactivadoId})` });
       } else if (existente.estadoEntrega === 'no_entregado' && f.estadoEntrega === 'entregado') {
-        plan.transiciones.push(f);
-      } else if (f.estadoIess && f.estadoIess !== existente.estadoIess) {
-        plan.actualizaciones.push(f);
+        plan.transiciones.push(fila);
+      } else if (fila.estadoIess && fila.estadoIess !== existente.estadoIess) {
+        plan.actualizaciones.push(fila);
       } else {
         plan.duplicados.push({ fila: f, motivo: existente.estadoEntrega === f.estadoEntrega ? 'Ya estaba cargado' : 'Ya estaba entregado' });
       }

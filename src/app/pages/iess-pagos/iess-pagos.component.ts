@@ -16,11 +16,13 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { SharedDataService } from '../../services/sharedData/shared-data.service';
 import { TitulosCreditoService, CargaPagos } from '../../services/titulosCredito/titulos-credito.service';
 import { formatoMoneda, fechaCorta } from '../../services/titulosCredito/titulos-credito.util';
 import { FilaPago, PlanPagos, extraerFilasPago, planificarPagos } from '../../services/titulosCredito/pagos-titulos.util';
 import { FilaInvalida } from '../../services/titulosCredito/importador-titulos.util';
 import { leerArchivoTablas } from '../iess-titulos/lector-archivo.util';
+import { descargarPlantillaPagos } from './plantilla-pagos.export';
 
 @Component({
   selector: 'app-iess-pagos',
@@ -52,16 +54,22 @@ export class IessPagosComponent implements OnInit {
   leyendo = false;
   analizando = false;
   confirmando = false;
+  descargandoPlantilla = false;
   plan: PlanPagos | null = null;
   honorarioYaCobrado = true;
 
   cargas: CargaPagos[] = [];
   cargandoHistorial = false;
 
+  readonly carteras: string[];
+
   constructor(
     private titulosService: TitulosCreditoService,
+    private sharedData: SharedDataService,
     private message: NzMessageService
-  ) { }
+  ) {
+    this.carteras = this.sharedData.getCarterasIess();
+  }
 
   ngOnInit(): void {
     this.cargarHistorial();
@@ -104,7 +112,7 @@ export class IessPagosComponent implements OnInit {
       }
 
       if (filasTotales.length === 0 && invalidasTotales.length === 0) {
-        this.message.warning('No se reconocieron columnas de pagos en este archivo (se esperan RUC, Título de crédito, Honorarios, Total cancelado).');
+        this.message.warning('No se reconocieron columnas de pagos en este archivo (se esperan RUC, TC, Total y Honorario — o Capital + Interés en vez de Total).');
         this.archivo = null;
         return;
       }
@@ -112,7 +120,7 @@ export class IessPagosComponent implements OnInit {
       this.analizando = true;
       const numeros = [...new Set(filasTotales.map(f => f.numero))];
       const existentes = await this.titulosService.getTitulosPorNumeros(numeros);
-      this.plan = planificarPagos(filasTotales, invalidasTotales, existentes);
+      this.plan = planificarPagos(filasTotales, invalidasTotales, existentes, this.carteras);
     } catch (error) {
       console.error('Error leyendo el archivo:', error);
       this.message.error('No se pudo leer el archivo. ¿Es un .xlsx o .csv válido?');
@@ -123,8 +131,41 @@ export class IessPagosComponent implements OnInit {
     }
   }
 
+  async descargarPlantilla(): Promise<void> {
+    this.descargandoPlantilla = true;
+    try {
+      await descargarPlantillaPagos(this.carteras);
+    } catch (error) {
+      console.error('Error generando la plantilla:', error);
+      this.message.error('No se pudo generar la plantilla.');
+    } finally {
+      this.descargandoPlantilla = false;
+    }
+  }
+
   get puedeConfirmar(): boolean {
     return !!this.plan && this.plan.validos.length > 0;
+  }
+
+  // Estado del honorario que trae el propio archivo ("Estado honorario").
+  // La pregunta al admin solo hace falta para las filas que no lo traen.
+  get validosConHonorarioPendiente(): number {
+    return this.plan ? this.plan.validos.filter(f => f.honorarioCobrado === false).length : 0;
+  }
+
+  get validosConHonorarioCobrado(): number {
+    return this.plan ? this.plan.validos.filter(f => f.honorarioCobrado === true).length : 0;
+  }
+
+  get validosSinEstadoHonorario(): number {
+    return this.plan ? this.plan.validos.filter(f => f.honorarioCobrado === undefined).length : 0;
+  }
+
+  etiquetaHonorario(c: CargaPagos): { texto: string; color: string } {
+    const cobrados = c.honorariosCobrados ?? (c.honorarioYaCobrado !== false ? c.aplicados : 0);
+    if (cobrados === c.aplicados) return { texto: 'Cobrado', color: 'green' };
+    if (cobrados === 0) return { texto: 'Pendiente', color: 'orange' };
+    return { texto: `Mixto (${cobrados} cobrados)`, color: 'blue' };
   }
 
   async confirmar(): Promise<void> {
@@ -132,8 +173,13 @@ export class IessPagosComponent implements OnInit {
 
     this.confirmando = true;
     try {
+      const pendientes = this.validosConHonorarioPendiente + (this.honorarioYaCobrado ? 0 : this.validosSinEstadoHonorario);
       await this.titulosService.confirmarPagos(this.plan, this.archivo.name, this.honorarioYaCobrado);
-      const detalleHonorario = this.honorarioYaCobrado ? 'con honorario cobrado' : 'con honorario aún pendiente de cobrar';
+      const detalleHonorario = pendientes === 0
+        ? 'con honorario cobrado'
+        : pendientes === this.plan.validos.length
+          ? 'con honorario aún pendiente de cobrar'
+          : `${pendientes} con honorario aún pendiente de cobrar`;
       this.message.success(`Se aplicaron ${this.plan.validos.length} pago(s) — título marcado como cancelado, ${detalleHonorario}.`);
       this.reiniciar();
       await this.cargarHistorial();

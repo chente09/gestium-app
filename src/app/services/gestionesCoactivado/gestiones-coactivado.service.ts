@@ -15,11 +15,12 @@ export const COLECCION_GESTIONES = 'gestiones_coactivado';
 
 // 'migrado' no se registra a mano: lo crea el importador de títulos al
 // migrar las notas del Excel en la carga inicial (ver TitulosCreditoService).
-export type TipoGestion = 'llamada' | 'mensaje' | 'reunion' | 'otro' | 'migrado';
+export type TipoGestion = 'llamada' | 'correo' | 'mensaje' | 'reunion' | 'otro' | 'migrado';
 
 // El orden acá es el orden en que aparecen los botones en la bitácora.
 export const TIPOS_GESTION: Record<TipoGestion, string> = {
   llamada: 'Llamada',
+  correo: 'Correo',
   mensaje: 'Mensaje',
   reunion: 'Reunión',
   otro: 'Otro',
@@ -27,7 +28,7 @@ export const TIPOS_GESTION: Record<TipoGestion, string> = {
 };
 
 // Tipos que sí puede elegir una persona al registrar una gestión a mano.
-export const TIPOS_GESTION_SELECCIONABLES: TipoGestion[] = ['llamada', 'mensaje', 'reunion', 'otro'];
+export const TIPOS_GESTION_SELECCIONABLES: TipoGestion[] = ['llamada', 'correo', 'mensaje', 'reunion', 'otro'];
 
 // Cualquiera del área IESS puede corregir el tipo y el texto de una gestión
 // (queda sellado quién y cuándo la editó); solo admin puede borrarla. Quién

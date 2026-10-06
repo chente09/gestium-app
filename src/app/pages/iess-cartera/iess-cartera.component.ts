@@ -13,6 +13,7 @@ import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import { NzRadioModule } from 'ng-zorro-antd/radio';
 
 import {
   CoactivadosService,
@@ -40,7 +41,8 @@ import { formatoMoneda } from '../../services/titulosCredito/titulos-credito.uti
     NzStatisticModule,
     NzAlertModule,
     NzEmptyModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    NzRadioModule
   ],
   templateUrl: './iess-cartera.component.html',
   styleUrl: './iess-cartera.component.css'
@@ -51,6 +53,7 @@ export class IessCarteraComponent implements OnInit {
   resumenCancelados: ResumenCancelados | null = null;
   cargando = false;
   filtro = '';
+  filtroLlamada: 'todos' | 'sin' | 'con' = 'todos';
   readonly formatoMoneda = formatoMoneda;
 
   constructor(
@@ -82,7 +85,10 @@ export class IessCarteraComponent implements OnInit {
   get filtrados(): CoactivadoConEstado[] {
     if (!this.resumen) return [];
     const t = normalizarBusqueda(this.filtro);
-    return t ? this.resumen.todos.filter(c => c.nombreBusqueda.includes(t)) : this.resumen.todos;
+    return this.resumen.todos.filter(c =>
+      (!t || c.nombreBusqueda.includes(t)) &&
+      (this.filtroLlamada === 'todos' || (this.filtroLlamada === 'con') === c.tieneLlamada)
+    );
   }
 
   abrirFicha(c: { cedula: string }): void {

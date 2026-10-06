@@ -78,6 +78,63 @@
                     </button>
                 </ng-container>
             </nz-card>
+
+            <!-- Casos de la cartera del coactivado abierto: navegar sin volver a la lista general -->
+            <nz-card *ngIf="seleccionado" class="card-casos" [nzBodyStyle]="{ padding: '12px' }">
+                <div class="casos-cabecera">
+                    <div class="casos-titulo">
+                        <strong>Casos de {{ seleccionado.cartera }}</strong>
+                        <span class="casos-posicion" *ngIf="indiceCasoActual >= 0">
+                            {{ indiceCasoActual + 1 }} de {{ listaCasos.length }}
+                        </span>
+                    </div>
+                    <div class="casos-nav">
+                        <button
+                            nz-button
+                            nzSize="small"
+                            type="button"
+                            aria-label="Caso anterior"
+                            [disabled]="indiceCasoActual <= 0"
+                            (click)="irAlCaso(-1)">
+                            <nz-icon nzType="left"></nz-icon>
+                        </button>
+                        <button
+                            nz-button
+                            nzSize="small"
+                            type="button"
+                            aria-label="Caso siguiente"
+                            [disabled]="indiceCasoActual < 0 || indiceCasoActual >= listaCasos.length - 1"
+                            (click)="irAlCaso(1)">
+                            <nz-icon nzType="right"></nz-icon>
+                        </button>
+                        <button
+                            nz-button
+                            nzSize="small"
+                            nzType="text"
+                            type="button"
+                            aria-label="Mostrar u ocultar la lista"
+                            (click)="alternarLista()">
+                            <nz-icon [nzType]="listaAbierta ? 'up' : 'down'"></nz-icon>
+                        </button>
+                    </div>
+                </div>
+
+                <ng-container *ngIf="listaAbierta">
+                    <nz-empty *ngIf="cargandoLista" nzNotFoundContent="Cargando casos..."></nz-empty>
+
+                    <div class="lista-casos" *ngIf="!cargandoLista">
+                        <button
+                            type="button"
+                            class="caso-item"
+                            *ngFor="let c of listaCasos; trackBy: trackByCedula"
+                            [class.activo]="seleccionado.cedula === c.cedula"
+                            (click)="seleccionar(c)">
+                            <span class="caso-nombre">{{ c.nombre }}</span>
+                            <span class="caso-cedula">{{ c.cedula }}</span>
+                        </button>
+                    </div>
+                </ng-container>
+            </nz-card>
         </aside>
 
         <!-- ================= FICHA ================= -->
@@ -529,6 +586,13 @@
                             nzShowIcon
                             class="alerta-pendientes"
                             nzMessage="Todos tienen al menos una gestión">
+                        </nz-alert>
+                        <nz-alert
+                            *ngIf="r.coactivados > 0 && r.sinLlamada > 0"
+                            nzType="info"
+                            nzShowIcon
+                            class="alerta-pendientes"
+                            [nzMessage]="r.sinLlamada + ' sin llamada todavía'">
                         </nz-alert>
 
                         <nz-alert

@@ -72,3 +72,8 @@ nz-card.paso-card {
     font-size: 13px;
     margin-bottom: 12px;
 }
+
+.filtro-llamada {
+    display: block;
+    margin-bottom: 12px;
+}

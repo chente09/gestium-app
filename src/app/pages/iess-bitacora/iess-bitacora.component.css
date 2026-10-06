@@ -419,3 +419,79 @@ nz-card {
     color: rgba(0, 0, 0, 0.55);
     font-size: 13px;
 }
+
+/* ===== Casos de la cartera (navegar entre casos) ===== */
+.card-casos {
+    margin-top: 12px;
+}
+
+.casos-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.casos-titulo {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.casos-posicion {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.casos-nav {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.lista-casos {
+    position: relative;
+    max-height: 45vh;
+    overflow-y: auto;
+}
+
+@media (min-width: 900px) {
+    .lista-casos {
+        max-height: calc(100vh - 340px);
+        min-height: 160px;
+    }
+}
+
+.caso-item {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    text-align: left;
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+}
+
+.caso-item:hover {
+    border-color: #91caff;
+}
+
+.caso-item.activo {
+    border-color: #1677ff;
+    background: #e6f4ff;
+}
+
+.caso-nombre {
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.caso-cedula {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.45);
+}

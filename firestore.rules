@@ -175,7 +175,7 @@ service cloud.firestore {
       allow create: if esDelAreaIess() &&
                        request.resource.data.registradoPor.uid == request.auth.uid &&
                        request.resource.data.coactivadoId is string &&
-                       request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro', 'migrado'] &&
+                       request.resource.data.tipo in ['llamada', 'correo', 'mensaje', 'reunion', 'otro', 'migrado'] &&
                        request.resource.data.descripcion is string &&
                        request.resource.data.descripcion.size() > 0;
 
@@ -184,7 +184,7 @@ service cloud.firestore {
       allow update: if esDelAreaIess() &&
                        request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['tipo', 'descripcion', 'observacionGeneral', 'editadoPor', 'fechaEdicion']) &&
-                       request.resource.data.tipo in ['llamada', 'mensaje', 'reunion', 'otro', 'migrado'] &&
+                       request.resource.data.tipo in ['llamada', 'correo', 'mensaje', 'reunion', 'otro', 'migrado'] &&
                        request.resource.data.descripcion is string &&
                        request.resource.data.descripcion.size() > 0 &&
                        request.resource.data.editadoPor.uid == request.auth.uid;

@@ -131,6 +131,15 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
   guardandoGestion = false;
 
+  // Casos de la cartera del coactivado abierto, en orden alfabético: para
+  // avanzar o retroceder de un caso a otro sin volver a la lista general (que
+  // arranca otra vez desde el principio). Se lee una vez por cartera.
+  listaCasos: Coactivado[] = [];
+  carteraLista: string | null = null;
+  cargandoLista = false;
+  listaAbierta = typeof window === 'undefined' || window.innerWidth >= 900;
+  private listasPorCartera = new Map<string, Coactivado[]>();
+
   // Recordatorios: integrantes del IESS entre quienes elegir responsable, y
   // los recordatorios todavía abiertos del coactivado abierto.
   responsables: { uid: string; nombre: string }[] = [];
@@ -419,8 +428,9 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.cedulaNoEncontrada = null;
     this.seleccionado = coactivado;
     this.reiniciarFormularioGestion();
+    this.cargarListaCasos(coactivado.cartera);
 
-    this.recordatoriosSub = this.gestionesService.getRecordatoriosPendientes(coactivado.cedula).subscribe({
+    this.recordatoriosSub =this.gestionesService.getRecordatoriosPendientes(coactivado.cedula).subscribe({
       next: recordatorios => this.recordatorios = recordatorios,
       error: error => console.error('Error cargando recordatorios:', error)
     });
@@ -443,6 +453,87 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
         this.message.error('No se pudieron cargar las gestiones.');
       }
     });
+  }
+
+  // ============================================
+  // 🧭 Lista de casos de la cartera (navegar entre casos)
+  // ============================================
+  private async cargarListaCasos(cartera: string): Promise<void> {
+    // Misma cartera que la lista ya cargada: solo se reubica la posición.
+    if (cartera === this.carteraLista && this.listaCasos.length > 0) {
+      this.desplazarAlCasoActivo();
+      return;
+    }
+
+    const enCache = this.listasPorCartera.get(cartera);
+    if (enCache) {
+      this.listaCasos = enCache;
+      this.carteraLista = cartera;
+      this.desplazarAlCasoActivo();
+      return;
+    }
+
+    this.listaCasos = [];
+    this.carteraLista = null;
+    this.cargandoLista = true;
+    try {
+      const casos = (await this.coactivadosService.getTodosLosCoactivados(cartera))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      this.listasPorCartera.set(cartera, casos);
+      // La cartera del coactivado abierto pudo cambiar mientras cargaba.
+      if (this.seleccionado?.cartera === cartera) {
+        this.listaCasos = casos;
+        this.carteraLista = cartera;
+      }
+    } catch (error) {
+      console.error('Error cargando la lista de casos de la cartera:', error);
+      this.message.error('No se pudo cargar la lista de casos.');
+    } finally {
+      this.cargandoLista = false;
+      this.desplazarAlCasoActivo();
+    }
+  }
+
+  // Si la cartera cambió o se agregó/quitó alguien, la lista guardada ya no
+  // sirve: se vuelve a leer la próxima vez que haga falta.
+  private invalidarListaCasos(...carteras: (string | undefined)[]): void {
+    carteras.forEach(c => { if (c) this.listasPorCartera.delete(c); });
+    if (this.carteraLista && carteras.includes(this.carteraLista)) {
+      this.carteraLista = null;
+      this.listaCasos = [];
+    }
+  }
+
+  get indiceCasoActual(): number {
+    const cedula = this.seleccionado?.cedula;
+    return cedula ? this.listaCasos.findIndex(c => c.cedula === cedula) : -1;
+  }
+
+  alternarLista(): void {
+    this.listaAbierta = !this.listaAbierta;
+    if (this.listaAbierta) this.desplazarAlCasoActivo();
+  }
+
+  // delta = -1 (anterior) o +1 (siguiente).
+  irAlCaso(delta: number): void {
+    const i = this.indiceCasoActual + delta;
+    if (this.indiceCasoActual < 0 || i < 0 || i >= this.listaCasos.length) return;
+    this.seleccionar(this.listaCasos[i]);
+  }
+
+  // Centra el caso activo en la lista solo si quedó fuera de la vista, para
+  // no mover la lista debajo del cursor al hacer clic en un caso visible.
+  private desplazarAlCasoActivo(): void {
+    setTimeout(() => {
+      const contenedor = document.querySelector<HTMLElement>('.lista-casos');
+      const activo = contenedor?.querySelector<HTMLElement>('.caso-item.activo');
+      if (!contenedor || !activo) return;
+      const arriba = activo.offsetTop;
+      const abajo = arriba + activo.offsetHeight;
+      if (arriba < contenedor.scrollTop || abajo > contenedor.scrollTop + contenedor.clientHeight) {
+        contenedor.scrollTop = arriba - contenedor.clientHeight / 2 + activo.offsetHeight / 2;
+      }
+    }, 0);
   }
 
   private limpiarSeleccion(): void {
@@ -559,6 +650,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     try {
       const nuevo = await this.coactivadosService.crear(this.altaForm.value);
       this.message.success('Coactivado registrado.');
+      this.invalidarListaCasos(nuevo.cartera);
       this.seleccionar(nuevo);
     } catch (error: any) {
       if (error?.message === 'YA_EXISTE') {
@@ -609,8 +701,11 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
     this.guardandoEdicion = true;
     try {
+      const anterior = this.seleccionado;
       const actualizado = await this.coactivadosService.actualizar(this.seleccionado, this.edicionForm.value);
       this.seleccionado = actualizado;
+      this.invalidarListaCasos(anterior.cartera, actualizado.cartera);
+      this.cargarListaCasos(actualizado.cartera);
       if (this.resultados) {
         this.resultados = this.resultados.map(c => c.cedula === actualizado.cedula ? actualizado : c);
       }
@@ -648,6 +743,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     try {
       await this.coactivadosService.eliminar(coactivado.cedula);
       this.mostrarEliminacion = false;
+      this.invalidarListaCasos(coactivado.cartera);
       this.limpiarSeleccion();
       this.resultados = this.resultados?.filter(c => c.cedula !== coactivado.cedula) ?? null;
       this.message.success('Coactivado eliminado con sus gestiones y recordatorios.');
@@ -769,6 +865,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   tipoColor(tipo: TipoGestion): string {
     switch (tipo) {
       case 'llamada': return 'geekblue';
+      case 'correo': return 'orange';
       case 'mensaje': return 'green';
       case 'reunion': return 'purple';
       case 'migrado': return 'default';

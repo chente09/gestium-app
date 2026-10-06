@@ -69,6 +69,10 @@ export interface Coactivado {
 export interface CoactivadoConEstado extends Coactivado {
   // Si ya tiene alguna gestión registrada (incluye las migradas del Excel).
   tieneGestion: boolean;
+  // Si ya tiene al menos una gestión de tipo "Llamada" registrada en la app.
+  // El correo masivo del primer acercamiento y las notas migradas del Excel
+  // no cuentan: sirve para ver a quién todavía no se le ha llamado.
+  tieneLlamada: boolean;
 }
 
 // Panel de carteras: para decidir por dónde seguir gestionando.
@@ -87,6 +91,8 @@ export interface ResumenCartera {
   titulosConvenio: number;
   // Coactivados sin ninguna gestión registrada todavía (ni siquiera migrada).
   pendientes: Coactivado[];
+  // Coactivados a los que todavía no se les ha registrado una llamada.
+  sinLlamada: number;
   // Todos los coactivados de la cartera, pendientes primero — para revisar
   // el resto de casos y decidir por cuál seguir o empezar.
   todos: CoactivadoConEstado[];
@@ -442,14 +448,21 @@ export class CoactivadosService {
 
   // Cédulas que ya tienen al menos una gestión (incluye las migradas del
   // Excel: también cuentan como contacto/historial ya documentado).
-  private async cedulasConGestion(cedulas: string[]): Promise<Set<string>> {
+  // Con los mismos documentos se sabe también quién ya tiene una llamada: no
+  // cuesta lecturas extra.
+  private async estadoDeGestiones(cedulas: string[]): Promise<{ conGestion: Set<string>; conLlamada: Set<string> }> {
     const ref = collection(this.firestore, COLECCION_GESTIONES);
     const snaps = await Promise.all(
       chunks(cedulas, TAM_CHUNK_IN).map(grupo => getDocs(query(ref, where('coactivadoId', 'in', grupo))))
     );
-    const resultado = new Set<string>();
-    snaps.forEach(snap => snap.forEach(d => resultado.add((d.data() as { coactivadoId: string }).coactivadoId)));
-    return resultado;
+    const conGestion = new Set<string>();
+    const conLlamada = new Set<string>();
+    snaps.forEach(snap => snap.forEach(d => {
+      const g = d.data() as { coactivadoId: string; tipo?: string };
+      conGestion.add(g.coactivadoId);
+      if (g.tipo === 'llamada') conLlamada.add(g.coactivadoId);
+    }));
+    return { conGestion, conLlamada };
   }
 
   async getResumenCartera(cartera: string): Promise<ResumenCartera> {
@@ -459,23 +472,24 @@ export class CoactivadosService {
     if (coactivados.length === 0) {
       return {
         cartera, coactivados: 0, titulos: 0, titulosEntregados: 0, titulosNoEntregados: 0, capital: 0,
-        titulosAnulados: 0, capitalAnulado: 0, titulosConvenio: 0, pendientes: [], todos: []
+        titulosAnulados: 0, capitalAnulado: 0, titulosConvenio: 0, pendientes: [], sinLlamada: 0, todos: []
       };
     }
 
     const cedulas = coactivados.map(c => c.cedula);
-    const [totales, conGestion] = await Promise.all([
+    const [totales, { conGestion, conLlamada }] = await Promise.all([
       this.totalesTitulosPorCartera(cartera),
-      this.cedulasConGestion(cedulas)
+      this.estadoDeGestiones(cedulas)
     ]);
 
     // Pendientes primero, y alfabético dentro de cada grupo — así "ver todos"
     // también sirve para elegir por dónde arrancar.
     const todos = coactivados
-      .map(c => ({ ...c, tieneGestion: conGestion.has(c.cedula) }))
+      .map(c => ({ ...c, tieneGestion: conGestion.has(c.cedula), tieneLlamada: conLlamada.has(c.cedula) }))
       .sort((a, b) => Number(a.tieneGestion) - Number(b.tieneGestion) || a.nombre.localeCompare(b.nombre));
 
     const pendientes = todos.filter(c => !c.tieneGestion);
+    const sinLlamada = todos.filter(c => !c.tieneLlamada).length;
 
     return {
       cartera,
@@ -488,6 +502,7 @@ export class CoactivadosService {
       capitalAnulado: totales.capitalAnulado,
       titulosConvenio: totales.convenio,
       pendientes,
+      sinLlamada,
       todos
     };
   }

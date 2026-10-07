@@ -346,6 +346,28 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // Cola de la segunda instancia de "Trigger Email" (cuenta de notificaciones
+    // del IESS). La extensión escribe `delivery` con el Admin SDK, así que el
+    // cliente solo crea el documento y lo lee para saber si se entregó. Solo
+    // admite el aviso pre-coactivo: el asunto va fijo (si cambia en
+    // aviso-precoactivo.template.ts, hay que cambiarlo acá también) y como
+    // máximo 10 destinatarios (MAX_DESTINATARIOS en correos-iess.util.ts).
+    match /mail_iess/{id} {
+      allow read: if esDelAreaIess();
+      allow create: if esDelAreaIess() &&
+                       request.resource.data.keys().hasOnly(['to', 'message']) &&
+                       request.resource.data.to is list &&
+                       request.resource.data.to.size() > 0 &&
+                       request.resource.data.to.size() <= 10 &&
+                       request.resource.data.message.keys().hasOnly(['subject', 'html', 'text']) &&
+                       request.resource.data.message.subject == 'AVISO Pre-Coactivo IESS - Obligaciones Patronales' &&
+                       request.resource.data.message.html is string &&
+                       request.resource.data.message.html.size() < 100000 &&
+                       request.resource.data.message.text is string &&
+                       request.resource.data.message.text.size() < 100000;
+      allow update, delete: if false;
+    }
+
     // ============================================
     // 🚫 Todo lo demás: denegado por defecto
     // ============================================

@@ -47,6 +47,7 @@ import {
   TIPOS_GESTION,
   TIPOS_GESTION_SELECCIONABLES
 } from '../../services/gestionesCoactivado/gestiones-coactivado.service';
+import { AvisoPrecoactivoModalComponent } from './aviso-precoactivo-modal/aviso-precoactivo-modal.component';
 import { TitulosCreditoService } from '../../services/titulosCredito/titulos-credito.service';
 import {
   TituloCredito,
@@ -91,7 +92,8 @@ import {
     NzTableModule,
     NzDropDownModule,
     NzMenuModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    AvisoPrecoactivoModalComponent
   ],
   templateUrl: './iess-bitacora.component.html',
   styleUrl: './iess-bitacora.component.css'
@@ -130,6 +132,9 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   eliminandoGestionId: string | null = null;
 
   guardandoGestion = false;
+
+  // Aviso pre-coactivo por correo (modal propio: AvisoPrecoactivoModalComponent).
+  mostrarAviso = false;
 
   // Casos de la cartera del coactivado abierto, en orden alfabético: para
   // avanzar o retroceder de un caso a otro sin volver a la lista general (que
@@ -541,6 +546,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.recordatoriosSub?.unsubscribe();
     this.titulosSub?.unsubscribe();
     this.seleccionado = null;
+    this.mostrarAviso = false;
     this.gestiones = [];
     this.recordatorios = [];
     this.titulos = [];
@@ -564,6 +570,11 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
   get recordatorioActivo(): boolean {
     return !!this.gestionForm.get('recordatorio')?.value;
+  }
+
+  // Con "Correo" elegido se ofrece enviar el aviso pre-coactivo desde acá.
+  get esTipoCorreo(): boolean {
+    return this.gestionForm.get('tipo')?.value === 'correo';
   }
 
   // Vencido = su fecha ya pasó y sigue abierto.

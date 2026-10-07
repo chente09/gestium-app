@@ -111,6 +111,27 @@ export class TitulosCreditoService {
     return snap.exists() ? (snap.data() as TituloCredito) : null;
   }
 
+  // Para sumar al aviso por correo títulos que no son de este coactivado (el
+  // mismo deudor registrado con cédula y con RUC, por ejemplo): una consulta
+  // puntual, no en tiempo real. Los números que no existen simplemente no
+  // vuelven en la lista; quien llama compara para avisarlo.
+  async getPorNumeros(numeros: string[]): Promise<TituloCredito[]> {
+    const distintos = [...new Set(numeros)];
+    const ref = collection(this.firestore, this.collectionName);
+
+    const snaps = await Promise.all(
+      chunks(distintos, TAM_CHUNK_IN).map(grupo => getDocs(query(ref, where(documentId(), 'in', grupo))))
+    );
+    return snaps.flatMap(snap => snap.docs.map(d => d.data() as TituloCredito));
+  }
+
+  // Todos los títulos de otro coactivado, una sola vez (no en tiempo real).
+  async getDeCoactivado(coactivadoId: string): Promise<TituloCredito[]> {
+    const ref = collection(this.firestore, this.collectionName);
+    const snap = await getDocs(query(ref, where('coactivadoId', '==', coactivadoId)));
+    return snap.docs.map(d => d.data() as TituloCredito);
+  }
+
   async eliminarPorCoactivado(coactivadoId: string): Promise<void> {
     const ref = collection(this.firestore, this.collectionName);
     const snap = await getDocs(query(ref, where('coactivadoId', '==', coactivadoId)));

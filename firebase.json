@@ -20,6 +20,7 @@
     }
   ],
   "extensions": {
-    "firestore-send-email": "firebase/firestore-send-email@0.2.10"
+    "firestore-send-email": "firebase/firestore-send-email@0.2.10",
+    "firestore-send-email-iess": "firebase/firestore-send-email@0.2.10"
   }
 }

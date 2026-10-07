@@ -433,6 +433,30 @@
                             </nz-form-control>
                         </nz-form-item>
 
+                        <!-- Correo: el aviso pre-coactivo se arma y se envía desde acá, y la
+                             gestión se registra sola. El formulario de abajo queda para
+                             anotar correos que se mandaron por fuera de la app. -->
+                        <div class="aviso-correo" *ngIf="esTipoCorreo">
+                            <div class="aviso-correo-texto">
+                                <b>¿Vas a enviar el aviso pre-coactivo?</b>
+                                <span>
+                                    Sale desde notificaciones.iess.gestium&#64;gmail.com y la gestión se registra sola.
+                                    Si lo enviaste por fuera de la app, anótalo en el formulario de abajo.
+                                </span>
+                            </div>
+                            <button
+                                nz-button
+                                nzType="primary"
+                                class="brand-btn"
+                                type="button"
+                                [disabled]="cargandoTitulos || titulos.length === 0"
+                                nz-tooltip
+                                [nzTooltipTitle]="titulos.length === 0 && !cargandoTitulos ? 'Este coactivado no tiene títulos cargados' : ''"
+                                (click)="mostrarAviso = true">
+                                <nz-icon nzType="mail"></nz-icon> Enviar aviso pre-coactivo
+                            </button>
+                        </div>
+
                         <nz-form-item>
                             <nz-form-label nzRequired>¿Qué se habló o se acordó?</nz-form-label>
                             <nz-form-control>
@@ -847,3 +871,12 @@
         </button>
     </ng-template>
 </nz-modal>
+
+<app-aviso-precoactivo-modal
+    *ngIf="seleccionado"
+    [(visible)]="mostrarAviso"
+    (editarCoactivado)="abrirEdicion()"
+    [coactivado]="seleccionado"
+    [titulos]="titulos"
+    [gestiones]="gestiones">
+</app-aviso-precoactivo-modal>

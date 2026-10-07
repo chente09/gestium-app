@@ -54,6 +54,9 @@ export interface GestionCoactivado {
   cargaId?: string;
   observacionGeneral?: string;
   claveHistorica?: string;
+  // Solo en los avisos enviados desde la app: el documento de `mail_iess`
+  // con el correo exacto que salió (destinatarios y texto), como respaldo.
+  mailId?: string;
 }
 
 // Firestore devuelve Timestamps; la app trabaja con Date.
@@ -130,6 +133,7 @@ export class GestionesCoactivadoService {
     tipo: TipoGestion;
     descripcion: string;
     observacionGeneral?: string;
+    mailId?: string;
   }): Promise<string> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();

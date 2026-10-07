@@ -1,0 +1,232 @@
+<nz-modal
+    [nzVisible]="visible"
+    nzTitle="Enviar aviso pre-coactivo"
+    nzWidth="780px"
+    [nzMaskClosable]="!enviando"
+    [nzClosable]="!enviando"
+    (nzOnCancel)="cerrar()"
+    [nzFooter]="pie">
+    <ng-container *nzModalContent>
+        <nz-alert
+            *ngIf="ultimoAviso"
+            class="bloque"
+            nzType="warning"
+            nzShowIcon
+            [nzMessage]="'Ya se envió un aviso a este coactivado el ' + (ultimoAviso | date: 'dd/MM/yyyy')"
+            nzDescription="Revisa las gestiones antes de enviar otro.">
+        </nz-alert>
+
+        <nz-alert
+            *ngIf="!genero"
+            class="bloque"
+            nzType="error"
+            nzShowIcon
+            nzMessage="No se puede firmar este aviso"
+            [nzDescription]="'La cartera &quot;' + coactivado.cartera + '&quot; no tiene configurado el género de la firma (generosAbogadosIess en SharedDataService).'">
+        </nz-alert>
+
+        <div class="bloque firma" *ngIf="genero">
+            <span class="etiqueta">Firma:</span> Ab. {{ coactivado.cartera }}
+            <span class="etiqueta">· Desde:</span> notificaciones.iess.gestium&#64;gmail.com
+        </div>
+
+        <!-- Empresa: el "Estimado:" va al representante legal de la ficha; la razón
+             social queda en el detalle. Persona natural: va a su propio nombre. -->
+        <div class="bloque firma" *ngIf="esEmpresa && representante">
+            <span class="etiqueta">Dirigido a:</span> {{ representante }}
+            <span class="etiqueta">· Representante legal de</span> {{ coactivado.nombre }}
+        </div>
+
+        <nz-alert
+            *ngIf="esEmpresa && !representante"
+            class="bloque"
+            nzType="error"
+            nzShowIcon
+            nzMessage="Falta el representante legal"
+            nzDescription="Es una empresa: el correo no puede ir dirigido a la razón social. Completa el representante legal en la ficha y vuelve a abrir el aviso."
+            [nzAction]="accionEditarFicha">
+        </nz-alert>
+        <ng-template #accionEditarFicha>
+            <button nz-button nzSize="small" nzType="default" (click)="irAEditarFicha()">Editar coactivado</button>
+        </ng-template>
+
+        <nz-alert
+            *ngIf="datosSospechosos.length > 0"
+            class="bloque"
+            nzType="warning"
+            nzShowIcon
+            nzMessage="Hay un “?” en el nombre"
+            [nzDescription]="'Suele ser una tilde o una Ñ dañada al importar el Excel y saldría así en el correo: ' + datosSospechosos.join(' · ') + '. Corrígelo en la ficha (Editar) antes de enviar.'">
+        </nz-alert>
+
+        <div class="bloque">
+            <div class="etiqueta">Destinatarios</div>
+            <nz-select
+                nzMode="tags"
+                class="select-correos"
+                nzPlaceHolder="Escribe un correo y presiona Enter"
+                [nzTokenSeparators]="separadores"
+                [nzDisabled]="enviando"
+                [ngModel]="destinatarios"
+                (ngModelChange)="cambiarDestinatarios($event)">
+            </nz-select>
+            <div class="error-texto" *ngIf="invalidos.length > 0">
+                No parecen correos válidos: {{ invalidos.join(', ') }}. Corrígelos o quítalos.
+            </div>
+            <div class="ayuda" *ngIf="destinatarios.length === 0">
+                Este coactivado no tiene correo registrado. Puedes escribirlo aquí solo para este aviso;
+                para guardarlo en su ficha usa "Editar".
+            </div>
+        </div>
+
+        <div class="bloque">
+            <div class="titulo-fila">
+                <span class="etiqueta">Títulos de crédito a incluir</span>
+                <span class="acciones">
+                    <button nz-button nzType="link" nzSize="small" [disabled]="enviando" (click)="marcarVigentes()">Solo vigentes</button>
+                    <button nz-button nzType="link" nzSize="small" [disabled]="enviando" (click)="marcarTodos(true)">Todos</button>
+                    <button nz-button nzType="link" nzSize="small" [disabled]="enviando" (click)="marcarTodos(false)">Ninguno</button>
+                </span>
+            </div>
+
+            <nz-table
+                #tabla
+                [nzData]="titulosOrdenados"
+                [nzPageSize]="1000"
+                [nzShowPagination]="false"
+                [nzScroll]="{ y: '220px' }"
+                nzSize="small"
+                [nzBordered]="true">
+                <thead>
+                    <tr>
+                        <th
+                            nzWidth="46px"
+                            [nzShowCheckbox]="true"
+                            [nzChecked]="todosMarcados"
+                            [nzIndeterminate]="algunosMarcados"
+                            [nzDisabled]="enviando"
+                            (nzCheckedChange)="marcarTodos($event)"></th>
+                        <th>Número</th>
+                        <th>Capital</th>
+                        <th>Estado</th>
+                        <th>Guía</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let t of tabla.data; trackBy: trackByTitulo">
+                        <td
+                            [nzChecked]="seleccion.has(t.numero)"
+                            [nzDisabled]="enviando"
+                            (nzCheckedChange)="alternar(t.numero, $event)"></td>
+                        <td>{{ t.numero }}</td>
+                        <td>{{ formatoCapitalAviso(t.capital) }}</td>
+                        <td>
+                            <nz-tag [nzColor]="estadoVisual(t).color">{{ estadoVisual(t).texto }}</nz-tag>
+                            <nz-tag *ngIf="t.tipoCancelacion === 'abono'" nzColor="blue">Abono</nz-tag>
+                            <nz-tag *ngIf="esDeOtro(t)" nzColor="magenta">Otro RUC: {{ t.coactivadoId }}</nz-tag>
+                            <nz-tag *ngIf="t.cartera && t.cartera !== coactivado.cartera" nzColor="purple">De {{ t.cartera }}</nz-tag>
+                        </td>
+                        <td>{{ t.guia || '—' }}</td>
+                    </tr>
+                </tbody>
+            </nz-table>
+
+            <div class="resumen-envio">
+                {{ titulosSeleccionados.length }} título(s) en el correo ·
+                Capital adeudado: <b>{{ formatoCapitalAviso(capital) }}</b>
+            </div>
+
+            <nz-alert
+                *ngIf="hayNoVigentes"
+                class="bloque-chico"
+                nzType="warning"
+                nzShowIcon
+                nzMessage="Marcaste títulos cancelados, en convenio o anulados. Entran al correo y al capital tal como están."></nz-alert>
+            <nz-alert
+                *ngIf="hayAbonos"
+                class="bloque-chico"
+                nzType="info"
+                nzShowIcon
+                nzMessage="Hay títulos con abono: el correo muestra su capital completo, sin descontar el abono."></nz-alert>
+        </div>
+
+        <nz-collapse class="bloque" [nzBordered]="false">
+            <nz-collapse-panel nzHeader="Agregar otros TC del sistema" [nzActive]="false">
+                <p class="ayuda sin-margen">
+                    Para sumar títulos que no son de este coactivado (por ejemplo, el mismo deudor registrado con
+                    cédula y con RUC). Quedan arriba de la lista, con la etiqueta de su RUC.
+                </p>
+                <div class="agregar-fila">
+                    <input
+                        nz-input
+                        [(ngModel)]="numerosNuevos"
+                        [disabled]="enviando || buscandoTc"
+                        placeholder="Números de TC, separados por coma o punto y coma"
+                        (keyup.enter)="agregarPorNumeros()" />
+                    <button nz-button nzType="default" [nzLoading]="buscandoTc" [disabled]="enviando" (click)="agregarPorNumeros()">
+                        Agregar TC
+                    </button>
+                </div>
+                <div class="agregar-fila">
+                    <input
+                        nz-input
+                        [(ngModel)]="rucNuevo"
+                        [disabled]="enviando || buscandoTc"
+                        inputmode="numeric"
+                        placeholder="Cédula o RUC de otro coactivado"
+                        (keyup.enter)="agregarPorRuc()" />
+                    <button nz-button nzType="default" [nzLoading]="buscandoTc" [disabled]="enviando" (click)="agregarPorRuc()">
+                        Traer sus TC
+                    </button>
+                </div>
+                <nz-alert
+                    *ngIf="avisoAgregar"
+                    class="bloque-chico"
+                    [nzType]="avisoAgregar.tipo"
+                    nzShowIcon
+                    [nzMessage]="avisoAgregar.texto"></nz-alert>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-collapse class="bloque" [nzBordered]="false">
+            <nz-collapse-panel nzHeader="Vista previa del correo" [nzActive]="false">
+                <div class="asunto"><span class="etiqueta">Asunto:</span> {{ asunto }}</div>
+                <iframe class="vista-previa" sandbox="" [srcdoc]="vistaPrevia" title="Vista previa del aviso"></iframe>
+            </nz-collapse-panel>
+        </nz-collapse>
+
+        <nz-alert
+            *ngIf="resultado?.estado === 'error'"
+            class="bloque"
+            nzType="error"
+            nzShowIcon
+            nzMessage="No se pudo enviar el aviso"
+            [nzDescription]="resultado?.detalle || 'La extensión de correo devolvió un error.'">
+        </nz-alert>
+        <nz-alert
+            *ngIf="resultado?.estado === 'en_cola'"
+            class="bloque"
+            nzType="warning"
+            nzShowIcon
+            nzMessage="El correo sigue en cola"
+            nzDescription="La confirmación no llegó a tiempo. Puede que igual salga: espera unos minutos y revisa la bandeja de notificaciones.iess.gestium@gmail.com antes de volver a enviar. La gestión NO se registró; si llega, regístrala a mano como Correo.">
+        </nz-alert>
+    </ng-container>
+
+    <ng-template #pie>
+        <span class="motivo" *ngIf="motivoBloqueo && resultado?.estado !== 'en_cola'">{{ motivoBloqueo }}</span>
+        <button nz-button nzType="default" [disabled]="enviando" (click)="cerrar()">
+            {{ resultado?.estado === 'en_cola' ? 'Cerrar' : 'Cancelar' }}
+        </button>
+        <button
+            *ngIf="resultado?.estado !== 'en_cola'"
+            nz-button
+            nzType="primary"
+            class="brand-btn"
+            [nzLoading]="enviando"
+            [disabled]="!!motivoBloqueo"
+            (click)="enviar()">
+            <nz-icon nzType="mail"></nz-icon> Enviar aviso
+        </button>
+    </ng-template>
+</nz-modal>

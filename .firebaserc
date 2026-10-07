@@ -14,7 +14,8 @@
   "etags": {
     "gestium-intranet": {
       "extensionInstances": {
-        "firestore-send-email": "e3286e75183001339a5f0e733d194fddc33c7fb197845f428711fd4560d57543"
+        "firestore-send-email": "e3286e75183001339a5f0e733d194fddc33c7fb197845f428711fd4560d57543",
+        "firestore-send-email-iess": "e31388066826d0e3183122ddea638e35f98e2b04e562cabb6fc0940b48eb4912"
       }
     }
   }

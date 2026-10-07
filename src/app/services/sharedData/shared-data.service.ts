@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import type { GeneroFirma } from '../correosIess/aviso-precoactivo.template';
 
 @Injectable({
   providedIn: 'root'
@@ -69,6 +70,17 @@ export class SharedDataService {
     'Marcelo Mena',
     'Mayra Ordoñez'
   ];
+
+  // Género con el que firma cada cartera en el aviso pre-coactivo ("Abogada –
+  // Secretaria Externa" / "Abogado – Secretario Externo"). Es un dato que
+  // confirmó el despacho, no se deduce del nombre: quien se agregue arriba
+  // debe agregarse acá o no podrá enviar avisos.
+  readonly generosAbogadosIess: Record<string, GeneroFirma> = {
+    'Jessica Ordoñez': 'femenino',
+    'Jose Luis Rueda': 'masculino',
+    'Marcelo Mena': 'masculino',
+    'Mayra Ordoñez': 'femenino'
+  };
 
   readonly estados: string[] = [
     'Completado', 
@@ -202,6 +214,12 @@ export class SharedDataService {
 
   getCarterasIess(): string[] {
     return this.carterasIess;
+  }
+
+  // null si la cartera no está configurada: el aviso no se envía en vez de
+  // adivinar el género de la firma.
+  getGeneroAbogadoIess(cartera: string): GeneroFirma | null {
+    return this.generosAbogadosIess[cartera] ?? null;
   }
 
   getEstados(): string[] {

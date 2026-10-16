@@ -1,0 +1,127 @@
+<div class="convenios-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/iess/bitacora">Bitácora de Gestiones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Convenios de pago</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <h1 class="page-title"><nz-icon nzType="swap"></nz-icon> Convenios de pago</h1>
+    <p class="page-subtitulo">
+        Razones sociales que ya pagaron parte de sus títulos (cancelados, en convenio o con abono) y todavía tienen
+        títulos pendientes. Se detectan solos: no hace falta marcarlos. Sirve para dar seguimiento por abogado y
+        cotejar los comprobantes de cada pago.
+    </p>
+
+    <nz-card class="paso-card">
+        <div class="selector-fila">
+            <nz-select class="select-abogado" nzPlaceHolder="Elige un abogado" [(ngModel)]="abogado">
+                <nz-option [nzValue]="TODOS" nzLabel="Todos los abogados"></nz-option>
+                <nz-option *ngFor="let c of carteras" [nzValue]="c" [nzLabel]="c"></nz-option>
+            </nz-select>
+            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="cargando" [disabled]="!abogado" (click)="cargar()">
+                <nz-icon nzType="search"></nz-icon> {{ cargado ? 'Actualizar' : 'Ver convenios' }}
+            </button>
+        </div>
+        <div class="ayuda" *ngIf="abogado === TODOS">
+            "Todos los abogados" lee todos los títulos de la base: tarda más. Para el día a día conviene ir por abogado.
+        </div>
+    </nz-card>
+
+    <ng-container *ngIf="cargado">
+        <div class="resumen-stats">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="filtrados.length" nzTitle="Razones sociales en pago parcial"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="totalTcCancelados" nzTitle="TC ya cancelados"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="totalTcPendientes" nzTitle="TC pendientes"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-capital">
+                <div class="stat-titulo">Capital pendiente</div>
+                <div class="stat-valor">{{ formatoMoneda(totalCapitalPendiente) }}</div>
+            </nz-card>
+        </div>
+
+        <nz-card class="paso-card">
+            <div class="barra">
+                <input nz-input class="filtro" [(ngModel)]="filtro" (ngModelChange)="filtrar()" placeholder="Filtrar por razón social o RUC..." />
+                <button nz-button [nzLoading]="exportando" [disabled]="filtrados.length === 0" (click)="exportar()">
+                    <nz-icon nzType="download"></nz-icon> Descargar Excel
+                </button>
+            </div>
+
+            <nz-empty *ngIf="convenios.length === 0" nzNotFoundContent="Ninguna razón social tiene pagos parciales en este momento."></nz-empty>
+            <nz-empty *ngIf="convenios.length > 0 && filtrados.length === 0" nzNotFoundContent="Sin resultados para ese filtro."></nz-empty>
+
+            <div class="tabla-scroll" *ngIf="filtrados.length > 0">
+                <nz-table #tabla [nzData]="filtrados" [nzPageSize]="20" [nzShowPagination]="filtrados.length > 20" nzSize="small" [nzBordered]="true">
+                    <thead>
+                        <tr>
+                            <th nzWidth="46px"></th>
+                            <th>Razón social</th>
+                            <th *ngIf="abogadoCargado === TODOS">Abogado</th>
+                            <th [nzSortFn]="ordenarPorPendientes" [nzSortDirections]="['descend','ascend']">TC cancelados</th>
+                            <th [nzSortFn]="ordenarPorCapital" [nzSortDirections]="['descend','ascend']">Capital pendiente</th>
+                            <th>Cobrado registrado</th>
+                            <th>Último pago</th>
+                            <th [nzSortFn]="ordenarPorDias" [nzSortDirections]="['descend','ascend']">Días sin pagar</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <ng-container *ngFor="let c of tabla.data; trackBy: trackByConvenio">
+                            <tr>
+                                <td [nzExpand]="expandidos.has(clave(c))" (nzExpandChange)="alternar(clave(c), $event)"></td>
+                                <td>
+                                    <div class="nombre">{{ c.nombre }}</div>
+                                    <div class="cedula">{{ c.cedula }}</div>
+                                </td>
+                                <td *ngIf="abogadoCargado === TODOS" class="nowrap">{{ c.cartera }}</td>
+                                <td class="nowrap">
+                                    <nz-tag nzColor="green">{{ c.cancelados }} de {{ c.tc.length }}</nz-tag>
+                                    <span class="tenue">{{ c.pendientes }} pendiente(s)</span>
+                                </td>
+                                <td class="nowrap">{{ formatoMoneda(c.capitalPendiente) }}</td>
+                                <td class="nowrap">{{ c.cobrado > 0 ? formatoMoneda(c.cobrado) : '—' }}</td>
+                                <td class="nowrap">{{ c.ultimoPago ? (c.ultimoPago | date: 'dd/MM/yyyy') : '—' }}</td>
+                                <td class="nowrap">
+                                    <ng-container *ngIf="diasSinPagar(c) as dias; else sinDato">
+                                        <nz-tag [nzColor]="dias >= 60 ? 'red' : dias >= 30 ? 'orange' : 'default'">{{ dias }} días</nz-tag>
+                                    </ng-container>
+                                    <ng-template #sinDato>
+                                        <span class="tenue" nz-tooltip nzTooltipTitle="No hay fecha de pago registrada: los cancelados vienen del Excel sin fecha.">
+                                            {{ c.ultimoPago ? 'Hoy' : '—' }}
+                                        </span>
+                                    </ng-template>
+                                </td>
+                                <td class="nowrap">
+                                    <a [routerLink]="['/iess/bitacora']" [queryParams]="{ cedula: c.cedula }">Ver ficha</a>
+                                </td>
+                            </tr>
+                            <tr [nzExpand]="expandidos.has(clave(c))">
+                                <div class="detalle">
+                                    <nz-table [nzData]="c.tc" [nzShowPagination]="false" [nzPageSize]="1000" nzSize="small" [nzBordered]="true">
+                                        <thead>
+                                            <tr><th>TC</th><th>Guía</th><th>Estado</th><th>Capital</th><th>Cobrado</th><th>Fecha del pago</th><th>Comprobante</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr *ngFor="let t of c.tc">
+                                                <td>{{ t.numero }}</td>
+                                                <td>{{ t.guia || '—' }}</td>
+                                                <td><nz-tag [nzColor]="etiquetaTc(t).color">{{ etiquetaTc(t).texto }}</nz-tag></td>
+                                                <td class="nowrap">{{ formatoMoneda(t.capital) }}</td>
+                                                <td class="nowrap">{{ t.montoCobrado != null ? formatoMoneda(t.montoCobrado) : '—' }}</td>
+                                                <td class="nowrap">{{ t.fechaPago ? (t.fechaPago | date: 'dd/MM/yyyy') : '—' }}</td>
+                                                <td>{{ t.comprobante || '—' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </nz-table>
+                                </div>
+                            </tr>
+                        </ng-container>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
+    </ng-container>
+</div>

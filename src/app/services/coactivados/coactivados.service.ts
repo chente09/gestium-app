@@ -25,6 +25,7 @@ import { COLECCION_GESTIONES } from '../gestionesCoactivado/gestiones-coactivado
 import { TitulosCreditoService } from '../titulosCredito/titulos-credito.service';
 import { COLECCION_TITULOS } from '../titulosCredito/titulos-credito.service';
 import { ESTADO_ANULADO, ESTADO_CONVENIO, TituloCredito } from '../titulosCredito/titulos-credito.util';
+import { ConvenioPago, construirConvenios } from '../titulosCredito/convenios-pago.util';
 import { borrarEnLotes } from '../firestore-utils/batch-delete';
 import {
   COLECCION_COACTIVADOS,
@@ -659,6 +660,27 @@ export class CoactivadosService {
   // cartera), para armar el Excel en el mismo formato de las matrices
   // originales del IESS.
   // ============================================
+  // Reporte de convenios de pago (ver convenios-pago.util.ts): lee los
+  // títulos del abogado (o todos) una sola vez, bajo demanda, y busca el
+  // nombre solo de las razones sociales que resultaron en pago parcial.
+  async getConveniosDePago(cartera?: string): Promise<ConvenioPago[]> {
+    const ref = collection(this.firestore, COLECCION_TITULOS);
+    const snap = await getDocs(cartera ? query(ref, where('cartera', '==', cartera)) : ref);
+    const convenios = construirConvenios(snap.docs.map(d => d.data() as TituloCredito));
+    if (convenios.length === 0) return [];
+
+    const cedulas = [...new Set(convenios.map(c => c.cedula))];
+    const refCoact = collection(this.firestore, this.collectionName);
+    const snapsCoact = await Promise.all(
+      chunks(cedulas, TAM_CHUNK_IN).map(grupo => getDocs(query(refCoact, where(documentId(), 'in', grupo))))
+    );
+    const nombres = new Map<string, string>();
+    snapsCoact.forEach(s => s.forEach(d => nombres.set(d.id, (d.data() as Coactivado).nombre)));
+
+    convenios.forEach(c => { c.nombre = nombres.get(c.cedula) ?? c.cedula; });
+    return convenios.sort((a, b) => a.cartera.localeCompare(b.cartera) || a.nombre.localeCompare(b.nombre));
+  }
+
   async getTodosLosCoactivados(cartera?: string): Promise<Coactivado[]> {
     const ref = collection(this.firestore, this.collectionName);
     const snap = await getDocs(cartera ? query(ref, where('cartera', '==', cartera)) : ref);

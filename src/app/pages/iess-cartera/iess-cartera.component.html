@@ -10,6 +10,9 @@
     </nz-breadcrumb>
 
     <h1 class="page-title"><nz-icon nzType="folder-open"></nz-icon> {{ cartera }}</h1>
+    <a class="enlace-convenios" [routerLink]="['/iess/convenios']" [queryParams]="{ abogado: cartera }">
+        <nz-icon nzType="swap"></nz-icon> Convenios de pago de esta cartera
+    </a>
 
     <nz-card *ngIf="cargando" [nzLoading]="true" [nzBodyStyle]="{ padding: '32px 16px' }"></nz-card>
 

@@ -11,7 +11,11 @@
 
     <div class="page-header">
         <h1 class="page-title"><nz-icon nzType="phone"></nz-icon> Bitácora de Gestiones</h1>
-        <div class="acciones-admin" *ngIf="esAdmin">
+        <div class="acciones-admin">
+            <a nz-button routerLink="/iess/convenios">
+                <nz-icon nzType="swap"></nz-icon> Convenios de pago
+            </a>
+            <ng-container *ngIf="esAdmin">
             <a nz-button routerLink="/iess/titulos">
                 <nz-icon nzType="upload"></nz-icon> Importar títulos
             </a>
@@ -27,6 +31,7 @@
             <a nz-button routerLink="/iess/duplicados">
                 <nz-icon nzType="copy"></nz-icon> Notas duplicadas
             </a>
+            </ng-container>
         </div>
     </div>
 
@@ -287,12 +292,13 @@
                                                     De {{ t.cartera }}
                                                 </nz-tag>
                                                 <nz-tag *ngIf="t.tipoCancelacion === 'abono'" nzColor="blue">Abono</nz-tag>
+                                                <nz-tag *ngIf="t.comprobantePago" nzColor="geekblue">Comp. {{ t.comprobantePago }}</nz-tag>
                                                 <nz-tag
                                                     *ngIf="t.tipoCancelacion === 'pago_total'"
                                                     [nzColor]="t.honorarioCobrado ? 'green' : 'orange'"
-                                                    class="tag-honorario"
+                                                    [class.tag-honorario]="esAdmin"
                                                     nz-tooltip
-                                                    nzTooltipTitle="Clic para marcar si el IESS ya pagó el honorario"
+                                                    [nzTooltipTitle]="esAdmin ? 'Clic para marcar si el IESS ya pagó el honorario' : 'Solo un admin puede marcar si el IESS ya pagó el honorario'"
                                                     (click)="toggleHonorarioCobrado(t)">
                                                     <nz-icon [nzType]="cambiandoHonorarioNumero === t.numero ? 'loading' : (t.honorarioCobrado ? 'check' : 'clock-circle')"></nz-icon>
                                                     {{ formatoMoneda(t.honorario || 0) }} honorario {{ t.honorarioCobrado ? 'cobrado' : 'por cobrar' }}
@@ -631,16 +637,28 @@
                             [nzDescription]="'Capital de referencia: ' + formatoMoneda(resumenCanceladosPorCartera.get(r.cartera)!.capitalCancelado)">
                         </nz-alert>
 
-                        <a
-                            *ngIf="r.coactivados > 0"
-                            nz-button
-                            nzType="link"
-                            nzSize="small"
-                            class="btn-ver-pendientes"
-                            [routerLink]="['/iess/cartera', r.cartera]">
-                            Ver todos los casos ({{ r.coactivados }})
-                            <nz-icon nzType="arrow-right"></nz-icon>
-                        </a>
+                        <div class="enlaces-cartera">
+                            <a
+                                *ngIf="r.coactivados > 0"
+                                nz-button
+                                nzType="link"
+                                nzSize="small"
+                                class="btn-ver-pendientes"
+                                [routerLink]="['/iess/cartera', r.cartera]">
+                                Ver todos los casos ({{ r.coactivados }})
+                                <nz-icon nzType="arrow-right"></nz-icon>
+                            </a>
+                            <a
+                                nz-button
+                                nzType="link"
+                                nzSize="small"
+                                class="btn-ver-pendientes"
+                                [routerLink]="['/iess/convenios']"
+                                [queryParams]="{ abogado: r.cartera }">
+                                Convenios de pago
+                                <nz-icon nzType="arrow-right"></nz-icon>
+                            </a>
+                        </div>
                     </nz-card>
                 </div>
             </ng-container>
@@ -857,6 +875,12 @@
                 <nz-form-label nzRequired>Honorario</nz-form-label>
                 <nz-form-control nzErrorTip="Ingresa el honorario">
                     <input nz-input type="number" min="0" step="0.01" formControlName="honorario" />
+                </nz-form-control>
+            </nz-form-item>
+            <nz-form-item>
+                <nz-form-label>Número de comprobante</nz-form-label>
+                <nz-form-control>
+                    <input nz-input formControlName="comprobante" placeholder="Opcional — el del pago que acabas de registrar" />
                 </nz-form-control>
             </nz-form-item>
         </form>

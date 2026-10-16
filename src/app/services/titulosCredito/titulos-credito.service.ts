@@ -146,7 +146,7 @@ export class TitulosCreditoService {
   // la estadística de recuperación.
   async registrarCancelacion(
     numero: string,
-    datos: { tipo: TipoCancelacion; montoCancelado: number; honorario?: number }
+    datos: { tipo: TipoCancelacion; montoCancelado: number; honorario?: number; comprobante?: string }
   ): Promise<void> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();
@@ -164,6 +164,10 @@ export class TitulosCreditoService {
       patch['estadoIess'] = 'CANCELADO';
       patch['honorario'] = datos.honorario ?? 0;
     }
+    // Número del comprobante del pago, para seguir los convenios de pago. Si
+    // se registra otro abono, queda el del último.
+    const comprobante = datos.comprobante?.trim();
+    if (comprobante) patch['comprobantePago'] = comprobante;
 
     await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), patch);
   }
@@ -218,12 +222,14 @@ export class TitulosCreditoService {
   }
 
   // Que el título esté cancelado y que el IESS ya le haya pagado el
-  // honorario a la oficina son cosas distintas — cualquiera del área lo
-  // puede marcar, igual que registrarCancelacion.
+  // honorario a la oficina son cosas distintas: cualquiera del área registra
+  // la cancelación (registrarCancelacion), pero este estado solo lo cambia un
+  // admin — las reglas de Firestore lo exigen; acá se corta antes de escribir.
   async marcarHonorarioCobrado(numero: string, cobrado: boolean): Promise<void> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();
     if (!user || !register) throw new Error('🔒 Usuario no autenticado');
+    if (!this.registersService.isCurrentUserAdmin()) throw new Error('Solo un admin puede cambiar el estado del honorario.');
 
     const patch: Record<string, any> = { honorarioCobrado: cobrado };
     if (cobrado) {

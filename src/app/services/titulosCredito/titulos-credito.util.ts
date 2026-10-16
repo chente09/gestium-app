@@ -48,8 +48,8 @@ export interface TituloCredito {
   honorarioCobrado?: boolean;
   honorarioCobradoPor?: { uid: string; nombre: string };
   fechaCobroHonorario?: Date | any;
-  // Número de comprobante del pago del honorario (viene de la carga masiva
-  // de pagos ya cobrados, no se pide en el registro manual).
+  // Número de comprobante del pago: viene de la carga masiva de pagos o se
+  // anota al registrar un abono/pago desde la ficha (en un abono, el último).
   comprobantePago?: string;
   // De qué carga masiva de pagos vino (para poder rastrearla, no para deshacerla).
   cargaPagosId?: string;

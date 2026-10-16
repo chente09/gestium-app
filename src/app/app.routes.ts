@@ -30,6 +30,7 @@ import { IessCarteraComponent } from './pages/iess-cartera/iess-cartera.componen
 import { IessRecuperacionComponent } from './pages/iess-recuperacion/iess-recuperacion.component';
 import { IessPagosComponent } from './pages/iess-pagos/iess-pagos.component';
 import { IessNotasDuplicadasComponent } from './pages/iess-notas-duplicadas/iess-notas-duplicadas.component';
+import { IessConveniosComponent } from './pages/iess-convenios/iess-convenios.component';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
 
@@ -104,6 +105,7 @@ const solicitudesAprobarRoutes: Routes = [
 const iessRoutes: Routes = [
   { path: 'iess/bitacora', component: IessBitacoraComponent },
   { path: 'iess/cartera/:cartera', component: IessCarteraComponent },
+  { path: 'iess/convenios', component: IessConveniosComponent },
 ].map(withAuthAnd([iessGuard]));
 
 const errorRoutes: Routes = [

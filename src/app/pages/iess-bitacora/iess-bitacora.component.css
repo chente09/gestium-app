@@ -296,6 +296,12 @@ nz-card {
     padding: 0;
 }
 
+.enlaces-cartera {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+}
+
 .tabla-titulos-scroll {
     overflow-x: auto;
 }

@@ -189,7 +189,12 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
   cambiandoHonorarioNumero: string | null = null;
 
+  // Solo admin: el resto del área ve el estado pero no lo cambia.
   async toggleHonorarioCobrado(t: TituloCredito): Promise<void> {
+    if (!this.esAdmin) {
+      this.message.warning('Solo un admin puede cambiar el estado del honorario.');
+      return;
+    }
     if (this.cambiandoHonorarioNumero) return;
     this.cambiandoHonorarioNumero = t.numero;
     try {
@@ -292,7 +297,8 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.cancelacionForm = this.fb.group({
       tipo: ['abono', Validators.required],
       montoCancelado: [null, [Validators.required, Validators.min(0.01)]],
-      honorario: [null]
+      honorario: [null],
+      comprobante: ['']
     });
 
     this.corregirRucForm = this.fb.group({
@@ -909,7 +915,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   // ============================================
   abrirCancelacion(t: TituloCredito): void {
     this.tituloCancelando = t;
-    this.cancelacionForm.reset({ tipo: 'abono', montoCancelado: null, honorario: null });
+    this.cancelacionForm.reset({ tipo: 'abono', montoCancelado: null, honorario: null, comprobante: '' });
     this.mostrarCancelacion = true;
   }
 
@@ -967,7 +973,8 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       await this.titulosService.registrarCancelacion(this.tituloCancelando.numero, {
         tipo: v.tipo,
         montoCancelado: v.montoCancelado,
-        honorario: v.tipo === 'pago_total' ? v.honorario : undefined
+        honorario: v.tipo === 'pago_total' ? v.honorario : undefined,
+        comprobante: v.comprobante
       });
       this.message.success('Cancelación registrada.');
       this.cerrarCancelacion();

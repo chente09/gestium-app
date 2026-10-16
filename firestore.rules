@@ -205,16 +205,16 @@ service cloud.firestore {
       // título (capital, guía, fechas, etc. — eso sigue siendo solo admin).
       allow update: if esDelAreaIess() &&
                        request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['tipoCancelacion', 'estadoIess', 'montoCancelado', 'honorario', 'canceladoPor', 'fechaCancelacion']) &&
+                         .hasOnly(['tipoCancelacion', 'estadoIess', 'montoCancelado', 'honorario', 'canceladoPor', 'fechaCancelacion', 'comprobantePago']) &&
                        request.resource.data.tipoCancelacion in ['abono', 'pago_total'] &&
                        request.resource.data.canceladoPor.uid == request.auth.uid;
 
-      // Que el IESS ya haya pagado el honorario es un evento aparte de la
-      // cancelación — cualquiera del área lo puede marcar/desmarcar, sin
-      // importar quién registró la cancelación original.
-      allow update: if esDelAreaIess() &&
-                       request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['honorarioCobrado', 'honorarioCobradoPor', 'fechaCobroHonorario']);
+      // Que el IESS ya haya pagado el honorario (honorarioCobrado,
+      // honorarioCobradoPor, fechaCobroHonorario) es un evento aparte de la
+      // cancelación y solo lo cambia un admin: no hay regla para el resto del
+      // área, así que lo cubre únicamente el permiso general de admin de arriba.
+      // Cualquiera del área sí puede registrar cancelaciones (regla anterior),
+      // pero esa regla no deja tocar estos campos.
     }
 
     // Auditoría de cada importación: se crea, nunca se edita ni se borra.

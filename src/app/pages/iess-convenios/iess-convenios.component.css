@@ -1,0 +1,118 @@
+.convenios-container {
+    padding: 16px 24px 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-title {
+    margin: 12px 0 4px;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.page-subtitulo {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 13px;
+    margin-bottom: 16px;
+    max-width: 860px;
+}
+
+nz-card.paso-card {
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.selector-fila {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.select-abogado {
+    min-width: 260px;
+}
+
+.ayuda {
+    margin-top: 8px;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+}
+
+.resumen-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.stat-titulo {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.stat-valor {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.barra {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.filtro {
+    max-width: 360px;
+}
+
+.tabla-scroll {
+    overflow-x: auto;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.nombre {
+    font-weight: 500;
+}
+
+.cedula {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+}
+
+.tenue {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+}
+
+.detalle {
+    padding: 4px 8px;
+    overflow-x: auto;
+}
+
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}
+
+.brand-btn.ant-btn-primary[disabled],
+.brand-btn.ant-btn-primary[disabled]:hover {
+    background-color: #f5f5f5;
+    border-color: #d9d9d9;
+    color: rgba(0, 0, 0, 0.25);
+}

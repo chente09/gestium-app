@@ -21,6 +21,7 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { RouterModule } from '@angular/router';
 
 import { PayrollService, PayrollEmployee } from '../../../services/payroll/payroll.service';
+import { fechaIso, saldoVacacionesAlDia } from '../../../services/payroll/vacaciones-saldo.util';
 import { RegistersService, Register } from '../../../services/registers/registers.service';
 
 const EMPLEADORES = [
@@ -155,6 +156,11 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
   openEditModal(employee: PayrollEmployee): void {
     this.editingId = employee.id!;
     this.esPasante = !employee.fechaAfiliacionIESS;
+    // Se muestra el saldo real de hoy (con los aniversarios ya cumplidos
+    // sumados), no el número crudo guardado: es el que se guarda de vuelta.
+    const saldoHoy = employee.fechaAfiliacionIESS || employee.saldoVacacionesDisponible != null
+      ? saldoVacacionesAlDia(employee).saldo
+      : null;
     this.form.reset({
       nombreCompleto: employee.nombreCompleto,
       cedula: employee.cedula,
@@ -163,7 +169,7 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       empleadorRuc: employee.empleadorRuc,
       activo: employee.activo,
       uid: employee.uid || null,
-      saldoVacacionesDisponible: employee.saldoVacacionesDisponible ?? null,
+      saldoVacacionesDisponible: saldoHoy,
       remuneracionMensual: employee.remuneracionMensual ?? null
     });
     this.showModal = true;
@@ -200,6 +206,9 @@ export class PayrollEmployeesComponent implements OnInit, OnDestroy {
       activo: value.activo,
       uid: value.uid || null,
       saldoVacacionesDisponible: value.saldoVacacionesDisponible ?? null,
+      // El número del formulario es el saldo real de hoy: de acá en adelante
+      // solo se suman los aniversarios que se cumplan después de hoy.
+      vacacionesAcreditadasHasta: this.esPasante ? null : fechaIso(),
       remuneracionMensual: this.esPasante ? null : (value.remuneracionMensual || null)
     };
 

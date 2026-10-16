@@ -15,7 +15,8 @@
         <nz-collapse-panel nzHeader="ℹ️ ¿Cómo se calcula esto?" [nzActive]="false">
             <p>"Elegible vacaciones" se calcula desde la fecha de afiliación de cada empleado (no desde enero de cada año) — se habilita al cumplir 1 año exacto de afiliación continua.</p>
             <p>Al cumplir el año, el empleado tiene 11 días descontables disponibles. El "Saldo disponible" es ese número menos los días que ya tomó desde su último aniversario — por eso puede superar 11 si no los usa, o quedar en negativo si tomó de más (incluso antes de cumplir el año, por acuerdo mutuo).</p>
-            <p>Para empleados con más de un año de antigüedad, tomamos como referencia solo su último aniversario cumplido, no el acumulado histórico completo.</p>
+            <p>Cada aniversario de afiliación el sistema suma 11 días al saldo automáticamente (desde el 01/10/2026; los aniversarios anteriores ya estaban incluidos en el saldo cargado a mano). Un adelanto o una deuda se descuenta automáticamente de esos 11 días. Las solicitudes descuentan únicamente días laborables, de lunes a viernes.</p>
+            <p>Haz clic en el nombre de una persona para ver el detalle de cada una de sus solicitudes y cómo se compone su saldo.</p>
         </nz-collapse-panel>
     </nz-collapse>
 
@@ -37,11 +38,12 @@
                         <th>Elegible vacaciones</th>
                         <th>Período vigente</th>
                         <th>Saldo disponible</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr *ngFor="let e of tabla.data; trackBy: trackById">
-                        <td>{{ e.nombreCompleto }}</td>
+                        <td><a [routerLink]="['/permisos/saldos', e.id]">{{ e.nombreCompleto }}</a></td>
                         <td>{{ e.cedula }}</td>
                         <td>{{ e.fechaAfiliacionIESS || '—' }}</td>
                         <td>
@@ -54,6 +56,9 @@
                             <nz-tag [nzColor]="saldoColor(e)" nz-tooltip [nzTooltipTitle]="saldoTooltip(e)">
                                 {{ saldoCorto(e) }}
                             </nz-tag>
+                        </td>
+                        <td class="nowrap">
+                            <a [routerLink]="['/permisos/saldos', e.id]"><nz-icon nzType="profile"></nz-icon> Ver detalle</a>
                         </td>
                     </tr>
                 </tbody>

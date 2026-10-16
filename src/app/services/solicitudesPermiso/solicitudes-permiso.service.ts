@@ -7,17 +7,26 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   query,
   updateDoc,
   where
 } from '@angular/fire/firestore';
 import { Storage, getDownloadURL, ref, uploadBytes } from '@angular/fire/storage';
 import { Observable } from 'rxjs';
-import { PayrollService } from '../payroll/payroll.service';
+import { PayrollEmployee, PayrollService } from '../payroll/payroll.service';
+import { DIAS_VACACIONES_DESCONTABLES, diasLaborables, saldoVacacionesAlDia } from '../payroll/vacaciones-saldo.util';
 import { RegistersService } from '../registers/registers.service';
 
 export type TipoSolicitud = 'vacaciones' | 'medico' | 'con_descuento_vacaciones' | 'calamidad_domestica' | 'maternidad' | 'paternidad';
 export type EstadoSolicitud = 'pendiente' | 'aprobado' | 'rechazado' | 'vencido_sin_justificativo';
+
+export const ESTADOS_SOLICITUD: Record<EstadoSolicitud, { label: string; color: string }> = {
+  pendiente: { label: 'Pendiente', color: 'gold' },
+  aprobado: { label: 'Aprobado', color: 'green' },
+  rechazado: { label: 'Rechazado', color: 'red' },
+  vencido_sin_justificativo: { label: 'Vencido sin justificativo', color: 'volcano' }
+};
 
 // diasSugeridos: para precargar fechaFin al elegir el tipo (Código del
 // Trabajo Ecuador Art. 152: maternidad 84 días, paternidad 10 días —
@@ -64,8 +73,9 @@ export const DIAS_PLAZO_JUSTIFICATIVO = 8;
 
 // De los 15 días legales de vacaciones, 4 corresponden a fines de semana
 // dentro del bloque y no se pueden gastar sueltos — el saldo que sí se
-// puede descontar día a día (ej. por permisos no justificados) es 11.
-export const DIAS_VACACIONES_DESCONTABLES = 11;
+// puede descontar día a día (ej. por permisos no justificados) es 11, y
+// solo se descuentan días laborables (ver vacaciones-saldo.util.ts).
+export { DIAS_VACACIONES_DESCONTABLES };
 
 export interface SolicitudPermiso {
   id?: string;
@@ -87,17 +97,14 @@ export interface SolicitudPermiso {
   justificativoUrl?: string;
   justificativoSubidoEn?: string; // ISO
   descontadoDeVacaciones?: boolean;
+  // Cuántos días laborables se descontaron del saldo al hacerlo. Se guarda
+  // desde el 16/10/2026; las anteriores se descontaron en días corridos y no
+  // lo tienen (ver efecto-saldo.util.ts).
+  diasDescontados?: number;
   justificativoValidado?: boolean;
   validadoPor?: string;
   nombreValidador?: string;
   fechaValidacion?: string; // ISO
-}
-
-function diffDiasCalendario(fechaInicio: string, fechaFin: string): number {
-  const inicio = new Date(fechaInicio);
-  const fin = new Date(fechaFin);
-  const ms = fin.getTime() - inicio.getTime();
-  return Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)) + 1);
 }
 
 @Injectable({
@@ -191,13 +198,27 @@ export class SolicitudesPermisoService {
     // llegar acá porque la UI no le ofrece estos tipos, pero por las dudas.
     if (!empleado?.id || this.payrollService.esPasante(empleado)) return;
 
-    const dias = diffDiasCalendario(solicitud.fechaInicio, solicitud.fechaFin);
-    const saldoActual = empleado.saldoVacacionesDisponible ?? 0;
-    // Sin piso en 0: si toma más días de los que tiene, el saldo debe
-    // quedar en negativo (deuda real), no esconderse — ver comentario en
-    // PayrollEmployee.saldoVacacionesDisponible.
-    const nuevoSaldo = saldoActual - dias;
-    await this.payrollService.updatePayrollEmployee(empleado.id, { saldoVacacionesDisponible: nuevoSaldo });
+    const dias = await this.descontarDelSaldo(empleado, solicitud);
+    // Queda anotado cuánto se descontó, para poder revisar el historial de
+    // la persona con ella.
+    await updateDoc(doc(this.firestore, `${this.collectionName}/${solicitud.id}`), { diasDescontados: dias });
+  }
+
+  // Primero suma los aniversarios que todavía no estaban acreditados y recién
+  // después descuenta (solo días laborables), así el saldo que queda guardado
+  // es el real de hoy. Sin piso en 0: si toma más días de los que tiene, el
+  // saldo queda en negativo (deuda real), no se esconde — ver comentario en
+  // PayrollEmployee.saldoVacacionesDisponible.
+  // Devuelve los días laborables descontados.
+  private async descontarDelSaldo(empleado: PayrollEmployee, solicitud: SolicitudPermiso): Promise<number> {
+    if (!empleado.id) return 0;
+    const dias = diasLaborables(solicitud.fechaInicio, solicitud.fechaFin);
+    const { saldo, acreditadoHasta } = saldoVacacionesAlDia(empleado);
+    await this.payrollService.updatePayrollEmployee(empleado.id, {
+      saldoVacacionesDisponible: saldo - dias,
+      vacacionesAcreditadasHasta: acreditadoHasta
+    });
+    return dias;
   }
 
   async eliminarSolicitud(id: string): Promise<void> {
@@ -380,13 +401,10 @@ export class SolicitudesPermisoService {
     // igual (para que se vea que no se justificó), pero sin descuento.
     const esPasante = empleado ? this.payrollService.esPasante(empleado) : false;
 
+    let diasDescontados: number | undefined;
     if (empleado?.id && !esPasante) {
       try {
-        const dias = diffDiasCalendario(solicitud.fechaInicio, solicitud.fechaFin);
-        const saldoActual = empleado.saldoVacacionesDisponible ?? 0;
-        // Sin piso en 0 — ver descontarDiasDeVacaciones.
-        const nuevoSaldo = saldoActual - dias;
-        await this.payrollService.updatePayrollEmployee(empleado.id, { saldoVacacionesDisponible: nuevoSaldo });
+        diasDescontados = await this.descontarDelSaldo(empleado, solicitud);
       } catch (error) {
         console.error('[Permisos] No se pudo descontar el saldo de vacaciones al vencer:', error);
       }
@@ -395,7 +413,8 @@ export class SolicitudesPermisoService {
     const ref2 = doc(this.firestore, `${this.collectionName}/${solicitud.id}`);
     await updateDoc(ref2, {
       estado: 'vencido_sin_justificativo',
-      descontadoDeVacaciones: !exento && !esPasante
+      descontadoDeVacaciones: !exento && !esPasante,
+      ...(diasDescontados !== undefined ? { diasDescontados } : {})
     });
   }
 
@@ -406,6 +425,16 @@ export class SolicitudesPermisoService {
   async reabrirParaJustificativoTardio(id: string): Promise<void> {
     const ref2 = doc(this.firestore, `${this.collectionName}/${id}`);
     await updateDoc(ref2, { estado: 'aprobado' });
+  }
+
+  // Historial completo de una persona, una sola vez (no en tiempo real): lo
+  // usa la vista de detalle del saldo. Un solo where, sin índice compuesto.
+  async getSolicitudesPorEmpleado(payrollEmployeeId: string): Promise<SolicitudPermiso[]> {
+    const ref2 = collection(this.firestore, this.collectionName);
+    const snap = await getDocs(query(ref2, where('payrollEmployeeId', '==', payrollEmployeeId)));
+    return snap.docs
+      .map(d => ({ id: d.id, ...d.data() }) as SolicitudPermiso)
+      .sort((a, b) => b.fechaInicio.localeCompare(a.fechaInicio));
   }
 
   async getSolicitudById(id: string): Promise<SolicitudPermiso | null> {

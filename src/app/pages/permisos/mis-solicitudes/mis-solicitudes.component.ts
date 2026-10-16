@@ -18,6 +18,7 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { RouterModule } from '@angular/router';
 
 import { PayrollService, PayrollEmployee } from '../../../services/payroll/payroll.service';
+import { DIAS_VACACIONES_DESCONTABLES, saldoVacacionesAlDia } from '../../../services/payroll/vacaciones-saldo.util';
 import { RegistersService } from '../../../services/registers/registers.service';
 import { UsersService } from '../../../services/users/users.service';
 import {
@@ -57,6 +58,9 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
   esPasante = false;
   cargandoPerfil = true;
   periodoVigente: { inicio: string; fin: string } | null = null;
+  // Saldo real de hoy: el guardado más los aniversarios que faltaba sumar.
+  saldoActual = 0;
+  readonly diasPorAnio = DIAS_VACACIONES_DESCONTABLES;
 
   solicitudes: SolicitudPermiso[] = [];
   loading = false;
@@ -120,6 +124,7 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
     this.periodoVigente = this.payrollEmployee?.fechaAfiliacionIESS
       ? this.payrollService.periodoVacacionesVigente(this.payrollEmployee.fechaAfiliacionIESS)
       : null;
+    this.saldoActual = this.payrollEmployee ? saldoVacacionesAlDia(this.payrollEmployee).saldo : 0;
     this.cargandoPerfil = false;
 
     const tipoActual = this.form.get('tipo')?.value;
@@ -150,7 +155,7 @@ export class MisSolicitudesComponent implements OnInit, OnDestroy {
   // negativo significa "adelanto" antes de cumplir el año, o "deuda real"
   // si ya lo cumplió — el texto lo deja explícito.
   saldoTexto(): string {
-    const saldo = this.payrollEmployee?.saldoVacacionesDisponible ?? 0;
+    const saldo = this.saldoActual;
     if (this.elegibleVacaciones) {
       return saldo < 0 ? `Debes ${Math.abs(saldo)} día(s) de este período` : `${saldo} día(s) disponibles`;
     }

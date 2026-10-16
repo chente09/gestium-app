@@ -21,6 +21,7 @@ import { solicitudesAprobarGuard } from './guards/solicitudesPermiso/solicitudes
 import { MisSolicitudesComponent } from './pages/permisos/mis-solicitudes/mis-solicitudes.component';
 import { SolicitudesAprobarComponent } from './pages/permisos/solicitudes-aprobar/solicitudes-aprobar.component';
 import { SaldoVacacionesComponent } from './pages/permisos/saldo-vacaciones/saldo-vacaciones.component';
+import { SaldoVacacionesDetalleComponent } from './pages/permisos/saldo-vacaciones-detalle/saldo-vacaciones-detalle.component';
 import { iessGuard } from './guards/iess/iess.guard';
 import { IessBitacoraComponent } from './pages/iess-bitacora/iess-bitacora.component';
 import { IessReportesComponent } from './pages/iess-reportes/iess-reportes.component';
@@ -95,6 +96,7 @@ const payrollRoutes: Routes = [
 const solicitudesAprobarRoutes: Routes = [
   { path: 'permisos/aprobar', component: SolicitudesAprobarComponent },
   { path: 'permisos/saldos', component: SaldoVacacionesComponent },
+  { path: 'permisos/saldos/:id', component: SaldoVacacionesDetalleComponent },
 ].map(withAuthAnd([solicitudesAprobarGuard]));
 
 const iessRoutes: Routes = [

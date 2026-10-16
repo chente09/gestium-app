@@ -14,10 +14,14 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { NzMessageService } from 'ng-zorro-antd/message';
 
 import { PayrollService, PayrollEmployee } from '../../../services/payroll/payroll.service';
+import { DIAS_VACACIONES_DESCONTABLES, etiquetaSaldo, saldoVacacionesAlDia } from '../../../services/payroll/vacaciones-saldo.util';
 
 interface EmpleadoConSaldo extends PayrollEmployee {
   elegibleVacaciones: boolean;
   periodoVigente: { inicio: string; fin: string } | null;
+  // Saldo real de hoy: el guardado más los aniversarios que faltaba sumar.
+  saldoActual: number;
+  aniversariosPorAcreditar: number;
 }
 
 @Component({
@@ -57,11 +61,16 @@ export class SaldoVacacionesComponent implements OnInit {
       this.empleados = activos
         // Pasantes no tienen saldo de vacaciones — no aportan nada a esta vista.
         .filter(e => !this.payrollService.esPasante(e))
-        .map(e => ({
-          ...e,
-          elegibleVacaciones: this.payrollService.esElegibleVacaciones(e),
-          periodoVigente: e.fechaAfiliacionIESS ? this.payrollService.periodoVacacionesVigente(e.fechaAfiliacionIESS) : null
-        }))
+        .map(e => {
+          const saldo = saldoVacacionesAlDia(e);
+          return {
+            ...e,
+            elegibleVacaciones: this.payrollService.esElegibleVacaciones(e),
+            periodoVigente: e.fechaAfiliacionIESS ? this.payrollService.periodoVacacionesVigente(e.fechaAfiliacionIESS) : null,
+            saldoActual: saldo.saldo,
+            aniversariosPorAcreditar: saldo.aniversariosPorAcreditar
+          };
+        })
         .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
       this.filtrar();
     } catch (error) {
@@ -85,30 +94,28 @@ export class SaldoVacacionesComponent implements OnInit {
     return e.id;
   }
 
-  // Un mismo número negativo significa cosas distintas según si ya cumplió
-  // el año o no (deuda real vs. adelanto antes de tener derecho). En vez de
-  // un texto largo repetido en cada fila, un tag corto + color + tooltip
-  // con el detalle completo — el color y la palabra ya distinguen los tres
-  // casos sin necesitar una leyenda aparte.
+  // En vez de un texto largo repetido en cada fila, un tag corto + color +
+  // tooltip con el detalle completo (la regla de rotulado vive en
+  // etiquetaSaldo, compartida con la vista de detalle).
   saldoColor(e: EmpleadoConSaldo): string {
-    const saldo = e.saldoVacacionesDisponible ?? 0;
-    if (saldo > 0) return 'green';
-    if (saldo === 0) return 'default';
-    return e.elegibleVacaciones ? 'red' : 'gold';
+    return etiquetaSaldo(e.saldoActual, e.elegibleVacaciones).color;
   }
 
   saldoCorto(e: EmpleadoConSaldo): string {
-    const saldo = e.saldoVacacionesDisponible ?? 0;
-    if (saldo === 0) return '0 días';
-    if (saldo > 0) return `${saldo} días`;
-    return e.elegibleVacaciones ? `Debe ${Math.abs(saldo)}` : `Adelanto ${Math.abs(saldo)}`;
+    return etiquetaSaldo(e.saldoActual, e.elegibleVacaciones).texto;
   }
 
   saldoTooltip(e: EmpleadoConSaldo): string {
-    const saldo = e.saldoVacacionesDisponible ?? 0;
+    const saldo = e.saldoActual;
+    let texto: string;
     if (e.elegibleVacaciones) {
-      return saldo < 0 ? `Debe ${Math.abs(saldo)} día(s) de este período` : `${saldo} día(s) disponibles este período`;
+      texto = saldo < 0 ? `Debe ${Math.abs(saldo)} día(s) de este período` : `${saldo} día(s) disponibles este período`;
+    } else {
+      texto = saldo < 0 ? `Tomó ${Math.abs(saldo)} día(s) de adelanto antes de cumplir el año` : 'Aún no cumple el año — sin días disponibles todavía';
     }
-    return saldo < 0 ? `Tomó ${Math.abs(saldo)} día(s) de adelanto antes de cumplir el año` : 'Aún no cumple el año — sin días disponibles todavía';
+    if (e.aniversariosPorAcreditar > 0) {
+      texto += ` · Incluye +${e.aniversariosPorAcreditar * DIAS_VACACIONES_DESCONTABLES} por su aniversario de afiliación`;
+    }
+    return texto;
   }
 }

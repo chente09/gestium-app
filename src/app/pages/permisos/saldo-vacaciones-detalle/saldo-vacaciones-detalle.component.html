@@ -1,0 +1,175 @@
+<div class="permisos-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/permisos/saldos"><nz-icon nzType="bar-chart"></nz-icon> Saldo de Vacaciones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>{{ empleado?.nombreCompleto || 'Detalle' }}</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <nz-card *ngIf="cargando" [nzLoading]="true" class="bloque"></nz-card>
+
+    <nz-card *ngIf="!cargando && noEncontrado" class="bloque">
+        <nz-empty nzNotFoundContent="No se encontró a esta persona.">
+            <ng-template #nzNotFoundFooter>
+                <a routerLink="/permisos/saldos">Volver a la lista de saldos</a>
+            </ng-template>
+        </nz-empty>
+    </nz-card>
+
+    <ng-container *ngIf="!cargando && empleado">
+        <h1 class="page-title"><nz-icon nzType="user"></nz-icon> {{ empleado.nombreCompleto }}</h1>
+        <div class="subtitulo">
+            Cédula {{ empleado.cedula }}
+            <span *ngIf="empleado.fechaAfiliacionIESS"> · Afiliado desde {{ empleado.fechaAfiliacionIESS | date: 'dd/MM/yyyy' }}</span>
+            <nz-tag [nzColor]="elegible ? 'green' : 'gold'">{{ elegible ? 'Elegible para vacaciones' : 'Falta 1 año' }}</nz-tag>
+        </div>
+
+        <div class="resumen-stats">
+            <nz-card [nzBodyStyle]="{ padding: '12px 16px' }" class="tarjeta-saldo">
+                <div class="stat-titulo">Saldo de hoy</div>
+                <nz-tag class="saldo-grande" [nzColor]="etiquetaDeSaldo.color">{{ etiquetaDeSaldo.texto }}</nz-tag>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '12px 16px' }">
+                <nz-statistic [nzValue]="diasDescontadosDesdeAniversario" nzTitle="Descontados desde su último aniversario"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '12px 16px' }">
+                <nz-statistic [nzValue]="diasDescontadosTotal" nzTitle="Descontados en total (desde la app)"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '12px 16px' }">
+                <nz-statistic [nzValue]="sinEfecto" nzTitle="Permisos aprobados sin descuento"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '12px 16px' }">
+                <nz-statistic [nzValue]="pendientes" nzTitle="Pendientes de aprobar"></nz-statistic>
+            </nz-card>
+        </div>
+
+        <nz-card nzTitle="¿De dónde sale el saldo?" class="bloque" *ngIf="empleado.fechaAfiliacionIESS">
+            <ul class="composicion">
+                <li>
+                    <b>Saldo guardado:</b> {{ saldoGuardado }} día(s). Es lo que cargó el administrador, ya con los
+                    descuentos de las solicitudes aprobadas desde la app restados.
+                </li>
+                <li *ngFor="let fecha of aniversariosAuto">
+                    <b>+{{ diasPorAnio }}</b> por su aniversario del {{ fecha | date: 'dd/MM/yyyy' }}
+                    <nz-tag nzColor="blue">automático</nz-tag>
+                </li>
+                <li *ngIf="aniversariosAuto.length === 0" class="tenue">
+                    Todavía no hay aniversarios sumados automáticamente (se cuentan desde el 01/10/2026; los anteriores ya
+                    estaban incluidos en el saldo cargado).
+                </li>
+                <li class="total"><b>Saldo de hoy:</b> {{ saldoHoy }} día(s)</li>
+                <li *ngIf="proximo" class="tenue">
+                    Próximo aniversario: {{ proximo | date: 'dd/MM/yyyy' }} (+{{ diasPorAnio }} días).
+                </li>
+            </ul>
+        </nz-card>
+
+        <nz-card nzTitle="Historial de solicitudes" class="bloque">
+            <div class="filtros" *ngIf="filas.length > 0">
+                <nz-select
+                    class="filtro"
+                    nzAllowClear
+                    nzPlaceHolder="Todos los tipos"
+                    [(ngModel)]="filtroTipo"
+                    (ngModelChange)="filtrar()">
+                    <nz-option *ngFor="let t of tipos" [nzValue]="t.value" [nzLabel]="t.label"></nz-option>
+                </nz-select>
+                <nz-select
+                    class="filtro filtro-anio"
+                    nzAllowClear
+                    nzPlaceHolder="Todos los años"
+                    [(ngModel)]="filtroAnio"
+                    (ngModelChange)="filtrar()">
+                    <nz-option *ngFor="let a of anios" [nzValue]="a" [nzLabel]="'' + a"></nz-option>
+                </nz-select>
+            </div>
+
+            <nz-empty *ngIf="filas.length === 0" nzNotFoundContent="Esta persona todavía no tiene solicitudes."></nz-empty>
+            <nz-empty *ngIf="filas.length > 0 && filtradas.length === 0" nzNotFoundContent="Ninguna solicitud con ese filtro."></nz-empty>
+
+            <div class="tabla-scroll" *ngIf="filtradas.length > 0">
+                <nz-table #tabla [nzData]="filtradas" [nzPageSize]="15" [nzShowPagination]="filtradas.length > 15" nzSize="small" [nzBordered]="true">
+                    <thead>
+                        <tr>
+                            <th nzWidth="46px"></th>
+                            <th>Fechas</th>
+                            <th>Tipo</th>
+                            <th>Días</th>
+                            <th>Efecto en el saldo</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <ng-container *ngFor="let f of tabla.data; trackBy: trackByFila">
+                            <tr>
+                                <td
+                                    [nzExpand]="expandidas.has(f.solicitud.id || '')"
+                                    (nzExpandChange)="alternarFila(f.solicitud.id, $event)"></td>
+                                <td class="nowrap">
+                                    {{ f.solicitud.fechaInicio | date: 'dd/MM/yyyy' }}
+                                    <span *ngIf="f.solicitud.fechaFin !== f.solicitud.fechaInicio"> al {{ f.solicitud.fechaFin | date: 'dd/MM/yyyy' }}</span>
+                                </td>
+                                <td>{{ f.tipoLabel }}</td>
+                                <td class="nowrap">
+                                    {{ f.laborables }} laborable(s)
+                                    <span class="tenue" *ngIf="f.corridos !== f.laborables">· {{ f.corridos }} corridos</span>
+                                </td>
+                                <td>
+                                    <ng-container [ngSwitch]="f.efecto.tipo">
+                                        <nz-tag *ngSwitchCase="'descuenta'" nzColor="red">−{{ f.efecto.dias }} día(s)</nz-tag>
+                                        <nz-tag *ngSwitchCase="'descontado_por_vencer'" nzColor="volcano">−{{ f.efecto.dias }} por no justificar a tiempo</nz-tag>
+                                        <nz-tag *ngSwitchCase="'descontara'" nzColor="gold">Descontará {{ f.efecto.dias }} al aprobarse</nz-tag>
+                                        <span *ngSwitchDefault class="tenue">Sin efecto en el saldo</span>
+                                    </ng-container>
+                                    <span
+                                        *ngIf="f.efecto.diasCorridosAnteriores"
+                                        class="aviso-anterior"
+                                        nz-tooltip
+                                        nzTooltipTitle="Se aprobó antes del 16/10/2026, cuando los días se descontaban corridos (con sábados y domingos). Hoy se descuentan solo los laborables.">
+                                        (días corridos)
+                                    </span>
+                                    <nz-tag
+                                        *ngIf="f.plazoVencido"
+                                        nzColor="orange"
+                                        nz-tooltip
+                                        nzTooltipTitle="Venció el plazo para subir el justificativo. Se marca como vencida y se descuenta la próxima vez que se abra su lista de solicitudes.">
+                                        Plazo vencido
+                                    </nz-tag>
+                                </td>
+                                <td><nz-tag [nzColor]="f.estado.color">{{ f.estado.label }}</nz-tag></td>
+                            </tr>
+                            <tr [nzExpand]="expandidas.has(f.solicitud.id || '')">
+                                <div class="detalle-fila">
+                                    <div><span class="etiqueta">Motivo:</span> {{ f.solicitud.motivo }}</div>
+                                    <div>
+                                        <span class="etiqueta">Solicitado:</span> {{ f.solicitud.fechaSolicitud | date: 'dd/MM/yyyy HH:mm' }}
+                                    </div>
+                                    <div *ngIf="f.solicitud.nombreAprobador">
+                                        <span class="etiqueta">{{ f.solicitud.estado === 'rechazado' ? 'Rechazado por:' : 'Aprobado por:' }}</span>
+                                        {{ f.solicitud.nombreAprobador }}
+                                        <span *ngIf="f.solicitud.fechaAprobacion">· {{ f.solicitud.fechaAprobacion | date: 'dd/MM/yyyy HH:mm' }}</span>
+                                    </div>
+                                    <div *ngIf="f.solicitud.motivoRechazo">
+                                        <span class="etiqueta">Motivo del rechazo:</span> {{ f.solicitud.motivoRechazo }}
+                                    </div>
+                                    <div *ngIf="f.solicitud.requiereJustificativo">
+                                        <span class="etiqueta">Justificativo:</span>
+                                        <ng-container *ngIf="f.solicitud.justificativoUrl; else sinJustificativo">
+                                            <a [href]="f.solicitud.justificativoUrl" target="_blank" rel="noopener">Ver archivo</a>
+                                            <nz-tag *ngIf="f.solicitud.justificativoValidado" nzColor="green">Validado</nz-tag>
+                                            <nz-tag *ngIf="!f.solicitud.justificativoValidado" nzColor="default">Sin validar</nz-tag>
+                                        </ng-container>
+                                        <ng-template #sinJustificativo><span class="tenue">No subido</span></ng-template>
+                                    </div>
+                                </div>
+                            </tr>
+                        </ng-container>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
+    </ng-container>
+</div>

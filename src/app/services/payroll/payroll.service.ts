@@ -45,13 +45,17 @@ export interface PayrollEmployee {
   empleadorNombre: string;
   empleadorRuc: string;
   activo: boolean;
-  // Acumulado histórico de días de vacaciones disponibles: sube al aprobar
+  // Acumulado histórico de días de vacaciones disponibles: baja al aprobar
   // Vacaciones/permisos con descuento (ver SolicitudesPermisoService), no
   // está limitado a los 11 descontables de un solo año (se van sumando año
   // a año si no se usan) y puede quedar en negativo si la persona debe
-  // días. Lo carga y ajusta el admin a mano; no hay migración de saldos
-  // previos a la puesta en marcha del módulo de Permisos.
+  // días o tomó un adelanto. El admin lo carga y ajusta a mano; lo que
+  // falta sumar de los aniversarios ya cumplidos NO está acá: se calcula al
+  // leerlo con saldoVacacionesAlDia (vacaciones-saldo.util.ts).
   saldoVacacionesDisponible?: number | null;
+  // Fecha (YYYY-MM-DD) hasta la que los aniversarios ya están sumados dentro
+  // de saldoVacacionesDisponible. Se graba cada vez que se guarda el saldo.
+  vacacionesAcreditadasHasta?: string | null;
   // Remuneración mensual propia, si gana más que el SBU vigente (ej. un
   // cargo con sueldo pactado aparte). Vacío/null = usa el SBU del año, como
   // el resto de afiliados. No aplica a pasantes (siempre $300 fijo).

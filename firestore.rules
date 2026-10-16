@@ -270,12 +270,13 @@ service cloud.firestore {
                      (isAuthenticated() && resource.data.uid == request.auth.uid);
 
       // Coordinador aprueba Vacaciones/permisos-con-descuento y eso resta
-      // del saldo (SolicitudesPermisoService.descontarDiasDeVacaciones) —
-      // se le deja tocar únicamente ese campo, nada más del empleado.
+      // del saldo (SolicitudesPermisoService.descontarDelSaldo) — se le deja
+      // tocar únicamente el saldo y la fecha hasta la que ya se sumaron los
+      // aniversarios, nada más del empleado.
       allow write: if isAdminOrGerente() ||
                       (
                         isCoordinador() &&
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['saldoVacacionesDisponible'])
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['saldoVacacionesDisponible', 'vacacionesAcreditadasHasta'])
                       );
     }
 
@@ -323,7 +324,7 @@ service cloud.firestore {
           (
             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['justificativoUrl', 'justificativoSubidoEn']) ||
             (
-              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'descontadoDeVacaciones']) &&
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado', 'descontadoDeVacaciones', 'diasDescontados']) &&
               resource.data.estado == 'aprobado' &&
               request.resource.data.estado == 'vencido_sin_justificativo'
             )

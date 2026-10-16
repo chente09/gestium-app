@@ -29,6 +29,7 @@ import { IessTitulosComponent } from './pages/iess-titulos/iess-titulos.componen
 import { IessCarteraComponent } from './pages/iess-cartera/iess-cartera.component';
 import { IessRecuperacionComponent } from './pages/iess-recuperacion/iess-recuperacion.component';
 import { IessPagosComponent } from './pages/iess-pagos/iess-pagos.component';
+import { IessNotasDuplicadasComponent } from './pages/iess-notas-duplicadas/iess-notas-duplicadas.component';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
 
@@ -84,6 +85,7 @@ const superAdminRoutes: Routes = [
   { path: 'iess/titulos', component: IessTitulosComponent },
   { path: 'iess/recuperacion', component: IessRecuperacionComponent },
   { path: 'iess/pagos', component: IessPagosComponent },
+  { path: 'iess/duplicados', component: IessNotasDuplicadasComponent },
 ].map(withAuthAnd([AdminGuard]));
 
 const payrollRoutes: Routes = [

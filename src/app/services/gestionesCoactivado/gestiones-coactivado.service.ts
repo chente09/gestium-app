@@ -126,6 +126,26 @@ export class GestionesCoactivadoService {
     return ultimas;
   }
 
+  // Para revisar notas repetidas (solo admin en la UI): todas las gestiones
+  // migradas del Excel, con una sola consulta por tipo (un único campo, sin
+  // índice compuesto) y bajo demanda — no en tiempo real.
+  async getGestionesMigradas(): Promise<GestionCoactivado[]> {
+    const ref = collection(this.firestore, this.collectionName);
+    const snap = await getDocs(query(ref, where('tipo', '==', 'migrado')));
+    return snap.docs.map(d => aGestion(d.id, d.data()));
+  }
+
+  // Solo admin (las reglas de Firestore lo exigen). Solo gestiones migradas
+  // del Excel y nunca una que alguien editó a mano: las migradas no tienen
+  // recordatorios en la agenda, por eso no pasa por eliminarGestion (que los
+  // busca de a uno). El filtro de acá es una segunda barrera por si se
+  // llama con una lista equivocada.
+  async eliminarMigradas(gestiones: GestionCoactivado[]): Promise<number> {
+    const borrables = gestiones.filter(g => g.id && g.tipo === 'migrado' && !g.editadoPor);
+    await borrarEnLotes(this.firestore, borrables.map(g => doc(this.firestore, `${this.collectionName}/${g.id}`)));
+    return borrables.length;
+  }
+
   async registrarGestion(data: {
     coactivadoId: string;
     coactivadoNombre: string;

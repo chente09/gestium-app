@@ -1,0 +1,122 @@
+<div class="duplicadas-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/iess/bitacora">Bitácora de Gestiones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Notas duplicadas</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <h1 class="page-title"><nz-icon nzType="copy"></nz-icon> Notas duplicadas del Excel</h1>
+    <p class="page-subtitulo">
+        La gestión es del coactivado (RUC), no de cada título. Cuando la matriz repetía la misma nota en cada título
+        con una pequeña diferencia (por ejemplo, la hora), se migró una gestión por cada variante. Acá se encuentran
+        y se deja una sola por nota.
+    </p>
+
+    <nz-card class="paso-card">
+        <button nz-button nzType="primary" class="brand-btn" [nzLoading]="escaneando" (click)="escanear()">
+            <nz-icon nzType="search"></nz-icon> {{ escaneado ? 'Volver a revisar' : 'Buscar notas duplicadas' }}
+        </button>
+        <span class="nota-lectura">Solo lee y compara: no cambia nada hasta que elijas eliminar.</span>
+    </nz-card>
+
+    <ng-container *ngIf="escaneado">
+        <div class="resumen-stats">
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="revisadas" nzTitle="Notas migradas revisadas"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="grupos.length > 0">
+                <nz-statistic [nzValue]="grupos.length" nzTitle="Notas repetidas (grupos)"></nz-statistic>
+            </nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" [class.card-alerta]="totalSobrantes > 0">
+                <nz-statistic [nzValue]="totalSobrantes" nzTitle="Gestiones sobrantes"></nz-statistic>
+            </nz-card>
+        </div>
+
+        <nz-card *ngIf="grupos.length === 0" class="paso-card">
+            <nz-empty nzNotFoundContent="No hay notas repetidas. Todo en orden."></nz-empty>
+        </nz-card>
+
+        <nz-card *ngIf="grupos.length > 0" class="paso-card">
+            <nz-alert
+                class="aviso"
+                nzType="info"
+                nzShowIcon
+                nzMessage="Cómo se decide qué se conserva"
+                nzDescription="De cada grupo se conserva una sola nota (la más antigua, o la que alguien editó a mano). Una gestión editada a mano nunca se elimina. Antes de borrar se descarga un respaldo en Excel con lo que se elimina.">
+            </nz-alert>
+
+            <div class="barra-acciones">
+                <button
+                    nz-button
+                    nzType="primary"
+                    nzDanger
+                    [nzLoading]="eliminando"
+                    nz-popconfirm
+                    [nzPopconfirmTitle]="'¿Eliminar ' + totalSobrantes + ' notas repetidas de ' + grupos.length + ' grupo(s)? Antes se descarga un respaldo en Excel. No se puede deshacer.'"
+                    nzOkText="Eliminar"
+                    nzOkDanger
+                    nzCancelText="Cancelar"
+                    nzPopconfirmPlacement="bottomLeft"
+                    (nzOnConfirm)="eliminarTodos()">
+                    <nz-icon nzType="delete"></nz-icon> Eliminar todos los sobrantes ({{ totalSobrantes }})
+                </button>
+            </div>
+
+            <div class="tabla-scroll">
+                <nz-table #tabla [nzData]="grupos" [nzPageSize]="20" [nzShowPagination]="grupos.length > 20" nzSize="small" [nzBordered]="true">
+                    <thead>
+                        <tr>
+                            <th nzWidth="46px"></th>
+                            <th>Coactivado</th>
+                            <th>Cédula / RUC</th>
+                            <th>Sobrantes</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <ng-container *ngFor="let g of tabla.data; trackBy: trackByGrupo">
+                            <tr>
+                                <td [nzExpand]="expandidos.has(clave(g))" (nzExpandChange)="alternar(clave(g), $event)"></td>
+                                <td>{{ g.coactivadoNombre }}</td>
+                                <td class="nowrap">{{ g.coactivadoId }}</td>
+                                <td><nz-tag nzColor="orange">{{ g.sobrantes.length }}</nz-tag></td>
+                                <td class="nowrap">
+                                    <a [routerLink]="['/iess/bitacora']" [queryParams]="{ cedula: g.coactivadoId }">Ver ficha</a>
+                                    <button
+                                        nz-button
+                                        nzType="link"
+                                        nzDanger
+                                        nzSize="small"
+                                        [nzLoading]="eliminandoId === clave(g)"
+                                        nz-popconfirm
+                                        nzPopconfirmTitle="¿Eliminar las notas repetidas de este coactivado? Antes se descarga un respaldo en Excel."
+                                        nzOkText="Eliminar"
+                                        nzOkDanger
+                                        nzCancelText="Cancelar"
+                                        (nzOnConfirm)="eliminarGrupo(g)">
+                                        Eliminar sobrantes
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr [nzExpand]="expandidos.has(clave(g))">
+                                <div class="detalle">
+                                    <div class="nota conservar">
+                                        <nz-tag nzColor="green">Se conserva</nz-tag>
+                                        {{ g.conservar.descripcion }}
+                                        <div class="obs" *ngIf="g.conservar.observacionGeneral">Observación general: {{ g.conservar.observacionGeneral }}</div>
+                                    </div>
+                                    <div class="nota eliminar" *ngFor="let s of g.sobrantes">
+                                        <nz-tag nzColor="red">Se elimina</nz-tag>
+                                        {{ s.descripcion }}
+                                    </div>
+                                </div>
+                            </tr>
+                        </ng-container>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
+    </ng-container>
+</div>

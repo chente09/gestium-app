@@ -1,0 +1,100 @@
+.duplicadas-container {
+    padding: 16px 24px 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.page-title {
+    margin: 12px 0 4px;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.page-subtitulo {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 13px;
+    margin-bottom: 16px;
+    max-width: 820px;
+}
+
+nz-card.paso-card {
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.nota-lectura {
+    margin-left: 12px;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 13px;
+}
+
+.resumen-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.card-alerta {
+    border-color: #ffa940;
+    background: #fff7e6;
+}
+
+.aviso {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.barra-acciones {
+    margin-bottom: 12px;
+}
+
+.tabla-scroll {
+    overflow-x: auto;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.detalle {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 8px;
+}
+
+.nota {
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.nota.conservar {
+    background: #f6ffed;
+}
+
+.nota.eliminar {
+    background: #fff1f0;
+}
+
+.obs {
+    margin-top: 2px;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}

@@ -22,7 +22,7 @@ import { borrarEnLotes, escribirEnLotes, EscrituraLote } from '../firestore-util
 import { COLECCION_COACTIVADOS, normalizarBusqueda, palabrasBusqueda } from '../coactivados/coactivados.util';
 import { COLECCION_GESTIONES } from '../gestionesCoactivado/gestiones-coactivado.service';
 import { ESTADO_ANULADO, ESTADO_CONVENIO, TipoCancelacion, TituloCredito } from './titulos-credito.util';
-import { claveGestionHistorica, Existente, FilaTitulo, GestionHistorica, PlanCarga } from './importador-titulos.util';
+import { claveGestionHistorica, Existente, FilaTitulo, GestionHistorica, normalizarClaveGestion, PlanCarga } from './importador-titulos.util';
 import { FilaPago, PlanPagos, TituloExistente } from './pagos-titulos.util';
 
 export const COLECCION_TITULOS = 'titulos_credito';
@@ -293,7 +293,8 @@ export class TitulosCreditoService {
     const resultado = new Set<string>();
     snaps.forEach(snap => snap.forEach(d => {
       const clave = (d.data() as { claveHistorica?: string }).claveHistorica;
-      if (clave) resultado.add(clave);
+      // Las claves guardadas antes de ignorar la hora están sin normalizar.
+      if (clave) resultado.add(normalizarClaveGestion(clave));
     }));
     return resultado;
   }

@@ -445,13 +445,25 @@ export interface PlanCarga {
   totalFilas: number;
 }
 
+// Una nota que solo cambia en la hora ("LLAMAR EL DIA MIERCOLES A LAS 10:31"
+// y "...10:36"), en los espacios o en las mayúsculas es la MISMA nota: la
+// gestión es del coactivado (RUC), no de cada título, y el Excel repite la
+// nota en cada fila de sus títulos con variaciones mínimas. Es una función
+// aparte porque también se aplica a las claves que ya están guardadas en
+// Firestore (que se grabaron sin normalizar) y a la búsqueda de duplicados.
+export function normalizarClaveGestion(clave: string): string {
+  return clave.replace(/\b\d{1,2}:\d{2}\b/g, '##:##').replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
 // Clave estable de una nota histórica: se usa tanto para no duplicar dentro
 // del propio archivo (un RUC con 200 títulos repitiendo la misma nota) como
 // para no volver a migrar una nota que ya quedó guardada en una carga
 // anterior. OBSERVACION y OBSERVACION GENERAL entran por separado: si
-// cualquiera de las dos cambia, es una nota distinta.
+// cualquiera de las dos cambia (más allá de la hora), es una nota distinta.
+// El separador es el carácter nulo (así quedaron grabadas las claves ya
+// guardadas: no se puede cambiar sin volver a migrar todo).
 export function claveGestionHistorica(ruc: string, descripcion: string, observacionGeneral?: string): string {
-  return `${ruc} ${descripcion} ${observacionGeneral ?? ''}`;
+  return normalizarClaveGestion(`${ruc}\u0000${descripcion}\u0000${observacionGeneral ?? ''}`);
 }
 
 interface NotaFila {

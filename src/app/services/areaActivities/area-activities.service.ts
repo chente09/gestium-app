@@ -356,6 +356,25 @@ export class AreaActivitiesService {
     );
   }
 
+  // Actividades abiertas del área asignadas a una persona (en tiempo real):
+  // alimenta "Mis pendientes" de la Bitácora. Solo igualdades (el `in` de
+  // estado deja fuera las completadas, que con el tiempo son la mayoría y se
+  // leerían todas en cada visita) → sin índice compuesto. El where de `area`
+  // es obligatorio por las reglas de Firestore. Se ordena en el cliente.
+  getPendientesDeResponsable(area: string, uid: string): Observable<AreaActivity[]> {
+    const ref = collection(this.firestore, this.collectionName);
+    const q = query(
+      ref,
+      where('area', '==', area),
+      where('responsable', '==', uid),
+      where('estado', 'in', ['pendiente', 'en_progreso', 'pospuesta'])
+    );
+
+    return (collectionData(q, { idField: 'id' }) as Observable<AreaActivity[]>).pipe(
+      map(lista => lista.map(a => ({ ...a, fechaLimite: a.fechaLimite?.toDate ? a.fechaLimite.toDate() : a.fechaLimite })))
+    );
+  }
+
   // Borra TODAS las actividades ligadas a un coactivado (abiertas y ya
   // completadas). Solo tiene sentido al eliminar el coactivado — las reglas
   // de Firestore ya limitan el delete a su creador o admin/coordinador.

@@ -893,7 +893,12 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
   abrirFichaCoactivado(activity: AreaActivity): void {
     if (!activity.coactivadoId) return;
     this.closeViewModal();
-    this.router.navigate(['/iess/bitacora'], { queryParams: { cedula: activity.coactivadoId } });
+
+    // Si el recordatorio es de quien lo abre, la bitácora se abre ya en "Mis
+    // pendientes" para seguir con los demás sin volver a la agenda.
+    const queryParams: Record<string, string> = { cedula: activity.coactivadoId };
+    if (activity.responsable === this.registersService.getCurrentRegister()?.uid) queryParams['pendientes'] = '1';
+    this.router.navigate(['/iess/bitacora'], { queryParams });
   }
 
   // 👁️ Editar desde vista previa

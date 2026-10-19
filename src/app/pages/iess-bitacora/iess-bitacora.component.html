@@ -88,7 +88,21 @@
             </nz-card>
 
             <!-- Casos de la cartera del coactivado abierto: navegar sin volver a la lista general -->
-            <nz-card *ngIf="seleccionado" class="card-casos" [nzBodyStyle]="{ padding: '12px' }">
+            <nz-card *ngIf="seleccionado || pendientes.length > 0" class="card-casos" [nzBodyStyle]="{ padding: '12px' }">
+                <!-- Cartera: casos del abogado. Mis pendientes: mis recordatorios abiertos, para
+                     repasarlos de corrido sin volver a la agenda. -->
+                <nz-radio-group
+                    *ngIf="seleccionado"
+                    class="modo-navegacion"
+                    nzSize="small"
+                    nzButtonStyle="solid"
+                    [ngModel]="modoNavegacion"
+                    (ngModelChange)="cambiarModoNavegacion($event)">
+                    <label nz-radio-button nzValue="cartera">Cartera</label>
+                    <label nz-radio-button nzValue="pendientes">Mis pendientes ({{ pendientes.length }})</label>
+                </nz-radio-group>
+
+                <ng-container *ngIf="!verPendientes && seleccionado; else vistaPendientes">
                 <div class="casos-cabecera">
                     <div class="casos-titulo">
                         <strong>Casos de {{ seleccionado.cartera }}</strong>
@@ -142,6 +156,70 @@
                         </button>
                     </div>
                 </ng-container>
+                </ng-container>
+
+                <ng-template #vistaPendientes>
+                    <div class="casos-cabecera">
+                        <div class="casos-titulo">
+                            <strong>Mis pendientes</strong>
+                            <span class="casos-posicion" *ngIf="indicePendienteActual >= 0">
+                                {{ indicePendienteActual + 1 }} de {{ pendientes.length }}
+                            </span>
+                            <span class="casos-posicion" *ngIf="indicePendienteActual < 0 && pendientes.length > 0">
+                                {{ pendientes.length }} caso(s) con recordatorio abierto
+                            </span>
+                        </div>
+                        <div class="casos-nav">
+                            <button
+                                nz-button
+                                nzSize="small"
+                                type="button"
+                                aria-label="Pendiente anterior"
+                                [disabled]="indicePendienteActual <= 0"
+                                (click)="irAlPendiente(-1)">
+                                <nz-icon nzType="left"></nz-icon>
+                            </button>
+                            <button
+                                nz-button
+                                nzSize="small"
+                                type="button"
+                                aria-label="Pendiente siguiente"
+                                [disabled]="indicePendienteActual < 0 || indicePendienteActual >= pendientes.length - 1"
+                                (click)="irAlPendiente(1)">
+                                <nz-icon nzType="right"></nz-icon>
+                            </button>
+                            <button
+                                nz-button
+                                nzSize="small"
+                                nzType="text"
+                                type="button"
+                                aria-label="Mostrar u ocultar la lista"
+                                (click)="alternarLista()">
+                                <nz-icon [nzType]="listaAbierta ? 'up' : 'down'"></nz-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <ng-container *ngIf="listaAbierta">
+                        <nz-empty *ngIf="pendientes.length === 0" nzNotFoundContent="No tienes recordatorios pendientes."></nz-empty>
+
+                        <div class="lista-casos" *ngIf="pendientes.length > 0">
+                            <button
+                                type="button"
+                                class="caso-item"
+                                *ngFor="let p of pendientes; trackBy: trackByPendiente"
+                                [class.activo]="seleccionado?.cedula === p.coactivadoId"
+                                (click)="abrirPendiente(p)">
+                                <span class="caso-nombre">{{ p.coactivadoNombre }}</span>
+                                <span class="caso-meta">
+                                    <nz-tag [nzColor]="esPendienteVencido(p) ? 'red' : 'blue'">{{ p.fechaLimite | date: 'dd/MM' }}</nz-tag>
+                                    <nz-tag *ngIf="p.cantidad > 1">{{ p.cantidad }} recordatorios</nz-tag>
+                                </span>
+                                <span class="caso-cedula caso-desc" *ngIf="p.descripcion">{{ p.descripcion }}</span>
+                            </button>
+                        </div>
+                    </ng-container>
+                </ng-template>
             </nz-card>
         </aside>
 

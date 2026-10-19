@@ -48,6 +48,7 @@ import {
   TIPOS_GESTION_SELECCIONABLES
 } from '../../services/gestionesCoactivado/gestiones-coactivado.service';
 import { AvisoPrecoactivoModalComponent } from './aviso-precoactivo-modal/aviso-precoactivo-modal.component';
+import { PendienteCaso, agruparPendientesPorCoactivado, siguientePendienteTras } from '../../services/gestionesCoactivado/pendientes-iess.util';
 import { TitulosCreditoService } from '../../services/titulosCredito/titulos-credito.service';
 import {
   TituloCredito,
@@ -144,6 +145,15 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   cargandoLista = false;
   listaAbierta = typeof window === 'undefined' || window.innerWidth >= 900;
   private listasPorCartera = new Map<string, Coactivado[]>();
+
+  // "Mis pendientes": los recordatorios abiertos a mi nombre, un caso por
+  // coactivado, para repasarlos de corrido sin volver a la agenda (la agenda
+  // sigue mostrando los de todos). En vivo: si completo uno desde la agenda,
+  // desaparece de acá.
+  modoNavegacion: 'cartera' | 'pendientes' = 'cartera';
+  pendientes: PendienteCaso[] = [];
+  private actividadesPendientes: AreaActivity[] = [];
+  private pendientesSub?: Subscription;
 
   // Recordatorios: integrantes del IESS entre quienes elegir responsable, y
   // los recordatorios todavía abiertos del coactivado abierto.
@@ -327,11 +337,28 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarResponsables();
 
+    this.iniciarPendientes();
+
     // Desde la agenda: un recordatorio abre directo la ficha de su coactivado
-    // (en ese caso no hace falta cargar el panel de carteras).
-    const cedula = this.route.snapshot.queryParamMap.get('cedula');
+    // (en ese caso no hace falta cargar el panel de carteras). Si es mío, se
+    // abre ya en "Mis pendientes".
+    const params = this.route.snapshot.queryParamMap;
+    if (params.get('pendientes')) this.modoNavegacion = 'pendientes';
+    const cedula = params.get('cedula');
     if (cedula) this.abrirPorCedula(cedula);
     else this.cargarResumenCarteras();
+  }
+
+  private iniciarPendientes(): void {
+    if (!this.uid) return;
+    this.pendientesSub = this.gestionesService.getMisPendientes(this.uid).subscribe({
+      next: actividades => {
+        this.actividadesPendientes = actividades;
+        this.pendientes = agruparPendientesPorCoactivado(actividades);
+        this.desplazarAlCasoActivo();
+      },
+      error: error => console.error('Error cargando mis pendientes:', error)
+    });
   }
 
   private async cargarResumenCarteras(): Promise<void> {
@@ -357,6 +384,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.gestionesSub?.unsubscribe();
     this.recordatoriosSub?.unsubscribe();
+    this.pendientesSub?.unsubscribe();
   }
 
   private async cargarResponsables(): Promise<void> {
@@ -532,6 +560,56 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.seleccionar(this.listaCasos[i]);
   }
 
+  // ============================================
+  // 📌 Mis pendientes (recordatorios abiertos a mi nombre)
+  // ============================================
+
+  // Sin ficha abierta solo tiene sentido la lista de pendientes.
+  get verPendientes(): boolean {
+    return this.modoNavegacion === 'pendientes' || !this.seleccionado;
+  }
+
+  get indicePendienteActual(): number {
+    const cedula = this.seleccionado?.cedula;
+    return cedula ? this.pendientes.findIndex(p => p.coactivadoId === cedula) : -1;
+  }
+
+  cambiarModoNavegacion(modo: 'cartera' | 'pendientes'): void {
+    this.modoNavegacion = modo;
+    if (this.listaAbierta) this.desplazarAlCasoActivo();
+  }
+
+  abrirPendiente(pendiente: PendienteCaso): void {
+    if (this.seleccionado?.cedula === pendiente.coactivadoId) return;
+    this.abrirPorCedula(pendiente.coactivadoId);
+  }
+
+  // delta = -1 (anterior) o +1 (siguiente).
+  irAlPendiente(delta: number): void {
+    const i = this.indicePendienteActual + delta;
+    if (this.indicePendienteActual < 0 || i < 0 || i >= this.pendientes.length) return;
+    this.abrirPendiente(this.pendientes[i]);
+  }
+
+  // Vencido = su fecha ya pasó (el de hoy todavía está a tiempo).
+  esPendienteVencido(pendiente: PendienteCaso): boolean {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    return pendiente.fechaLimite < hoy;
+  }
+
+  trackByPendiente(_: number, p: PendienteCaso): string {
+    return p.coactivadoId;
+  }
+
+  // Al completar el último recordatorio de un caso, en "Mis pendientes" se
+  // pasa solo al siguiente (ver siguientePendienteTras). En modo Cartera no se
+  // cambia de caso.
+  private siguienteTrasCompletar(recordatorio: AreaActivity): PendienteCaso | null | undefined {
+    if (this.modoNavegacion !== 'pendientes') return undefined;
+    return siguientePendienteTras(recordatorio, this.actividadesPendientes);
+  }
+
   // Centra el caso activo en la lista solo si quedó fuera de la vista, para
   // no mover la lista debajo del cursor al hacer clic en un caso visible.
   private desplazarAlCasoActivo(): void {
@@ -613,9 +691,13 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     if (!recordatorio.id) return;
 
     this.completandoId = recordatorio.id;
+    const siguiente = this.siguienteTrasCompletar(recordatorio);
     try {
       await this.gestionesService.completarRecordatorio(recordatorio.id);
       this.message.success('Recordatorio completado.');
+
+      if (siguiente) this.abrirPendiente(siguiente);
+      else if (siguiente === null) this.message.info('No te quedan pendientes.');
     } catch (error) {
       console.error('Error completando recordatorio:', error);
       this.message.error('No se pudo completar el recordatorio.');

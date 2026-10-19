@@ -241,6 +241,12 @@ export class GestionesCoactivadoService {
     );
   }
 
+  // Recordatorios abiertos a nombre de una persona, de todos sus coactivados
+  // (en tiempo real): la lista "Mis pendientes" para repasarlos de corrido.
+  getMisPendientes(uid: string): Observable<AreaActivity[]> {
+    return this.areaActivitiesService.getPendientesDeResponsable(AREA_IESS, uid);
+  }
+
   async completarRecordatorio(activityId: string): Promise<void> {
     await this.areaActivitiesService.completeActivity(activityId);
   }

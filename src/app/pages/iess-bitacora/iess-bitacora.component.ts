@@ -48,7 +48,13 @@ import {
   TIPOS_GESTION_SELECCIONABLES
 } from '../../services/gestionesCoactivado/gestiones-coactivado.service';
 import { AvisoPrecoactivoModalComponent } from './aviso-precoactivo-modal/aviso-precoactivo-modal.component';
-import { PendienteCaso, agruparPendientesPorCoactivado, siguientePendienteTras } from '../../services/gestionesCoactivado/pendientes-iess.util';
+import {
+  PendienteCaso,
+  agruparPendientesPorCoactivado,
+  msHastaMedianoche,
+  siguientePendienteTras,
+  soloVencidasYDeHoy
+} from '../../services/gestionesCoactivado/pendientes-iess.util';
 import { TitulosCreditoService } from '../../services/titulosCredito/titulos-credito.service';
 import {
   TituloCredito,
@@ -152,8 +158,10 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   // desaparece de acá.
   modoNavegacion: 'cartera' | 'pendientes' = 'cartera';
   pendientes: PendienteCaso[] = [];
-  private actividadesPendientes: AreaActivity[] = [];
+  private actividadesAbiertas: AreaActivity[] = []; // todas las abiertas a mi nombre
+  private actividadesPendientes: AreaActivity[] = []; // de esas, las atrasadas y de hoy
   private pendientesSub?: Subscription;
+  private cambioDeDiaTimer?: ReturnType<typeof setTimeout>;
 
   // Recordatorios: integrantes del IESS entre quienes elegir responsable, y
   // los recordatorios todavía abiertos del coactivado abierto.
@@ -349,16 +357,32 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     else this.cargarResumenCarteras();
   }
 
+  // Solo lo atrasado y lo de hoy: lo de mañana aparece mañana.
   private iniciarPendientes(): void {
     if (!this.uid) return;
     this.pendientesSub = this.gestionesService.getMisPendientes(this.uid).subscribe({
       next: actividades => {
-        this.actividadesPendientes = actividades;
-        this.pendientes = agruparPendientesPorCoactivado(actividades);
-        this.desplazarAlCasoActivo();
+        this.actividadesAbiertas = actividades;
+        this.recalcularPendientes();
       },
       error: error => console.error('Error cargando mis pendientes:', error)
     });
+    this.programarCambioDeDia();
+  }
+
+  private recalcularPendientes(): void {
+    this.actividadesPendientes = soloVencidasYDeHoy(this.actividadesAbiertas);
+    this.pendientes = agruparPendientesPorCoactivado(this.actividadesPendientes);
+    this.desplazarAlCasoActivo();
+  }
+
+  // Si la pantalla queda abierta de un día para otro, a medianoche entran
+  // solos los recordatorios del día nuevo.
+  private programarCambioDeDia(): void {
+    this.cambioDeDiaTimer = setTimeout(() => {
+      this.recalcularPendientes();
+      this.programarCambioDeDia();
+    }, msHastaMedianoche() + 1000);
   }
 
   private async cargarResumenCarteras(): Promise<void> {
@@ -385,6 +409,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.gestionesSub?.unsubscribe();
     this.recordatoriosSub?.unsubscribe();
     this.pendientesSub?.unsubscribe();
+    if (this.cambioDeDiaTimer) clearTimeout(this.cambioDeDiaTimer);
   }
 
   private async cargarResponsables(): Promise<void> {

@@ -20,6 +20,25 @@ function aFecha(valor: any): Date {
   return valor?.toDate ? valor.toDate() : new Date(valor);
 }
 
+// "Mis pendientes" es lo que toca HOY: lo atrasado y lo de hoy. Un
+// recordatorio puesto para mañana aparece mañana, no antes — si no, la lista
+// se llenaría de cosas que todavía no hay que hacer.
+export function esVencidaODeHoy(fechaLimite: any, hoy: Date = new Date()): boolean {
+  const finDeHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+  return aFecha(fechaLimite) <= finDeHoy;
+}
+
+export function soloVencidasYDeHoy(actividades: AreaActivity[], hoy: Date = new Date()): AreaActivity[] {
+  return actividades.filter(a => esVencidaODeHoy(a.fechaLimite, hoy));
+}
+
+// Milisegundos hasta la próxima medianoche: a esa hora la lista de hoy cambia
+// sola, sin esperar a que Firestore mande otra actualización.
+export function msHastaMedianoche(ahora: Date = new Date()): number {
+  const medianoche = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1, 0, 0, 0, 0);
+  return medianoche.getTime() - ahora.getTime();
+}
+
 // A qué caso pasar al completar un recordatorio de "Mis pendientes": el que
 // queda en su lugar, o el anterior si era el último. undefined = no cambiar de
 // caso (la completada no es de mi lista, o ese coactivado todavía tiene otro

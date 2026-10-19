@@ -1,4 +1,10 @@
-import { agruparPendientesPorCoactivado, siguientePendienteTras } from './pendientes-iess.util';
+import {
+  agruparPendientesPorCoactivado,
+  esVencidaODeHoy,
+  msHastaMedianoche,
+  siguientePendienteTras,
+  soloVencidasYDeHoy
+} from './pendientes-iess.util';
 
 function act(id: string, cedula: string | undefined, dia: number, extra: Record<string, unknown> = {}): any {
   return {
@@ -14,6 +20,41 @@ function act(id: string, cedula: string | undefined, dia: number, extra: Record<
     ...extra
   };
 }
+
+describe('atrasados y de hoy', () => {
+  const hoy = new Date(2026, 9, 19, 15, 30, 0); // 19/10/2026 a media tarde
+
+  it('lo atrasado y lo de hoy cuentan; lo de mañana todavía no', () => {
+    expect(esVencidaODeHoy(new Date(2026, 9, 10, 12), hoy)).toBe(true); // atrasado
+    expect(esVencidaODeHoy(new Date(2026, 9, 18, 12), hoy)).toBe(true); // ayer
+    expect(esVencidaODeHoy(new Date(2026, 9, 19, 12), hoy)).toBe(true); // hoy (los recordatorios van a mediodía)
+    expect(esVencidaODeHoy(new Date(2026, 9, 19, 23, 59), hoy)).toBe(true); // hoy, a última hora
+    expect(esVencidaODeHoy(new Date(2026, 9, 20, 0, 0), hoy)).toBe(false); // mañana
+    expect(esVencidaODeHoy(new Date(2026, 9, 26, 12), hoy)).toBe(false);
+  });
+
+  it('acepta fechas de Firestore (Timestamp)', () => {
+    expect(esVencidaODeHoy({ toDate: () => new Date(2026, 9, 19, 12) }, hoy)).toBe(true);
+    expect(esVencidaODeHoy({ toDate: () => new Date(2026, 9, 21, 12) }, hoy)).toBe(false);
+  });
+
+  it('soloVencidasYDeHoy deja fuera lo de días futuros', () => {
+    const r = soloVencidasYDeHoy([act('a', '1', 10), act('b', '2', 19), act('c', '3', 20), act('d', '4', 26)], hoy);
+    expect(r.map(x => x.id).join(',')).toBe('a,b');
+  });
+
+  it('un coactivado con un recordatorio de hoy y otro de mañana aparece solo por el de hoy', () => {
+    const r = agruparPendientesPorCoactivado(soloVencidasYDeHoy([act('a', '1', 19), act('b', '1', 20)], hoy));
+    expect(r.length).toBe(1);
+    expect(r[0].cantidad).toBe(1);
+    expect(r[0].fechaLimite.getDate()).toBe(19);
+  });
+
+  it('calcula los milisegundos que faltan para medianoche', () => {
+    expect(msHastaMedianoche(new Date(2026, 9, 19, 23, 0, 0))).toBe(60 * 60 * 1000);
+    expect(msHastaMedianoche(new Date(2026, 9, 19, 12, 0, 0))).toBe(12 * 60 * 60 * 1000);
+  });
+});
 
 describe('siguientePendienteTras', () => {
   const lista = () => [act('a', '1', 10), act('b', '2', 12), act('c', '3', 14)];

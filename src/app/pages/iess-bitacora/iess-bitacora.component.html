@@ -163,10 +163,10 @@
                         <div class="casos-titulo">
                             <strong>Mis pendientes</strong>
                             <span class="casos-posicion" *ngIf="indicePendienteActual >= 0">
-                                {{ indicePendienteActual + 1 }} de {{ pendientes.length }}
+                                {{ indicePendienteActual + 1 }} de {{ pendientes.length }} · atrasados y de hoy
                             </span>
                             <span class="casos-posicion" *ngIf="indicePendienteActual < 0 && pendientes.length > 0">
-                                {{ pendientes.length }} caso(s) con recordatorio abierto
+                                {{ pendientes.length }} caso(s) atrasados o de hoy
                             </span>
                         </div>
                         <div class="casos-nav">
@@ -201,7 +201,7 @@
                     </div>
 
                     <ng-container *ngIf="listaAbierta">
-                        <nz-empty *ngIf="pendientes.length === 0" nzNotFoundContent="No tienes recordatorios pendientes."></nz-empty>
+                        <nz-empty *ngIf="pendientes.length === 0" nzNotFoundContent="No tienes pendientes para hoy ni atrasados."></nz-empty>
 
                         <div class="lista-casos" *ngIf="pendientes.length > 0">
                             <button

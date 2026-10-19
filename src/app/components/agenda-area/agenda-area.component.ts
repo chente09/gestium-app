@@ -27,6 +27,7 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 
 import { AreaActivitiesService, AreaActivity } from '../../services/areaActivities/area-activities.service';
+import { esVencidaODeHoy } from '../../services/gestionesCoactivado/pendientes-iess.util';
 import { RegistersService, Register } from '../../services/registers/registers.service';
 import { Subject, takeUntil } from 'rxjs';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
@@ -894,10 +895,12 @@ export class AgendaAreaComponent implements OnInit, OnDestroy {
     if (!activity.coactivadoId) return;
     this.closeViewModal();
 
-    // Si el recordatorio es de quien lo abre, la bitácora se abre ya en "Mis
-    // pendientes" para seguir con los demás sin volver a la agenda.
+    // Si el recordatorio es de quien lo abre y toca hoy (o está atrasado), la
+    // bitácora se abre ya en "Mis pendientes" para seguir con los demás sin
+    // volver a la agenda. Uno de mañana no está en esa lista.
     const queryParams: Record<string, string> = { cedula: activity.coactivadoId };
-    if (activity.responsable === this.registersService.getCurrentRegister()?.uid) queryParams['pendientes'] = '1';
+    const esMio = activity.responsable === this.registersService.getCurrentRegister()?.uid;
+    if (esMio && esVencidaODeHoy(activity.fechaLimite)) queryParams['pendientes'] = '1';
     this.router.navigate(['/iess/bitacora'], { queryParams });
   }
 

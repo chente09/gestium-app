@@ -334,14 +334,16 @@
                                 *ngIf="titulos.length > 10"
                                 nz-input
                                 [(ngModel)]="filtroTitulos"
+                                (ngModelChange)="paginaTitulos = 1"
                                 placeholder="Filtrar por número o guía..."
                                 class="filtro-titulos" />
                             <div class="tabla-titulos-scroll">
                                 <nz-table
                                     #tablaTitulos
                                     [nzData]="titulosFiltrados"
-                                    [nzPageSize]="20"
-                                    [nzShowPagination]="titulosFiltrados.length > 20"
+                                    [nzPageSize]="tamPaginaTitulos"
+                                    [(nzPageIndex)]="paginaTitulos"
+                                    [nzShowPagination]="titulosFiltrados.length > tamPaginaTitulos"
                                     nzSize="small"
                                     [nzBordered]="true">
                                     <thead>
@@ -357,7 +359,7 @@
                                     </thead>
                                     <tbody>
                                         <tr *ngFor="let t of tablaTitulos.data; let i = index; trackBy: trackByTitulo">
-                                            <td class="nowrap">{{ i + 1 }}</td>
+                                            <td class="nowrap">{{ (paginaTitulos - 1) * tamPaginaTitulos + i + 1 }}</td>
                                             <td>{{ t.numero }}</td>
                                             <td>{{ formatoMoneda(t.capital) }}</td>
                                             <td>

@@ -173,6 +173,10 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   titulos: TituloCredito[] = [];
   cargandoTitulos = false;
   filtroTitulos = '';
+  // De 10 en 10, y el número (#) sigue corrido entre páginas: la página 2
+  // empieza en 11, como en la tabla del propio IESS.
+  readonly tamPaginaTitulos = 10;
+  paginaTitulos = 1;
   readonly formatoMoneda = formatoMoneda;
   readonly esCancelado = esCancelado;
   readonly esAnulado = esAnulado;
@@ -660,6 +664,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.recordatorios = [];
     this.titulos = [];
     this.filtroTitulos = '';
+    this.paginaTitulos = 1;
   }
 
   get resumenTitulos(): ResumenTitulos {

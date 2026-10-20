@@ -51,6 +51,7 @@ import { AvisoPrecoactivoModalComponent } from './aviso-precoactivo-modal/aviso-
 import {
   PendienteCaso,
   agruparPendientesPorCoactivado,
+  esVencidaODeHoy,
   msHastaMedianoche,
   siguientePendienteTras,
   soloVencidasYDeHoy
@@ -168,6 +169,11 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   responsables: { uid: string; nombre: string }[] = [];
   recordatorios: AreaActivity[] = [];
   completandoId: string | null = null;
+
+  // Recordatorio abierto de la gestión que se está editando (si lo tiene): su
+  // fecha se corrige en el mismo modal de "Editar gestión".
+  recordatorioEditando: AreaActivity | null = null;
+  fechaRecordatorioEdicion: Date | null = null;
 
   // Títulos de crédito del coactivado abierto.
   titulos: TituloCredito[] = [];
@@ -944,6 +950,14 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   abrirEdicionGestion(gestion: GestionCoactivado): void {
     this.gestionEditando = gestion;
     this.edicionGestionForm.reset({ tipo: gestion.tipo, descripcion: gestion.descripcion, observacionGeneral: gestion.observacionGeneral ?? '' });
+
+    // Si la gestión tiene un recordatorio abierto, su fecha se puede corregir
+    // acá mismo. Arranca en la fecha actual solo si todavía se puede elegir
+    // (un vencido arranca vacío: hay que elegir otra).
+    this.recordatorioEditando = this.recordatorios.find(r => r.gestionId === gestion.id) ?? null;
+    const actual = this.recordatorioEditando ? new Date(this.recordatorioEditando.fechaLimite) : null;
+    this.fechaRecordatorioEdicion = actual && !this.fechaNoDisponible(actual) ? actual : null;
+
     this.mostrarEdicionGestion = true;
   }
 
@@ -951,12 +965,44 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     const gestion = this.gestionEditando;
     if (!gestion?.id || this.edicionGestionForm.invalid) return;
 
+    // ¿Se eligió otra fecha para el recordatorio? En "Mis pendientes", si pasa
+    // a un día futuro deja de ser un pendiente de hoy y se pasa solo al
+    // siguiente caso, igual que al completarlo.
+    const recordatorio = this.recordatorioEditando;
+    const nueva = this.fechaRecordatorioEdicion;
+    const cambiaFecha = !!recordatorio?.id && !!nueva
+      && nueva.toDateString() !== new Date(recordatorio.fechaLimite).toDateString();
+    const siguiente = cambiaFecha && recordatorio && nueva && this.modoNavegacion === 'pendientes' && !esVencidaODeHoy(nueva)
+      ? siguientePendienteTras(recordatorio, this.actividadesPendientes)
+      : undefined;
+
     this.guardandoEdicionGestion = true;
     try {
       await this.gestionesService.editarGestion(gestion.id, this.edicionGestionForm.value);
       this.mostrarEdicionGestion = false;
       this.gestionEditando = null;
-      this.message.success('Gestión actualizada.');
+
+      // La gestión ya quedó guardada: si la fecha falla se avisa aparte, sin
+      // dar por perdida la edición.
+      let fechaCambiada = false;
+      if (cambiaFecha && recordatorio?.id && nueva) {
+        try {
+          await this.gestionesService.reprogramarRecordatorio(recordatorio.id, nueva);
+          fechaCambiada = true;
+        } catch (error) {
+          console.error('Error reprogramando el recordatorio:', error);
+          this.message.warning('La gestión se guardó, pero no se pudo cambiar la fecha del recordatorio.');
+        }
+      }
+
+      this.message.success(
+        fechaCambiada
+          ? `Gestión actualizada. Recordatorio reprogramado para el ${formatDate(nueva!, 'dd/MM/yyyy', 'en-US')}.`
+          : 'Gestión actualizada.'
+      );
+
+      if (fechaCambiada && siguiente) this.abrirPendiente(siguiente);
+      else if (fechaCambiada && siguiente === null) this.message.info('No te quedan pendientes.');
     } catch (error) {
       console.error('Error editando gestión:', error);
       this.message.error('No se pudo actualizar la gestión.');

@@ -247,6 +247,15 @@ export class GestionesCoactivadoService {
     return this.areaActivitiesService.getPendientesDeResponsable(AREA_IESS, uid);
   }
 
+  // Cambia solo la fecha del recordatorio (a mediodía, como al crearlo para
+  // que una diferencia de zona horaria no lo mueva de día). El estado, la
+  // descripción y el responsable no se tocan. Las reglas de Firestore dejan a
+  // cualquier integrante del área IESS cambiar la fecha de un recordatorio.
+  async reprogramarRecordatorio(activityId: string, fecha: Date): Promise<void> {
+    const fechaLimite = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), 12, 0, 0);
+    await this.areaActivitiesService.updateActivity(activityId, { fechaLimite });
+  }
+
   async completarRecordatorio(activityId: string): Promise<void> {
     await this.areaActivitiesService.completeActivity(activityId);
   }

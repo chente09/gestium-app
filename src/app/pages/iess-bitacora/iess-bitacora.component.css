@@ -439,6 +439,10 @@ nz-card {
     align-items: center;
 }
 
+.tag-vencido-edicion {
+    margin-left: 6px;
+}
+
 .nota-edicion {
     margin: 0;
     font-size: 12px;

@@ -773,7 +773,29 @@
                     <textarea nz-input formControlName="observacionGeneral" rows="2" placeholder="Opcional"></textarea>
                 </nz-form-control>
             </nz-form-item>
+
+            <!-- Si la gestión tiene un recordatorio abierto en la agenda, su fecha se corrige acá
+                 mismo (en vez de otro botón aparte). Sin elegir otra fecha, no cambia. -->
+            <nz-form-item *ngIf="recordatorioEditando">
+                <nz-form-label>
+                    Fecha del recordatorio en la agenda
+                    <nz-tag *ngIf="esVencido(recordatorioEditando)" nzColor="red" class="tag-vencido-edicion">Vencido</nz-tag>
+                </nz-form-label>
+                <nz-form-control>
+                    <nz-date-picker
+                        [(ngModel)]="fechaRecordatorioEdicion"
+                        [ngModelOptions]="{ standalone: true }"
+                        nzFormat="dd/MM/yyyy"
+                        nzPlaceHolder="Elige otra fecha"
+                        [nzDisabledDate]="fechaNoDisponible"
+                        style="width: 100%;">
+                    </nz-date-picker>
+                </nz-form-control>
+            </nz-form-item>
         </form>
+        <p class="nota-edicion" *ngIf="recordatorioEditando">
+            La fecha del recordatorio es solo de lunes a viernes y desde hoy; si no eliges otra, no cambia.
+        </p>
         <p class="nota-edicion">Se conserva quién la registró y cuándo; queda anotado que la editaste tú.</p>
     </ng-container>
     <ng-template #edicionGestionFooter>

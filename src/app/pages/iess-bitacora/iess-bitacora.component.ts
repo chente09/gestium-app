@@ -61,8 +61,12 @@ import {
   TituloCredito,
   TipoCancelacion,
   ResumenTitulos,
+  CategoriaEstado,
+  PagoTitulo,
+  RANGO_CATEGORIA,
   ESTADO_ANULADO,
   ESTADO_CONVENIO,
+  categoriaEstado,
   esAnulado,
   esCancelado,
   esEnConvenio,
@@ -71,6 +75,7 @@ import {
   formatoMoneda,
   resumirTitulos
 } from '../../services/titulosCredito/titulos-credito.util';
+import { historialDePagos, totalPagado } from '../../services/titulosCredito/pagos-titulo.util';
 
 @Component({
   selector: 'app-iess-bitacora',
@@ -204,11 +209,21 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
   // Para el clic en el encabezado "Estado" de la tabla de títulos: alterna
   // entre ver primero los pendientes o primero los cancelados / convenio /
-  // anulados.
-  sortPorEstado = (a: TituloCredito, b: TituloCredito): number => {
-    const rango = (t: TituloCredito) => (esAnulado(t) ? 3 : esEnConvenio(t) ? 2 : esCancelado(t) ? 1 : 0);
-    return rango(a) - rango(b) || (a.guia ?? '').localeCompare(b.guia ?? '');
-  };
+  // anulados. Un título con abono va entre los pendientes y los cancelados.
+  sortPorEstado = (a: TituloCredito, b: TituloCredito): number =>
+    RANGO_CATEGORIA[categoriaEstado(a)] - RANGO_CATEGORIA[categoriaEstado(b)] ||
+    (a.guia ?? '').localeCompare(b.guia ?? '');
+
+  // Filtro por estado en el encabezado (se pueden marcar varios).
+  readonly filtrosEstado: { text: string; value: CategoriaEstado }[] = [
+    { text: 'Pendiente', value: 'pendiente' },
+    { text: 'Con abono', value: 'abono' },
+    { text: 'Cancelado', value: 'cancelado' },
+    { text: 'En convenio', value: 'convenio' },
+    { text: 'Anulado', value: 'anulado' }
+  ];
+  readonly filtrarPorEstado = (seleccion: CategoriaEstado[], t: TituloCredito): boolean =>
+    seleccion.includes(categoriaEstado(t));
 
   // Para el clic en el encabezado "Guía": mismo criterio que el orden por
   // defecto, pero con el toggle ascendente/descendente de la tabla.
@@ -240,6 +255,13 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   guardandoCancelacion = false;
   tituloCancelando: TituloCredito | null = null;
   cancelacionForm: FormGroup;
+
+  // Historial de pagos de un título (todos los abonos hasta el pago total).
+  mostrarHistorialPagos = false;
+  private numeroHistorial: string | null = null;
+  filasHistorial: { pago: PagoTitulo; indice: number }[] = [];
+  reversandoIndice: number | null = null;
+  readonly totalPagado = totalPagado;
 
   // Corregir el RUC de un título mal digitado en el Excel original (solo
   // admin) — vive dentro del modal "Editar coactivado", no en cada fila.
@@ -326,7 +348,8 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       tipo: ['abono', Validators.required],
       montoCancelado: [null, [Validators.required, Validators.min(0.01)]],
       honorario: [null],
-      comprobante: ['']
+      comprobante: [''],
+      fecha: [new Date()]
     });
 
     this.corregirRucForm = this.fb.group({
@@ -511,7 +534,12 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
 
     this.cargandoTitulos = true;
     this.titulosSub = this.titulosService.getPorCoactivado(coactivado.cedula).subscribe({
-      next: titulos => { this.titulos = titulos; this.cargandoTitulos = false; },
+      next: titulos => {
+        this.titulos = titulos;
+        this.cargandoTitulos = false;
+        // Si el historial está abierto, se actualiza con el título vivo (por ejemplo, tras reversar un pago).
+        if (this.numeroHistorial) this.recalcularHistorial();
+      },
       error: error => { console.error('Error cargando títulos:', error); this.cargandoTitulos = false; }
     });
 
@@ -1071,15 +1099,106 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   // ============================================
   // 💰 Registrar abono / pago total de un título
   // ============================================
+  // Un título con abonos sigue abierto: se le puede registrar otro pago (se
+  // suma al historial) hasta que se registra el pago por totalidad.
   abrirCancelacion(t: TituloCredito): void {
     this.tituloCancelando = t;
-    this.cancelacionForm.reset({ tipo: 'abono', montoCancelado: null, honorario: null, comprobante: '' });
+    this.cancelacionForm.reset({ tipo: 'abono', montoCancelado: null, honorario: null, comprobante: '', fecha: new Date() });
     this.mostrarCancelacion = true;
   }
 
   cerrarCancelacion(): void {
     this.mostrarCancelacion = false;
     this.tituloCancelando = null;
+  }
+
+  // No se puede registrar un pago con fecha futura.
+  readonly fechaFutura = (fecha: Date): boolean => {
+    const fin = new Date();
+    fin.setHours(23, 59, 59, 999);
+    return fecha > fin;
+  };
+
+  // Lo pagado antes de este pago, para mostrar cómo queda el total.
+  get pagadoAntes(): number {
+    return this.tituloCancelando ? totalPagado(this.tituloCancelando) : 0;
+  }
+
+  get pagosAnteriores(): number {
+    return this.tituloCancelando ? historialDePagos(this.tituloCancelando).length : 0;
+  }
+
+  get totalConEstePago(): number {
+    const monto = Number(this.cancelacionForm.value.montoCancelado) || 0;
+    return Math.round((this.pagadoAntes + monto) * 100) / 100;
+  }
+
+  // Historial de pagos de un título (en el orden en que se hicieron).
+  tieneHistorialPagos(t: TituloCredito): boolean {
+    return (t.tipoCancelacion === 'abono' || t.tipoCancelacion === 'pago_total')
+      && ((t.pagos?.length ?? 0) > 0 || (t.montoCancelado ?? 0) > 0);
+  }
+
+  // Un título con abonos sigue abierto: se le pueden registrar más pagos. El
+  // pago por totalidad (o un estado final) cierra el título.
+  admitePagos(t: TituloCredito): boolean {
+    return t.tipoCancelacion !== 'pago_total' && !esAnulado(t) && !esEnConvenio(t);
+  }
+
+  // El historial se abre desde la etiqueta del abono (o del "Pagado") del
+  // título. Se lee siempre del título vivo de la lista, así que al reversar un
+  // pago el modal se actualiza solo.
+  abrirHistorialPagos(t: TituloCredito): void {
+    this.numeroHistorial = t.numero;
+    this.recalcularHistorial();
+    this.mostrarHistorialPagos = true;
+  }
+
+  cerrarHistorialPagos(): void {
+    this.mostrarHistorialPagos = false;
+    this.numeroHistorial = null;
+    this.filasHistorial = [];
+  }
+
+  get tituloHistorial(): TituloCredito | null {
+    return this.numeroHistorial ? this.titulos.find(t => t.numero === this.numeroHistorial) ?? null : null;
+  }
+
+  // Se arma una vez cuando cambia el título (no en un getter: en cada revisión
+  // crearía objetos nuevos). Orden cronológico; los que no tienen fecha
+  // (anteriores al historial) primero. `indice` es la posición en
+  // historialDePagos, que es lo que necesita reversarPago.
+  private recalcularHistorial(): void {
+    const t = this.tituloHistorial;
+    this.filasHistorial = !t ? [] : historialDePagos(t)
+      .map((pago, indice) => ({ pago, indice }))
+      .sort((a, b) => (a.pago.fecha?.getTime?.() ?? 0) - (b.pago.fecha?.getTime?.() ?? 0) || a.indice - b.indice);
+  }
+
+  // Solo admin: reversa un pago puntual (no todos). En un título ya cancelado
+  // por totalidad lo reabre.
+  async reversarPago(indice: number): Promise<void> {
+    const t = this.tituloHistorial;
+    if (!t || !this.esAdmin || this.reversandoIndice !== null) return;
+
+    this.reversandoIndice = indice;
+    try {
+      const quedan = await this.titulosService.reversarPago(t.numero, indice);
+      this.message.success(quedan === 0 ? 'Pago reversado. El título quedó sin pagos.' : 'Pago reversado.');
+      if (quedan === 0) this.cerrarHistorialPagos();
+    } catch (error: any) {
+      console.error('Error reversando el pago:', error);
+      this.message.error(error?.message === 'El pago ya no existe.' ? error.message : 'No se pudo reversar el pago.');
+    } finally {
+      this.reversandoIndice = null;
+    }
+  }
+
+  // Solo admin: borra todos los pagos del título desde el historial.
+  async deshacerTodosLosPagos(): Promise<void> {
+    const t = this.tituloHistorial;
+    if (!t || !this.esAdmin) return;
+    if (await this.deshacerCancelacion(t)) this.cerrarHistorialPagos();
   }
 
   // ============================================
@@ -1128,30 +1247,40 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.guardandoCancelacion = true;
     try {
       const v = this.cancelacionForm.value;
+      const acumulado = this.totalConEstePago;
       await this.titulosService.registrarCancelacion(this.tituloCancelando.numero, {
         tipo: v.tipo,
         montoCancelado: v.montoCancelado,
         honorario: v.tipo === 'pago_total' ? v.honorario : undefined,
-        comprobante: v.comprobante
+        comprobante: v.comprobante,
+        fecha: v.fecha ?? undefined
       });
-      this.message.success('Cancelación registrada.');
+      this.message.success(
+        v.tipo === 'pago_total'
+          ? `Título cancelado por totalidad. Total pagado: ${formatoMoneda(acumulado)}.`
+          : `Abono registrado. Pagado hasta ahora: ${formatoMoneda(acumulado)}.`
+      );
       this.cerrarCancelacion();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error registrando la cancelación:', error);
-      this.message.error('No se pudo registrar la cancelación.');
+      this.message.error(error?.message?.startsWith('Este título') || error?.message?.startsWith('A un título')
+        ? error.message
+        : 'No se pudo registrar el pago.');
     } finally {
       this.guardandoCancelacion = false;
     }
   }
 
   // Solo admin: corrige una cancelación/abono registrada por error.
-  async deshacerCancelacion(t: TituloCredito): Promise<void> {
+  async deshacerCancelacion(t: TituloCredito): Promise<boolean> {
     try {
-      await this.titulosService.deshacerCancelacion(t.numero);
-      this.message.success('Cancelación deshecha.');
+      await this.titulosService.deshacerCancelacion(t);
+      this.message.success('Pagos del título deshechos.');
+      return true;
     } catch (error) {
       console.error('Error deshaciendo la cancelación:', error);
       this.message.error('No se pudo deshacer la cancelación.');
+      return false;
     }
   }
 

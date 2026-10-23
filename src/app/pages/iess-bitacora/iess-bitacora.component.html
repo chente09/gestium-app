@@ -351,7 +351,12 @@
                                             <th>#</th>
                                             <th>Número</th>
                                             <th>Capital</th>
-                                            <th [nzSortFn]="sortPorEstado" [nzSortDirections]="['ascend','descend']">Estado</th>
+                                            <th
+                                                [nzSortFn]="sortPorEstado"
+                                                [nzSortDirections]="['ascend','descend']"
+                                                [nzFilters]="filtrosEstado"
+                                                [nzFilterFn]="filtrarPorEstado"
+                                                [nzFilterMultiple]="true">Estado</th>
                                             <th [nzSortFn]="sortPorGuia" [nzSortDirections]="['ascend','descend']">Guía</th>
                                             <th>Fecha sorteo</th>
                                             <th></th>
@@ -371,7 +376,25 @@
                                                     nzTooltipTitle="El IESS sorteó este título a otro abogado, aunque el coactivado está en esta cartera">
                                                     De {{ t.cartera }}
                                                 </nz-tag>
-                                                <nz-tag *ngIf="t.tipoCancelacion === 'abono'" nzColor="blue">Abono</nz-tag>
+                                                <!-- El historial de pagos se abre desde esta etiqueta (y, en un título ya
+                                                     cancelado, desde "Pagado"): una opción menos en la fila. -->
+                                                <nz-tag
+                                                    *ngIf="t.tipoCancelacion === 'abono'"
+                                                    nzColor="blue"
+                                                    class="tag-clic"
+                                                    nz-tooltip
+                                                    [nzTooltipTitle]="'Pagado hasta ahora: ' + formatoMoneda(totalPagado(t)) + '. Clic para ver el historial de pagos. El título sigue abierto hasta registrar el pago por totalidad.'"
+                                                    (click)="abrirHistorialPagos(t)">
+                                                    Abono {{ formatoMoneda(totalPagado(t)) }}
+                                                </nz-tag>
+                                                <nz-tag
+                                                    *ngIf="t.tipoCancelacion === 'pago_total' && tieneHistorialPagos(t)"
+                                                    class="tag-clic"
+                                                    nz-tooltip
+                                                    nzTooltipTitle="Clic para ver el historial de pagos"
+                                                    (click)="abrirHistorialPagos(t)">
+                                                    Pagado {{ formatoMoneda(totalPagado(t)) }}
+                                                </nz-tag>
                                                 <nz-tag *ngIf="t.comprobantePago" nzColor="geekblue">Comp. {{ t.comprobantePago }}</nz-tag>
                                                 <nz-tag
                                                     *ngIf="t.tipoCancelacion === 'pago_total'"
@@ -388,21 +411,22 @@
                                             <td class="nowrap">{{ fechaCorta(t.fechaSorteo) }}</td>
                                             <td class="nowrap">
                                                 <button
-                                                    *ngIf="!t.tipoCancelacion && !esAnulado(t) && !esEnConvenio(t)"
+                                                    *ngIf="admitePagos(t)"
                                                     nz-button
                                                     nzType="link"
                                                     nzSize="small"
                                                     (click)="abrirCancelacion(t)">
-                                                    Registrar pago
+                                                    {{ t.tipoCancelacion === 'abono' ? 'Registrar otro pago' : 'Registrar pago' }}
                                                 </button>
+                                                <!-- Con pagos, deshacer (todos o uno) se hace desde el historial. -->
                                                 <button
-                                                    *ngIf="esAdmin && t.tipoCancelacion"
+                                                    *ngIf="esAdmin && t.tipoCancelacion && !tieneHistorialPagos(t)"
                                                     nz-button
                                                     nzType="link"
                                                     nzDanger
                                                     nzSize="small"
                                                     nz-popconfirm
-                                                    nzPopconfirmTitle="¿Deshacer esta cancelación/abono?"
+                                                    nzPopconfirmTitle="¿Deshacer la cancelación de este título?"
                                                     (nzOnConfirm)="deshacerCancelacion(t)">
                                                     Deshacer
                                                 </button>
@@ -954,23 +978,52 @@
     [nzFooter]="cancelacionFooter">
     <ng-container *nzModalContent>
         <p *ngIf="tituloCancelando" class="titulo-cancelando">
-            Título <b>{{ tituloCancelando.numero }}</b> — {{ formatoMoneda(tituloCancelando.capital) }}
+            Título <b>{{ tituloCancelando.numero }}</b> — {{ formatoMoneda(tituloCancelando.capital) }} de capital
         </p>
+
+        <!-- Un título con abonos sigue abierto: cada pago se suma a lo anterior. -->
+        <nz-alert
+            *ngIf="pagosAnteriores > 0"
+            class="aviso-pagos"
+            nzType="info"
+            nzShowIcon
+            [nzMessage]="'Pagado hasta ahora: ' + formatoMoneda(pagadoAntes) + ' (' + pagosAnteriores + (pagosAnteriores === 1 ? ' pago' : ' pagos') + ')'"
+            nzDescription="El pago que registres se suma a lo anterior. Para cerrar el título, registra el pago por totalidad.">
+        </nz-alert>
+
         <form nz-form [formGroup]="cancelacionForm" nzLayout="vertical">
             <nz-form-item>
                 <nz-form-label nzRequired>Tipo de pago</nz-form-label>
                 <nz-form-control>
                     <nz-radio-group formControlName="tipo" nzButtonStyle="solid">
                         <label nz-radio-button nzValue="abono">Abono (pago parcial)</label>
-                        <label nz-radio-button nzValue="pago_total">Pago por totalidad</label>
+                        <label nz-radio-button nzValue="pago_total">Pago por totalidad (cierra el título)</label>
                     </nz-radio-group>
                 </nz-form-control>
             </nz-form-item>
 
             <nz-form-item>
-                <nz-form-label nzRequired>{{ cancelacionForm.value.tipo === 'pago_total' ? 'Monto cancelado' : 'Monto abonado' }}</nz-form-label>
+                <nz-form-label nzRequired>
+                    {{ cancelacionForm.value.tipo === 'pago_total'
+                        ? (pagosAnteriores > 0 ? 'Monto del último pago' : 'Monto cancelado')
+                        : 'Monto de este abono' }}
+                </nz-form-label>
                 <nz-form-control nzErrorTip="Ingresa el monto">
                     <input nz-input type="number" min="0" step="0.01" formControlName="montoCancelado" />
+                </nz-form-control>
+            </nz-form-item>
+            <div class="total-resultante" *ngIf="pagosAnteriores > 0 && cancelacionForm.value.montoCancelado > 0">
+                Con este pago el título queda en <b>{{ formatoMoneda(totalConEstePago) }}</b> pagados.
+            </div>
+            <nz-form-item>
+                <nz-form-label>Fecha del pago</nz-form-label>
+                <nz-form-control>
+                    <nz-date-picker
+                        formControlName="fecha"
+                        nzFormat="dd/MM/yyyy"
+                        [nzDisabledDate]="fechaFutura"
+                        style="width: 100%;">
+                    </nz-date-picker>
                 </nz-form-control>
             </nz-form-item>
             <nz-form-item *ngIf="cancelacionForm.value.tipo === 'pago_total'">
@@ -998,6 +1051,98 @@
             (click)="guardarCancelacion()">
             Guardar
         </button>
+    </ng-template>
+</nz-modal>
+
+<nz-modal
+    [(nzVisible)]="mostrarHistorialPagos"
+    nzTitle="Historial de pagos del título"
+    nzWidth="720px"
+    (nzOnCancel)="cerrarHistorialPagos()"
+    [nzFooter]="historialFooter">
+    <ng-container *nzModalContent>
+        <p *ngIf="tituloHistorial" class="titulo-cancelando">
+            Título <b>{{ tituloHistorial.numero }}</b> — {{ formatoMoneda(tituloHistorial.capital) }} de capital
+            <nz-tag *ngIf="tituloHistorial.tipoCancelacion === 'abono'" nzColor="blue">Abierto: con abonos</nz-tag>
+            <nz-tag *ngIf="tituloHistorial.tipoCancelacion === 'pago_total'" nzColor="red">Cancelado por totalidad</nz-tag>
+        </p>
+        <nz-table
+            [nzData]="filasHistorial"
+            [nzShowPagination]="false"
+            [nzPageSize]="1000"
+            nzSize="small"
+            [nzBordered]="true">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>Comprobante</th>
+                    <th>Registrado por</th>
+                    <th *ngIf="esAdmin"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let f of filasHistorial; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td class="nowrap">
+                        {{ f.pago.fecha ? (f.pago.fecha | date: 'dd/MM/yyyy') : '—' }}
+                        <nz-tag
+                            *ngIf="f.pago.anterior"
+                            nz-tooltip
+                            nzTooltipTitle="Pago anterior al historial o traído por la carga de pagos: se conoce el monto, pero no siempre la fecha ni el comprobante.">
+                            anterior
+                        </nz-tag>
+                    </td>
+                    <td class="nowrap">{{ formatoMoneda(f.pago.monto) }}</td>
+                    <td>{{ f.pago.comprobante || '—' }}</td>
+                    <td>{{ f.pago.registradoPor.nombre }}</td>
+                    <td *ngIf="esAdmin" class="nowrap">
+                        <button
+                            nz-button
+                            nzType="link"
+                            nzDanger
+                            nzSize="small"
+                            nz-popconfirm
+                            [nzPopconfirmTitle]="tituloHistorial?.tipoCancelacion === 'pago_total'
+                                ? '¿Reversar este pago? El título volverá a quedar abierto y se quita el honorario: habrá que registrar de nuevo el pago por totalidad.'
+                                : '¿Reversar este pago? Se resta del total abonado.'"
+                            nzPopconfirmPlacement="left"
+                            nzOkText="Reversar"
+                            nzOkDanger
+                            nzCancelText="Cancelar"
+                            [nzLoading]="reversandoIndice === f.indice"
+                            [disabled]="reversandoIndice !== null"
+                            (nzOnConfirm)="reversarPago(f.indice)">
+                            Reversar
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </nz-table>
+        <div class="total-historial" *ngIf="tituloHistorial">
+            Total pagado: <b>{{ formatoMoneda(totalPagado(tituloHistorial)) }}</b>
+            <span *ngIf="tituloHistorial.tipoCancelacion === 'pago_total'">
+                · Honorario: <b>{{ formatoMoneda(tituloHistorial.honorario || 0) }}</b>
+            </span>
+        </div>
+    </ng-container>
+    <ng-template #historialFooter>
+        <button
+            *ngIf="esAdmin"
+            nz-button
+            nzType="default"
+            nzDanger
+            nz-popconfirm
+            nzPopconfirmTitle="¿Deshacer todos los pagos de este título? Queda como si nunca se hubiera pagado; si estaba cancelado por totalidad, también se quita el honorario."
+            nzPopconfirmPlacement="topRight"
+            nzOkText="Deshacer todos"
+            nzOkDanger
+            nzCancelText="Cancelar"
+            (nzOnConfirm)="deshacerTodosLosPagos()">
+            Deshacer todos los pagos
+        </button>
+        <button nz-button nzType="default" (click)="cerrarHistorialPagos()">Cerrar</button>
     </ng-template>
 </nz-modal>
 

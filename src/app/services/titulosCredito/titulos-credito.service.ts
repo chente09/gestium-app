@@ -10,6 +10,7 @@ import {
   getDoc,
   getDocs,
   query,
+  runTransaction,
   updateDoc,
   where
 } from '@angular/fire/firestore';
@@ -21,7 +22,8 @@ import { UsersService } from '../users/users.service';
 import { borrarEnLotes, escribirEnLotes, EscrituraLote } from '../firestore-utils/batch-delete';
 import { COLECCION_COACTIVADOS, normalizarBusqueda, palabrasBusqueda } from '../coactivados/coactivados.util';
 import { COLECCION_GESTIONES } from '../gestionesCoactivado/gestiones-coactivado.service';
-import { ESTADO_ANULADO, ESTADO_CONVENIO, TipoCancelacion, TituloCredito } from './titulos-credito.util';
+import { ESTADO_ANULADO, ESTADO_CONVENIO, TipoCancelacion, TituloCredito, esAnulado, esEnConvenio } from './titulos-credito.util';
+import { cambiosAlReversar, cambiosPorPago, camposAlDeshacer } from './pagos-titulo.util';
 import { claveGestionHistorica, Existente, FilaTitulo, GestionHistorica, normalizarClaveGestion, PlanCarga } from './importador-titulos.util';
 import { FilaPago, PlanPagos, TituloExistente } from './pagos-titulos.util';
 
@@ -140,36 +142,39 @@ export class TitulosCreditoService {
 
   // Cualquiera del área IESS puede registrarlo (lo exigen las reglas de
   // Firestore, que solo dejan tocar estos campos puntuales, no el resto del
-  // título). Un abono no cierra el título (estadoIess no cambia) pero sí
-  // guarda cuánto se pagó hasta ahora; solo un pago total lo marca como
-  // cancelado y guarda el honorario, que es el dato real que interesa para
-  // la estadística de recuperación.
+  // título). Un coactivado puede ir pagando un título en varios abonos: cada
+  // uno se SUMA al historial (`pagos`) y el título sigue abierto (estadoIess
+  // no cambia) hasta que se registra el pago por totalidad, que lo marca como
+  // cancelado y guarda el honorario — el dato real que interesa para la
+  // estadística de recuperación. `montoCancelado` es el de ESTE pago; el
+  // título guarda el total acumulado. En una transacción: dos personas
+  // registrando un abono a la vez no deben pisarse el historial.
   async registrarCancelacion(
     numero: string,
-    datos: { tipo: TipoCancelacion; montoCancelado: number; honorario?: number; comprobante?: string }
+    datos: { tipo: TipoCancelacion; montoCancelado: number; honorario?: number; comprobante?: string; fecha?: Date }
   ): Promise<void> {
     const user = this.usersService.getCurrentUser();
     const register = this.registersService.getCurrentRegister();
     if (!user || !register) throw new Error('🔒 Usuario no autenticado');
+    const usuario = { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' };
 
-    // any (no unknown): así coincide con el UpdateData laxo que espera el
-    // SDK de Firestore para updateDoc en una referencia sin tipar.
-    const patch: Record<string, any> = {
-      tipoCancelacion: datos.tipo,
-      montoCancelado: datos.montoCancelado,
-      canceladoPor: { uid: user.uid, nombre: register.displayName || user.email || 'Usuario' },
-      fechaCancelacion: new Date()
-    };
-    if (datos.tipo === 'pago_total') {
-      patch['estadoIess'] = 'CANCELADO';
-      patch['honorario'] = datos.honorario ?? 0;
-    }
-    // Número del comprobante del pago, para seguir los convenios de pago. Si
-    // se registra otro abono, queda el del último.
-    const comprobante = datos.comprobante?.trim();
-    if (comprobante) patch['comprobantePago'] = comprobante;
+    const ref = doc(this.firestore, `${this.collectionName}/${numero}`);
+    await runTransaction(this.firestore, async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('El título ya no existe.');
 
-    await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), patch);
+      const titulo = { ...(snap.data() as TituloCredito), numero };
+      if (titulo.tipoCancelacion === 'pago_total') throw new Error('Este título ya está cancelado por totalidad.');
+      if (esAnulado(titulo) || esEnConvenio(titulo)) throw new Error('A un título anulado o en convenio no se le registran pagos.');
+
+      tx.update(ref, cambiosPorPago(titulo, {
+        tipo: datos.tipo,
+        monto: datos.montoCancelado,
+        fecha: datos.fecha ?? new Date(),
+        comprobante: datos.comprobante,
+        honorario: datos.honorario
+      }, usuario));
+    });
   }
 
   // Solo admin: quita la marca de "Cancelado" que trae el Excel
@@ -207,18 +212,31 @@ export class TitulosCreditoService {
 
   // Solo admin: deshace una cancelación registrada por error (usa la regla
   // general de admin, no la de campos restringidos — por eso solo admin).
-  async deshacerCancelacion(numero: string): Promise<void> {
-    await updateDoc(doc(this.firestore, `${this.collectionName}/${numero}`), {
-      tipoCancelacion: deleteField(),
-      estadoIess: deleteField(),
-      montoCancelado: deleteField(),
-      honorario: deleteField(),
-      canceladoPor: deleteField(),
-      fechaCancelacion: deleteField(),
-      honorarioCobrado: deleteField(),
-      honorarioCobradoPor: deleteField(),
-      fechaCobroHonorario: deleteField()
+  // Solo admin: reversa UN pago del historial (el resto queda y el total se
+  // cuadra). Devuelve cuántos pagos quedan; con cero, el título vuelve a no
+  // tener pagos. Ver cambiosAlReversar para el caso de un título ya cancelado
+  // por totalidad (se reabre). En una transacción, como registrarCancelacion.
+  async reversarPago(numero: string, indice: number): Promise<number> {
+    if (!this.registersService.isCurrentUserAdmin()) throw new Error('Solo un admin puede reversar un pago.');
+
+    const ref = doc(this.firestore, `${this.collectionName}/${numero}`);
+    return runTransaction(this.firestore, async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('El título ya no existe.');
+
+      const { cambios, quitar } = cambiosAlReversar({ ...(snap.data() as TituloCredito), numero }, indice);
+      const patch: Record<string, any> = { ...cambios };
+      quitar.forEach(campo => { patch[campo] = deleteField(); });
+      tx.update(ref, patch);
+      return (cambios['pagos'] as unknown[] | undefined)?.length ?? 0;
     });
+  }
+
+  // Solo admin: borra TODOS los pagos del título de una vez.
+  async deshacerCancelacion(t: Pick<TituloCredito, 'numero' | 'tipoCancelacion' | 'pagos'>): Promise<void> {
+    const cambios: Record<string, any> = {};
+    camposAlDeshacer(t).forEach(campo => { cambios[campo] = deleteField(); });
+    await updateDoc(doc(this.firestore, `${this.collectionName}/${t.numero}`), cambios);
   }
 
   // Que el título esté cancelado y que el IESS ya le haya pagado el

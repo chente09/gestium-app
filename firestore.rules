@@ -203,9 +203,12 @@ service cloud.firestore {
       // Registrar un abono/pago total (cualquiera del área, no solo admin):
       // solo puede tocar los campos de cancelación, nada del resto del
       // título (capital, guía, fechas, etc. — eso sigue siendo solo admin).
+      // Un título ya cancelado por totalidad no admite más pagos: corregirlo
+      // es de un admin (deshacer la cancelación).
       allow update: if esDelAreaIess() &&
+                       resource.data.get('tipoCancelacion', null) != 'pago_total' &&
                        request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['tipoCancelacion', 'estadoIess', 'montoCancelado', 'honorario', 'canceladoPor', 'fechaCancelacion', 'comprobantePago']) &&
+                         .hasOnly(['tipoCancelacion', 'estadoIess', 'montoCancelado', 'honorario', 'canceladoPor', 'fechaCancelacion', 'comprobantePago', 'pagos']) &&
                        request.resource.data.tipoCancelacion in ['abono', 'pago_total'] &&
                        request.resource.data.canceladoPor.uid == request.auth.uid;
 

@@ -53,6 +53,22 @@ export interface TituloCredito {
   comprobantePago?: string;
   // De qué carga masiva de pagos vino (para poder rastrearla, no para deshacerla).
   cargaPagosId?: string;
+  // Pagos registrados desde la ficha, uno por abono hasta el pago por
+  // totalidad. `montoCancelado` es siempre la suma de todos (los reportes
+  // leen ese total). Los títulos con un abono anterior a este historial no lo
+  // tienen: ver historialDePagos (pagos-titulo.util.ts).
+  pagos?: PagoTitulo[];
+}
+
+export interface PagoTitulo {
+  monto: number;
+  // Cuándo se pagó (puede corregirse al registrar); sin fecha si no se sabe.
+  fecha?: Date | any;
+  comprobante?: string;
+  registradoPor: { uid: string; nombre: string };
+  // Monto conocido pero sin el detalle de cuándo o cómo: un abono registrado
+  // antes del historial, o lo que trajo la carga masiva de pagos.
+  anterior?: boolean;
 }
 
 // Excel guarda el RUC como número y se come el cero inicial (0502… queda
@@ -95,6 +111,22 @@ export function normalizarEstadoIess(texto: string): string {
   if (/ANULAD/.test(t)) return ESTADO_ANULADO;
   if (/CONVENIO/.test(t)) return ESTADO_CONVENIO;
   return t;
+}
+
+// En qué punto está un título, para ordenar y filtrar la tabla de la ficha.
+// Un abono es un título todavía abierto pero con plata ya recibida: va entre
+// "pendiente" y "cancelado".
+export type CategoriaEstado = 'pendiente' | 'abono' | 'cancelado' | 'convenio' | 'anulado';
+
+export const RANGO_CATEGORIA: Record<CategoriaEstado, number> = {
+  pendiente: 0, abono: 1, cancelado: 2, convenio: 3, anulado: 4
+};
+
+export function categoriaEstado(t: { estadoIess?: string; tipoCancelacion?: TipoCancelacion }): CategoriaEstado {
+  if (esAnulado(t)) return 'anulado';
+  if (esEnConvenio(t)) return 'convenio';
+  if (esCancelado(t)) return 'cancelado';
+  return t.tipoCancelacion === 'abono' ? 'abono' : 'pendiente';
 }
 
 // Cómo se ve un título en la tabla: una sola etiqueta con su color.

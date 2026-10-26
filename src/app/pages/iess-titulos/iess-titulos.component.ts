@@ -36,8 +36,10 @@ import {
   extraerFilas
 } from '../../services/titulosCredito/importador-titulos.util';
 import { planificarCarga } from '../../services/titulosCredito/importador-titulos.util';
+import { HOJA_INSTRUCCIONES } from '../../services/titulosCredito/plantilla-titulos.util';
 import { leerArchivoTablas } from './lector-archivo.util';
 import { exportarBaseTitulos } from './exportar-base.export';
+import { descargarPlantillaTitulos } from './plantilla-titulos.export';
 
 interface HojaCandidata {
   tabla: TablaHoja;
@@ -148,7 +150,7 @@ export class IessTitulosComponent implements OnInit {
     this.archivo = archivo;
     this.leyendo = true;
     try {
-      const tablas = await leerArchivoTablas(archivo);
+      const tablas = (await leerArchivoTablas(archivo)).filter(t => t.nombre !== HOJA_INSTRUCCIONES);
       this.hojas = tablas.map(tabla => {
         const formato = detectarFormato(tabla);
         return { tabla, formato, incluida: !!formato, estadoEntrega: formato?.estadoEntrega ?? null };
@@ -314,6 +316,23 @@ export class IessTitulosComponent implements OnInit {
 
   trackByGestionHistorica(index: number, g: GestionHistorica): string {
     return g.ruc + '|' + g.descripcion;
+  }
+
+  // ============================================
+  // 📥 Plantilla para cargar títulos a mano
+  // ============================================
+  descargandoPlantilla = false;
+
+  async descargarPlantilla(): Promise<void> {
+    this.descargandoPlantilla = true;
+    try {
+      await descargarPlantillaTitulos(this.carteras);
+    } catch (error) {
+      console.error('Error generando la plantilla:', error);
+      this.message.error('No se pudo generar la plantilla.');
+    } finally {
+      this.descargandoPlantilla = false;
+    }
   }
 
   // ============================================

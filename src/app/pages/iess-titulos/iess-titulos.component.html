@@ -21,6 +21,13 @@
 
     <!-- ================= PASO 1: ARCHIVO ================= -->
     <nz-card nzTitle="1. Elegir archivo" class="paso-card">
+        <p class="nota-radio">
+            ¿Vas a cargar títulos a mano? Descarga la plantilla, llénala con una fila por título y súbela acá.
+            Si ya tienes una matriz del IESS, súbela directamente.
+        </p>
+        <button nz-button nzType="default" class="btn-plantilla" [nzLoading]="descargandoPlantilla" (click)="descargarPlantilla()">
+            <nz-icon nzType="download"></nz-icon> Descargar plantilla
+        </button>
         <input
             type="file"
             id="archivo-titulos"

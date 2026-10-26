@@ -1,7 +1,7 @@
 import { TablaHoja, detectarFormato, extraerFilas } from './importador-titulos.util';
-import { COLUMNAS_PLANTILLA, HOJA_TITULOS, POSICION_ABOGADO, encabezadoDe, filasInstrucciones } from './plantilla-titulos.util';
+import { COLUMNAS_PLANTILLA, HOJA_TITULOS, POSICION_ABOGADO, filasInstrucciones } from './plantilla-titulos.util';
 
-const encabezados = COLUMNAS_PLANTILLA.map(encabezadoDe);
+const encabezados = COLUMNAS_PLANTILLA.map(c => c.encabezado);
 
 function hoja(...filas: (string | number)[][]): TablaHoja {
   return { nombre: HOJA_TITULOS, filas: [encabezados, ...filas] };
@@ -14,14 +14,14 @@ describe('plantilla de títulos', () => {
     COLUMNAS_PLANTILLA.forEach((c, i) => expect(formato.columnas[c.campo]).toBe(i));
   });
 
-  it('sin columnas de entrega se lee como títulos no entregados y trae abogado', () => {
+  it('trae guía y fecha de sorteo, así que se lee como entregados (el selector lo corrige) y trae abogado', () => {
     const formato = detectarFormato(hoja())!;
-    expect(formato.estadoEntrega).toBe('no_entregado');
+    expect(formato.estadoEntrega).toBe('entregado');
     expect(formato.traeAbogado).toBe(true);
   });
 
-  it('una fila llena se lee completa (los obligatorios llevan asterisco en el encabezado)', () => {
-    const tabla = hoja(['43406694', '1790012345001', 'EJEMPLO S.A.', '1250.50', 'Jose Luis Rueda', 'Ana Perez', '0999999999', 'ana@ejemplo.com']);
+  it('una fila llena se lee completa', () => {
+    const tabla = hoja(['43406694', '1790012345001', 'EJEMPLO S.A.', '1250.50', 'Jose Luis Rueda', '00133779', '15/10/2026']);
     const { filas, invalidas } = extraerFilas(tabla, detectarFormato(tabla)!);
     expect(invalidas.length).toBe(0);
     expect(filas.length).toBe(1);
@@ -30,12 +30,17 @@ describe('plantilla de títulos', () => {
     expect(filas[0].razon).toBe('EJEMPLO S.A.');
     expect(filas[0].capital).toBe(1250.5);
     expect(filas[0].abogado).toBe('JOSE LUIS RUEDA');
-    expect(filas[0].representanteLegal).toBe('ANA PEREZ');
-    expect(filas[0].telefono).toBe('0999999999');
-    expect(filas[0].correo).toBe('ana@ejemplo.com');
+    expect(filas[0].guia).toBe('133779');
+    expect(filas[0].fechaSorteo).toBe('2026-10-15');
   });
 
-  it('solo TC y RUC bastan para que la fila sea válida (el valor vacío queda en cero)', () => {
+  it('la fecha de sorteo también se lee si Excel la guardó como fecha', () => {
+    const tabla = hoja(['43406694', '1790012345001', 'EJEMPLO S.A.', 100, 'Jose Luis Rueda', '133779', new Date(Date.UTC(2026, 9, 15)) as any]);
+    const { filas } = extraerFilas(tabla, detectarFormato(tabla)!);
+    expect(filas[0].fechaSorteo).toBe('2026-10-15');
+  });
+
+  it('solo título y RUC bastan para que la fila sea válida (el valor vacío queda en cero)', () => {
     const tabla = hoja(['43406694', '1790012345001']);
     const { filas, invalidas } = extraerFilas(tabla, detectarFormato(tabla)!);
     expect(invalidas.length).toBe(0);
@@ -54,6 +59,6 @@ describe('plantilla de títulos', () => {
 
   it('la hoja de instrucciones explica cada columna', () => {
     const textos = filasInstrucciones().map(([titulo]) => titulo);
-    COLUMNAS_PLANTILLA.forEach(c => expect(textos.includes(encabezadoDe(c))).toBe(true));
+    COLUMNAS_PLANTILLA.forEach(c => expect(textos.some(t => t.startsWith(c.encabezado))).toBe(true));
   });
 });

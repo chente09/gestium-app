@@ -11,11 +11,17 @@ import {
   HOJA_TITULOS,
   NOMBRE_PLANTILLA,
   POSICION_ABOGADO,
-  encabezadoDe,
+  FormatoColumna,
   filasInstrucciones
 } from '../../services/titulosCredito/plantilla-titulos.util';
 
 const COLOR_ENCABEZADO = 'FF0D141B';
+
+const FORMATO_EXCEL: Record<FormatoColumna, string> = {
+  texto: '@',
+  dinero: '#,##0.00',
+  fecha: 'dd/mm/yyyy'
+};
 
 export async function crearLibroPlantilla(carteras: string[]): Promise<any> {
   // exceljs pesa bastante: se carga recién al descargar, no con la app.
@@ -26,9 +32,9 @@ export async function crearLibroPlantilla(carteras: string[]): Promise<any> {
 
   const hoja = libro.addWorksheet(HOJA_TITULOS);
   hoja.columns = COLUMNAS_PLANTILLA.map(c => ({
-    header: encabezadoDe(c),
+    header: c.encabezado,
     width: c.ancho,
-    style: c.formato === 'texto' ? { numFmt: '@' } : c.formato === 'dinero' ? { numFmt: '#,##0.00' } : {}
+    style: c.formato ? { numFmt: FORMATO_EXCEL[c.formato] } : {}
   }));
 
   const encabezado = hoja.getRow(1);

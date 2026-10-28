@@ -72,11 +72,13 @@ service cloud.firestore {
                        request.resource.data.uid == userId &&
                        request.resource.data.role == 'empleado';
 
-      // El propio usuario no puede cambiarse su rol/área; admin sí puede.
+      // El propio usuario no puede cambiarse su rol/área ni darse acceso a
+      // Trámites del IESS; admin sí puede.
       allow update: if isAuthenticated() && (
         (request.auth.uid == userId &&
          request.resource.data.role == resource.data.role &&
-         request.resource.data.areaAsignada == resource.data.areaAsignada) ||
+         request.resource.data.areaAsignada == resource.data.areaAsignada &&
+         request.resource.data.get('tramitesIess', false) == resource.data.get('tramitesIess', false)) ||
         isAdmin()
       );
 
@@ -233,6 +235,38 @@ service cloud.firestore {
       allow read: if esDelAreaIess();
       allow create: if isAdmin() && request.resource.data.realizadoPor.uid == request.auth.uid;
       allow update, delete: if false;
+    }
+
+    // ============================================
+    // 📑 Trámites del IESS (radiografías, anulaciones...)
+    // Los ve y trabaja el admin y quien el admin haya elegido (campo
+    // `tramitesIess` del registro, que solo un admin puede cambiar). Hay
+    // dinero de por medio: no depende del área ni del rol de coordinador.
+    // ============================================
+    function puedeTramitesIess() {
+      return isAuthenticated() && isActiveUser() &&
+             (isAdmin() || getUserRegister().get('tramitesIess', false) == true);
+    }
+
+    match /tramites_iess/{tramiteId} {
+      allow read: if puedeTramitesIess();
+
+      allow create: if puedeTramitesIess() &&
+                       request.resource.data.creadoPor.uid == request.auth.uid;
+
+      // Quien no es admin agrega pero no achica el historial (cobros,
+      // gestiones, costos): reversar y quitar es de admin. (Un pago quitado
+      // de dentro de un costo a tercero no se distingue acá; eso lo exige la
+      // pantalla.)
+      allow update: if puedeTramitesIess() && (
+        isAdmin() ||
+        (request.resource.data.get('pagos', []).size() >= resource.data.get('pagos', []).size() &&
+         request.resource.data.get('gestiones', []).size() >= resource.data.get('gestiones', []).size() &&
+         request.resource.data.get('costosTerceros', []).size() >= resource.data.get('costosTerceros', []).size() &&
+         request.resource.data.creadoPor == resource.data.creadoPor)
+      );
+
+      allow delete: if isAdmin();
     }
 
     // ============================================

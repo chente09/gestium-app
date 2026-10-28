@@ -23,6 +23,8 @@ import { SolicitudesAprobarComponent } from './pages/permisos/solicitudes-aproba
 import { SaldoVacacionesComponent } from './pages/permisos/saldo-vacaciones/saldo-vacaciones.component';
 import { SaldoVacacionesDetalleComponent } from './pages/permisos/saldo-vacaciones-detalle/saldo-vacaciones-detalle.component';
 import { iessGuard } from './guards/iess/iess.guard';
+import { tramitesIessGuard } from './guards/tramites/tramites-iess.guard';
+import { IessTramitesComponent } from './pages/iess-tramites/iess-tramites.component';
 import { IessBitacoraComponent } from './pages/iess-bitacora/iess-bitacora.component';
 import { IessReportesComponent } from './pages/iess-reportes/iess-reportes.component';
 import { IessTitulosComponent } from './pages/iess-titulos/iess-titulos.component';
@@ -108,6 +110,11 @@ const iessRoutes: Routes = [
   { path: 'iess/convenios', component: IessConveniosComponent },
 ].map(withAuthAnd([iessGuard]));
 
+// Trámites del IESS: el admin y quien el admin elija (no depende del área).
+const tramitesIessRoutes: Routes = [
+  { path: 'iess/tramites', component: IessTramitesComponent },
+].map(withAuthAnd([tramitesIessGuard]));
+
 const errorRoutes: Routes = [
   { path: 'unauthorized', component: UnauthorizedComponent }, 
   { path: 'not-found', component: NotFoundComponent }, 
@@ -123,5 +130,6 @@ export const routes: Routes = [
   ...payrollRoutes,
   ...solicitudesAprobarRoutes,
   ...iessRoutes,
+  ...tramitesIessRoutes,
   ...errorRoutes
 ];

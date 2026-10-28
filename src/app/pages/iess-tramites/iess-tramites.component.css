@@ -1,0 +1,434 @@
+.tramites-container {
+    padding: 16px 24px 32px;
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.page-title {
+    margin: 12px 0 4px;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.acciones {
+    display: flex;
+    gap: 8px;
+}
+
+.page-subtitulo {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 13px;
+    margin-bottom: 16px;
+    max-width: 860px;
+}
+
+nz-card.paso-card {
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+/* ===== Resumen ===== */
+.resumen-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.carta-clic {
+    cursor: pointer;
+}
+
+.carta-activa {
+    border-color: #ff4d4f;
+}
+
+.stat-titulo {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.stat-valor {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.stat-alerta {
+    color: #cf1322;
+}
+
+/* ===== Lista ===== */
+.barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.filtro-texto {
+    flex: 1 1 280px;
+    max-width: 420px;
+}
+
+.filtro-select {
+    min-width: 170px;
+}
+
+.tabla-scroll {
+    overflow-x: auto;
+}
+
+.fila-clic {
+    cursor: pointer;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.nombre {
+    font-weight: 500;
+}
+
+.detalle {
+    padding: 4px 8px;
+    overflow-x: auto;
+}
+
+.agregar-etapa {
+    padding-left: 0;
+}
+
+.tenue {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+}
+
+.monto-pendiente {
+    color: #d46b08;
+    font-weight: 600;
+}
+
+/* ===== Ficha ===== */
+.titulo-tag {
+    margin-left: 8px;
+}
+
+.ficha-cifras {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    background: #fafafa;
+    border-radius: 6px;
+}
+
+.ficha-cifras > div {
+    display: flex;
+    flex-direction: column;
+}
+
+.cifra-titulo {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+}
+
+.estado-linea {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.alerta {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.etapas {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+}
+
+.etapa {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border: 1px solid #f0f0f0;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.etapa-actual {
+    border-color: #1677ff;
+    background: #f0f7ff;
+}
+
+.etapa-resuelta .etapa-icono {
+    color: #52c41a;
+}
+
+.etapa-icono {
+    font-size: 18px;
+    color: rgba(0, 0, 0, 0.35);
+}
+
+.etapa-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.etapa-nombre {
+    font-weight: 500;
+}
+
+.etapa-omitida {
+    text-decoration: line-through;
+    color: rgba(0, 0, 0, 0.45);
+}
+
+.etapa-acciones {
+    display: flex;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.cierre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.cierre-motivo {
+    flex: 1 1 260px;
+    max-width: 420px;
+}
+
+/* ===== Formularios ===== */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.campo label {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.campo-ancho {
+    grid-column: 1 / -1;
+}
+
+.campo-completo {
+    grid-column: 1 / -1;
+}
+
+.campo-boton {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.campo-boton-doble {
+    gap: 8px;
+}
+
+nz-input-number,
+.campo nz-select {
+    width: 100%;
+}
+
+.seguimiento {
+    margin-top: 8px;
+}
+
+.form-honorario {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.form-pago {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.recuadro {
+    padding: 12px;
+    margin: 8px 0;
+    background: #fafafa;
+    border-radius: 6px;
+}
+
+.subtitulo {
+    margin: 16px 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.nota {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+    margin: 8px 0;
+}
+
+.acciones-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* ===== Terceros ===== */
+.barra-terceros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.costo {
+    border: 1px solid #f0f0f0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}
+
+.costo-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 16px;
+    margin-bottom: 6px;
+}
+
+.costo-acciones {
+    display: flex;
+    gap: 4px;
+}
+
+/* ===== Gestiones ===== */
+.nueva-gestion {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.nueva-gestion textarea {
+    width: 100%;
+}
+
+.gestion-sistema {
+    color: rgba(0, 0, 0, 0.55);
+}
+
+/* ===== Importar ===== */
+.importar-archivo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.previa-resumen {
+    margin: 12px 0 8px;
+}
+
+.previa-grupo {
+    border: 1px solid #f0f0f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+
+.previa-cliente {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+    margin-bottom: 4px;
+}
+
+.previa-tabla {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.previa-tabla td {
+    padding: 4px 8px 4px 0;
+    vertical-align: top;
+    border-top: 1px solid #f5f5f5;
+}
+
+.previa-omitida {
+    opacity: 0.5;
+}
+
+/* ===== Acceso ===== */
+.acceso-fila {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+@media (max-width: 720px) {
+    .form-grid,
+    .form-honorario,
+    .form-pago {
+        grid-template-columns: 1fr;
+    }
+}
+
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}
+
+.brand-btn.ant-btn-primary[disabled],
+.brand-btn.ant-btn-primary[disabled]:hover {
+    background-color: #f5f5f5;
+    border-color: #d9d9d9;
+    color: rgba(0, 0, 0, 0.25);
+}

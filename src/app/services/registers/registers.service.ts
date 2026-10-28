@@ -30,6 +30,9 @@ export interface Register {
   fechaCreacion: Date;
   fechaAsignacion?: Date; // Fecha cuando se asignó área/rol específico
   activo: boolean;
+  // Acceso al apartado de Trámites del IESS, además del admin: solo un admin
+  // lo concede (las reglas de Firestore no dejan que el propio usuario lo cambie).
+  tramitesIess?: boolean;
 }
 
 export interface AreaOficina {
@@ -337,6 +340,18 @@ export class RegistersService {
   canApproveSolicitudes(): boolean {
     const role = this.currentRegister?.role;
     return role === 'admin' || role === 'gerente' || role === 'coordinador';
+  }
+
+  // 🔐 Trámites del IESS: el admin y quien el admin haya elegido. Deliberadamente
+  // separado de hasFullAccess() — un coordinador NO entra solo por serlo.
+  canAccessTramitesIess(): boolean {
+    const register = this.currentRegister;
+    return !!register && register.activo && (register.role === 'admin' || register.tramitesIess === true);
+  }
+
+  // Solo admin (lo exigen las reglas): da o quita el acceso a Trámites del IESS.
+  async setAccesoTramitesIess(uid: string, acceso: boolean): Promise<void> {
+    await updateDoc(doc(this.firestore, `${this.collectionName}/${uid}`), { tramitesIess: acceso });
   }
 
   // 🔐 Verificar si usuario actual tiene acceso a un área

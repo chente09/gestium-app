@@ -15,6 +15,9 @@
             <a nz-button routerLink="/iess/convenios">
                 <nz-icon nzType="swap"></nz-icon> Convenios de pago
             </a>
+            <a *ngIf="puedeVerTramites" nz-button routerLink="/iess/tramites">
+                <nz-icon nzType="solution"></nz-icon> Trámites
+            </a>
             <ng-container *ngIf="esAdmin">
             <a nz-button routerLink="/iess/titulos">
                 <nz-icon nzType="upload"></nz-icon> Importar títulos

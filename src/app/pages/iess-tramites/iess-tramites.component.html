@@ -1,0 +1,846 @@
+<div class="tramites-container">
+    <nz-breadcrumb>
+        <nz-breadcrumb-item>
+            <a routerLink="/welcome"><nz-icon nzType="home"></nz-icon></a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>
+            <a routerLink="/iess/bitacora">Bitácora de Gestiones</a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item>Trámites</nz-breadcrumb-item>
+    </nz-breadcrumb>
+
+    <div class="page-header">
+        <h1 class="page-title"><nz-icon nzType="solution"></nz-icon> Trámites IESS</h1>
+        <div class="acciones">
+            <button *ngIf="esAdmin" nz-button (click)="abrirImportar()">
+                <nz-icon nzType="upload"></nz-icon> Importar
+            </button>
+            <button *ngIf="esAdmin" nz-button (click)="abrirAcceso()">
+                <nz-icon nzType="team"></nz-icon> Acceso
+            </button>
+            <button nz-button nzType="primary" class="brand-btn" (click)="abrirNuevo()">
+                <nz-icon nzType="plus"></nz-icon> Nuevo trámite
+            </button>
+        </div>
+    </div>
+    <p class="page-subtitulo">
+        Radiografías y anulaciones de títulos: en qué etapa va cada trámite, a quién se espera, lo que se cobra al
+        cliente y lo que se paga a terceros. Cada cobro, pago y cambio queda con quién lo anotó.
+    </p>
+
+    <!-- ================= RESUMEN ================= -->
+    <div class="resumen-stats">
+        <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-clic" (click)="verEnCurso()">
+            <div class="stat-titulo">Casos en curso</div>
+            <div class="stat-valor">{{ resumen.enCurso }}</div>
+        </nz-card>
+        <nz-card [nzBodyStyle]="{ padding: '10px 14px' }">
+            <div class="stat-titulo">Por cobrar a clientes</div>
+            <div class="stat-valor">{{ formatoMoneda(resumen.porCobrar) }}</div>
+        </nz-card>
+        <nz-card [nzBodyStyle]="{ padding: '10px 14px' }">
+            <div class="stat-titulo">Por pagar a terceros</div>
+            <div class="stat-valor">{{ formatoMoneda(resumen.porPagarTerceros) }}</div>
+        </nz-card>
+        <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-clic" [class.carta-activa]="filtros.soloSinMovimiento" (click)="alternarSinMovimiento()">
+            <div class="stat-titulo">Sin movimiento hace +15 días</div>
+            <div class="stat-valor" [class.stat-alerta]="resumen.sinMovimiento > 0">{{ resumen.sinMovimiento }}</div>
+        </nz-card>
+    </div>
+
+    <!-- ================= LISTA ================= -->
+    <nz-card class="paso-card">
+        <div class="barra">
+            <input
+                nz-input
+                class="filtro-texto"
+                [(ngModel)]="filtros.texto"
+                (ngModelChange)="refiltrar()"
+                placeholder="Buscar por cliente, RUC, teléfono o número de trámite..." />
+            <nz-select class="filtro-select" [(ngModel)]="filtros.tipo" (ngModelChange)="refiltrar()" nzAllowClear nzPlaceHolder="Tipo">
+                <nz-option *ngFor="let t of tipos" [nzValue]="t.id" [nzLabel]="t.nombre"></nz-option>
+            </nz-select>
+            <nz-select class="filtro-select" [(ngModel)]="filtros.estado" (ngModelChange)="refiltrar()" nzAllowClear nzPlaceHolder="Todos los estados">
+                <nz-option nzValue="en_curso" nzLabel="En curso"></nz-option>
+                <nz-option nzValue="terminado" nzLabel="Terminados"></nz-option>
+                <nz-option nzValue="desistido" nzLabel="Desistieron"></nz-option>
+            </nz-select>
+            <nz-select class="filtro-select" [(ngModel)]="filtros.esperandoA" (ngModelChange)="refiltrar()" nzAllowClear nzPlaceHolder="Esperando a">
+                <nz-option *ngFor="let o of esperandoOpciones" [nzValue]="o.id" [nzLabel]="o.texto"></nz-option>
+            </nz-select>
+            <button *ngIf="hayFiltros" nz-button nzType="link" (click)="limpiarFiltros()">Limpiar</button>
+        </div>
+
+        <nz-empty *ngIf="!cargando && tramites.length === 0" nzNotFoundContent="Todavía no hay trámites. Crea el primero con «Nuevo trámite»."></nz-empty>
+        <nz-empty *ngIf="!cargando && tramites.length > 0 && grupos.length === 0" nzNotFoundContent="Ningún trámite coincide con los filtros."></nz-empty>
+
+        <div class="tabla-scroll" *ngIf="cargando || grupos.length > 0">
+            <nz-table #tabla [nzData]="grupos" [nzLoading]="cargando" [nzPageSize]="20" [nzShowPagination]="grupos.length > 20" nzSize="small" [nzBordered]="true">
+                <thead>
+                    <tr>
+                        <th nzWidth="46px"></th>
+                        <th [nzSortFn]="ordenarPorNombre" [nzSortDirections]="['ascend','descend']">Cliente</th>
+                        <th>Etapas del caso</th>
+                        <th>Esperando a</th>
+                        <th [nzSortFn]="ordenarPorHonorario" [nzSortDirections]="['descend','ascend']">Honorario</th>
+                        <th [nzSortFn]="ordenarPorPorCobrar" [nzSortDirections]="['descend','ascend']">Por cobrar</th>
+                        <th [nzSortFn]="ordenarPorPorPagar" [nzSortDirections]="['descend','ascend']">Terceros por pagar</th>
+                        <th [nzSortFn]="ordenarPorDias" [nzSortDirections]="['descend','ascend']">Sin movimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <ng-container *ngFor="let v of tabla.data; trackBy: trackByGrupo">
+                        <tr>
+                            <td [nzExpand]="expandidos.has(v.g.clave)" (nzExpandChange)="alternar(v.g.clave, $event)"></td>
+                            <td>
+                                <div class="nombre">{{ v.g.nombre }}</div>
+                                <div class="tenue">
+                                    {{ v.g.clienteRuc || 'Sin RUC' }}<span *ngIf="v.g.telefono"> · {{ v.g.telefono }}</span><span *ngIf="v.g.contacto"> · {{ v.g.contacto }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <nz-tag [nzColor]="estadoColor(v.g.estado)">{{ estadoCasoTexto(v.g.estado) }}</nz-tag>
+                                <div class="tenue">{{ v.g.terminados }} de {{ v.g.tramites.length }} etapas completas</div>
+                            </td>
+                            <td>
+                                <nz-tag *ngFor="let e of v.g.esperando" [nzColor]="etiquetasEsperando[e].color">{{ etiquetasEsperando[e].texto }}</nz-tag>
+                            </td>
+                            <td class="nowrap">
+                                {{ formatoMoneda(v.g.honorario) }}
+                                <div class="tenue">cobrado {{ formatoMoneda(v.g.cobrado) }}</div>
+                            </td>
+                            <td class="nowrap" [class.monto-pendiente]="v.g.porCobrar > 0">{{ formatoMoneda(v.g.porCobrar) }}</td>
+                            <td class="nowrap" [class.monto-pendiente]="v.g.porPagarTerceros > 0">{{ formatoMoneda(v.g.porPagarTerceros) }}</td>
+                            <td class="nowrap">
+                                <ng-container *ngIf="v.g.dias !== null; else sinDias">
+                                    <nz-tag [nzColor]="v.g.seguimiento ? 'error' : 'default'">hace {{ v.g.dias }} d</nz-tag>
+                                </ng-container>
+                                <ng-template #sinDias><span class="tenue">—</span></ng-template>
+                            </td>
+                        </tr>
+                        <tr [nzExpand]="expandidos.has(v.g.clave)">
+                            <div class="detalle">
+                                <nz-table [nzData]="v.filas" [nzShowPagination]="false" [nzPageSize]="1000" nzSize="small" [nzBordered]="true">
+                                    <thead>
+                                        <tr>
+                                            <th>Etapa del caso</th>
+                                            <th>Avance</th>
+                                            <th>Esperando a</th>
+                                            <th>Honorario</th>
+                                            <th>Por cobrar</th>
+                                            <th>Terceros por pagar</th>
+                                            <th>Último movimiento</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr *ngFor="let f of v.filas; trackBy: trackByFila" class="fila-clic" (click)="abrirFicha(f.t)">
+                                            <td><nz-tag [nzColor]="colorTipo(f.t.tipo)">{{ etiquetaTipo(f.t) }}</nz-tag></td>
+                                            <td>
+                                                <ng-container *ngIf="f.t.estado === 'en_curso'; else cerradoFila">
+                                                    <div>{{ f.etapa ? f.etapa.nombre : 'Etapas completas' }}</div>
+                                                    <div class="tenue">{{ f.progreso.hechas }} de {{ f.progreso.total }}<span *ngIf="f.t.pendiente"> · Falta: {{ f.t.pendiente }}</span></div>
+                                                </ng-container>
+                                                <ng-template #cerradoFila>
+                                                    <nz-tag [nzColor]="estadoColor(f.t.estado)">{{ estadoTexto(f.t.estado) }}</nz-tag>
+                                                    <span class="tenue">{{ fechaCorta(f.t.fechaCierre) }}</span>
+                                                </ng-template>
+                                            </td>
+                                            <td>
+                                                <nz-tag *ngIf="f.esperando" [nzColor]="etiquetasEsperando[f.esperando].color">{{ etiquetasEsperando[f.esperando].texto }}</nz-tag>
+                                            </td>
+                                            <td class="nowrap">
+                                                {{ formatoMoneda(f.t.honorario) }}
+                                                <div class="tenue">cobrado {{ formatoMoneda(f.tot.cobrado) }}</div>
+                                            </td>
+                                            <td class="nowrap" [class.monto-pendiente]="f.tot.porCobrar > 0 && f.t.estado !== 'desistido'">{{ f.t.estado === 'desistido' ? '—' : formatoMoneda(f.tot.porCobrar) }}</td>
+                                            <td class="nowrap" [class.monto-pendiente]="f.tot.porPagarTerceros > 0">{{ formatoMoneda(f.tot.porPagarTerceros) }}</td>
+                                            <td class="nowrap">
+                                                <ng-container *ngIf="f.dias !== null; else sinDiasFila">
+                                                    <nz-tag [nzColor]="f.seguimiento ? 'error' : 'default'">hace {{ f.dias }} d</nz-tag>
+                                                </ng-container>
+                                                <ng-template #sinDiasFila><span class="tenue">—</span></ng-template>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </nz-table>
+                                <button nz-button nzType="link" class="agregar-etapa" (click)="agregarEtapa(v.g)">
+                                    <nz-icon nzType="plus"></nz-icon> Agregar etapa
+                                </button>
+                            </div>
+                        </tr>
+                    </ng-container>
+                </tbody>
+            </nz-table>
+        </div>
+    </nz-card>
+</div>
+
+<!-- ================= MODAL: NUEVO TRÁMITE ================= -->
+<nz-modal
+    [(nzVisible)]="mostrarNuevo"
+    nzTitle="Nuevo trámite"
+    nzWidth="640px"
+    (nzOnCancel)="cancelarNuevo()"
+    [nzFooter]="nuevoFooter">
+    <ng-container *nzModalContent>
+        <form [formGroup]="formNuevo" class="form-grid">
+            <div class="campo campo-ancho">
+                <label>Cliente *</label>
+                <input
+                    nz-input
+                    formControlName="clienteNombre"
+                    autocomplete="off"
+                    placeholder="Busca en las carteras por nombre, RUC o cédula, o escribe uno nuevo"
+                    [nzAutocomplete]="clienteAuto"
+                    (input)="buscarCliente($any($event.target).value)" />
+                <nz-autocomplete #clienteAuto (selectionChange)="elegirCoactivado($event.nzValue)">
+                    <nz-auto-option *ngFor="let c of sugerencias" [nzValue]="c.cedula" [nzLabel]="c.nombre">
+                        {{ c.nombre }}
+                        <span class="tenue">· {{ c.cedula }} · {{ c.cartera }}</span>
+                    </nz-auto-option>
+                </nz-autocomplete>
+                <span class="nota" *ngIf="sinCoincidencias">No está en las carteras: escribe los datos a mano.</span>
+            </div>
+            <div class="campo">
+                <label>RUC o cédula</label>
+                <input nz-input formControlName="clienteRuc" placeholder="Opcional" />
+            </div>
+            <div class="campo">
+                <label>Teléfono</label>
+                <input nz-input formControlName="telefono" placeholder="Opcional" />
+            </div>
+            <div class="campo campo-ancho">
+                <label>Quién lo lleva por el cliente</label>
+                <input nz-input formControlName="contacto" placeholder="Él mismo, hija, representante legal..." />
+            </div>
+            <div class="campo">
+                <label>Tipo de trámite *</label>
+                <nz-select formControlName="tipo" nzPlaceHolder="Elige el tipo">
+                    <nz-option *ngFor="let t of tipos" [nzValue]="t.id" [nzLabel]="t.nombre"></nz-option>
+                </nz-select>
+            </div>
+            <div class="campo" *ngIf="formNuevo.value.tipo === 'otro'">
+                <label>Qué trámite es *</label>
+                <input nz-input formControlName="tipoDetalle" placeholder="Ej.: Recuperación de claves SUT" />
+            </div>
+            <div class="campo">
+                <label>Honorario pactado</label>
+                <nz-input-number formControlName="honorario" [nzMin]="0" [nzPrecision]="2" [nzStep]="10"></nz-input-number>
+            </div>
+        </form>
+    </ng-container>
+    <ng-template #nuevoFooter>
+        <button nz-button (click)="cancelarNuevo()">Cancelar</button>
+        <button nz-button nzType="primary" class="brand-btn" [nzLoading]="trabajando === 'nuevo'" (click)="guardarNuevo()">Crear trámite</button>
+    </ng-template>
+</nz-modal>
+
+<!-- ================= MODAL: IMPORTAR DESDE EXCEL ================= -->
+<nz-modal
+    [(nzVisible)]="mostrarImportar"
+    nzTitle="Importar trámites desde Excel"
+    nzWidth="1000px"
+    (nzOnCancel)="cerrarImportar()"
+    [nzFooter]="importarFooter">
+    <ng-container *nzModalContent>
+        <p class="nota">
+            Una fila por trámite, con las columnas de la plantilla. Los clientes con varias etapas (radiografía, SUT,
+            acta, anulación) llevan una fila por etapa. Nada se guarda hasta que confirmes la vista previa.
+        </p>
+        <div class="importar-archivo">
+            <input type="file" id="archivo-tramites" accept=".xlsx,.csv" (change)="elegirArchivo($event)" hidden />
+            <label for="archivo-tramites" nz-button nzType="dashed">
+                <nz-icon nzType="file-excel"></nz-icon>
+                {{ nombreArchivo || 'Elegir el archivo Excel' }}
+            </label>
+            <button nz-button nzType="link" [nzLoading]="descargandoPlantilla" (click)="descargarPlantilla()">
+                <nz-icon nzType="download"></nz-icon> Descargar plantilla
+            </button>
+        </div>
+
+        <div *ngIf="leyendoArchivo" class="tenue">Leyendo el archivo...</div>
+
+        <ng-container *ngIf="previa as p">
+            <nz-alert
+                *ngIf="p.errores.length > 0"
+                class="alerta"
+                nzType="error"
+                nzShowIcon
+                [nzMessage]="p.errores.length + ' fila(s) con errores no se cargarán'"
+                [nzDescription]="erroresTpl">
+            </nz-alert>
+            <ng-template #erroresTpl>
+                <div *ngFor="let e of p.errores | slice: 0 : 8">Fila {{ e.fila }}: {{ e.mensaje }}</div>
+                <div *ngIf="p.errores.length > 8">...y {{ p.errores.length - 8 }} más.</div>
+            </ng-template>
+
+            <nz-alert
+                *ngIf="p.avisos.length > 0"
+                class="alerta"
+                nzType="warning"
+                nzShowIcon
+                [nzMessage]="'Para revisar (' + p.avisos.length + ')'"
+                [nzDescription]="avisosTpl">
+            </nz-alert>
+            <ng-template #avisosTpl>
+                <div *ngFor="let a of p.avisos | slice: 0 : 8">Fila {{ a.fila }}: {{ a.mensaje }}</div>
+                <div *ngIf="p.avisos.length > 8">...y {{ p.avisos.length - 8 }} más.</div>
+            </ng-template>
+
+            <div class="previa-resumen">
+                <b>{{ p.nuevos.length }}</b> trámite(s) nuevos de <b>{{ p.grupos.length }}</b> cliente(s)
+                <span *ngIf="p.duplicados > 0" class="tenue"> · {{ p.duplicados }} ya existen y se omiten</span>
+            </div>
+
+            <div class="previa-grupo" *ngFor="let g of p.grupos">
+                <div class="previa-cliente">
+                    <span class="nombre">{{ g.nombre }}</span>
+                    <span class="tenue">{{ g.ruc || 'Sin RUC' }}</span>
+                </div>
+                <table class="previa-tabla">
+                    <tr *ngFor="let f of g.filas" [class.previa-omitida]="f.duplicado">
+                        <td class="tenue nowrap">Fila {{ f.item.fila }}</td>
+                        <td><nz-tag [nzColor]="colorTipo(f.tramite.tipo)">{{ etiquetaTipo(f.tramite) }}</nz-tag></td>
+                        <td>
+                            <nz-tag *ngIf="f.tramite.estado !== 'en_curso'" [nzColor]="estadoColor(f.tramite.estado)">{{ estadoTexto(f.tramite.estado) }}</nz-tag>
+                            <ng-container *ngIf="f.tramite.estado === 'en_curso'">
+                                {{ f.etapaTexto }}
+                                <nz-tag *ngIf="f.esperando" [nzColor]="etiquetasEsperando[f.esperando].color">{{ etiquetasEsperando[f.esperando].texto }}</nz-tag>
+                            </ng-container>
+                        </td>
+                        <td class="nowrap">
+                            {{ formatoMoneda(f.tramite.honorario) }}
+                            <div class="tenue">cobrado {{ formatoMoneda(f.tot.cobrado) }}</div>
+                        </td>
+                        <td class="nowrap">
+                            <ng-container *ngIf="f.tot.pactadoTerceros > 0">
+                                {{ formatoMoneda(f.tot.pactadoTerceros) }}
+                                <div class="tenue">terceros, pagado {{ formatoMoneda(f.tot.pagadoTerceros) }}</div>
+                            </ng-container>
+                        </td>
+                        <td class="tenue">
+                            <span *ngIf="f.duplicado">Ya existe: se omite</span>
+                            <span *ngIf="!f.duplicado && f.radiografiaFila !== null">Sale de la radiografía (fila {{ f.radiografiaFila }})</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </ng-container>
+    </ng-container>
+    <ng-template #importarFooter>
+        <button nz-button (click)="cerrarImportar()" [disabled]="trabajando === 'importar'">Cancelar</button>
+        <button
+            nz-button
+            nzType="primary"
+            class="brand-btn"
+            [disabled]="!previa || previa.nuevos.length === 0"
+            [nzLoading]="trabajando === 'importar'"
+            (click)="confirmarImportar()">
+            Importar {{ previa ? previa.nuevos.length : 0 }} trámite(s)
+        </button>
+    </ng-template>
+</nz-modal>
+
+<!-- ================= MODAL: FICHA DEL TRÁMITE ================= -->
+<nz-modal
+    [(nzVisible)]="mostrarFicha"
+    [nzTitle]="tituloFichaTpl"
+    nzWidth="980px"
+    (nzOnCancel)="cerrarFicha()"
+    [nzFooter]="fichaFooter">
+    <ng-template #tituloFichaTpl>
+        {{ tituloFicha }}
+        <ng-container *ngIf="vista">
+            <nz-tag class="titulo-tag" [nzColor]="colorTipo(vista.t.tipo)">{{ etiquetaTipo(vista.t) }}</nz-tag>
+            <nz-tag [nzColor]="estadoColor(vista.t.estado)">{{ estadoTexto(vista.t.estado) }}</nz-tag>
+        </ng-container>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+        <ng-container *ngIf="vista as v">
+            <div class="ficha-cifras">
+                <div><span class="cifra-titulo">Honorario</span><b>{{ formatoMoneda(v.t.honorario) }}</b></div>
+                <div><span class="cifra-titulo">Cobrado</span><b>{{ formatoMoneda(v.tot.cobrado) }}</b></div>
+                <div><span class="cifra-titulo">Por cobrar</span><b [class.monto-pendiente]="v.tot.porCobrar > 0">{{ formatoMoneda(v.tot.porCobrar) }}</b></div>
+                <div><span class="cifra-titulo">Terceros por pagar</span><b [class.monto-pendiente]="v.tot.porPagarTerceros > 0">{{ formatoMoneda(v.tot.porPagarTerceros) }}</b></div>
+                <div><span class="cifra-titulo">Utilidad estimada</span><b>{{ formatoMoneda(v.tot.utilidad) }}</b></div>
+            </div>
+
+            <nz-tabset [(nzSelectedIndex)]="pestana">
+
+                <!-- ===== Etapas ===== -->
+                <nz-tab nzTitle="Etapas">
+                    <div class="estado-linea">
+                        <ng-container *ngIf="v.esperando">
+                            Esperando a
+                            <nz-tag [nzColor]="etiquetasEsperando[v.esperando].color">{{ etiquetasEsperando[v.esperando].texto }}</nz-tag>
+                        </ng-container>
+                        <span class="tenue">{{ v.progreso.hechas }} de {{ v.progreso.total }} etapas resueltas</span>
+                    </div>
+
+                    <nz-alert
+                        *ngIf="sinEtapasPendientes"
+                        class="alerta"
+                        nzType="success"
+                        nzShowIcon
+                        nzMessage="Todas las etapas están resueltas"
+                        nzDescription="Si esta etapa del caso ya concluyó, márcala como completada al final de esta pestaña.">
+                    </nz-alert>
+
+                    <ul class="etapas">
+                        <li
+                            *ngFor="let e of v.etapas"
+                            class="etapa"
+                            [class.etapa-actual]="v.t.estado === 'en_curso' && e.def.id === v.etapaActualId"
+                            [class.etapa-resuelta]="e.estado !== 'pendiente'">
+                            <nz-icon
+                                class="etapa-icono"
+                                [nzType]="e.estado === 'hecha' ? 'check-circle' : e.estado === 'omitida' ? 'minus-circle' : 'clock-circle'"
+                                nzTheme="outline">
+                            </nz-icon>
+                            <div class="etapa-info">
+                                <div class="etapa-nombre" [class.etapa-omitida]="e.estado === 'omitida'">
+                                    {{ e.def.nombre }}
+                                    <nz-tag *ngIf="v.t.estado === 'en_curso' && e.def.id === v.etapaActualId" nzColor="processing">Siguiente</nz-tag>
+                                    <nz-tag *ngIf="e.estado === 'pendiente'" [nzColor]="etiquetasEsperando[e.def.esperandoA].color">
+                                        espera a: {{ etiquetasEsperando[e.def.esperandoA].texto }}
+                                    </nz-tag>
+                                </div>
+                                <div class="tenue" *ngIf="e.estado !== 'pendiente'">
+                                    {{ e.estado === 'hecha' ? 'Hecha' : 'Omitida' }} el {{ fechaCorta(e.fecha) }}<span *ngIf="e.por"> · {{ e.por.nombre }}</span>
+                                </div>
+                            </div>
+                            <div class="etapa-acciones" *ngIf="v.t.estado === 'en_curso'">
+                                <ng-container *ngIf="e.estado === 'pendiente'; else deshacerEtapa">
+                                    <button nz-button nzSize="small" nzType="primary" class="brand-btn" [disabled]="!!trabajando" (click)="cambiarEtapa(e, 'hecha')">Hecha</button>
+                                    <button nz-button nzSize="small" [disabled]="!!trabajando" (click)="cambiarEtapa(e, 'omitida')">Omitir</button>
+                                </ng-container>
+                                <ng-template #deshacerEtapa>
+                                    <button nz-button nzType="link" nzSize="small" [disabled]="!!trabajando" (click)="cambiarEtapa(e, 'pendiente')">Deshacer</button>
+                                </ng-template>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <form *ngIf="v.t.estado === 'en_curso'" [formGroup]="formSeguimiento" class="form-grid seguimiento">
+                        <div class="campo">
+                            <label>Esperando a</label>
+                            <nz-select formControlName="esperandoAManual" nzAllowClear nzPlaceHolder="Según la etapa">
+                                <nz-option *ngFor="let o of esperandoOpciones" [nzValue]="o.id" [nzLabel]="o.texto"></nz-option>
+                            </nz-select>
+                        </div>
+                        <div class="campo campo-ancho">
+                            <label>Qué falta</label>
+                            <input nz-input formControlName="pendiente" placeholder="Ej.: firma del representante legal, clave SUT..." />
+                        </div>
+                        <div class="campo-boton">
+                            <button nz-button [nzLoading]="trabajando === 'seguimiento'" (click)="guardarSeguimiento()">Guardar</button>
+                        </div>
+                    </form>
+
+                    <div class="cierre">
+                        <ng-container *ngIf="v.t.estado === 'en_curso'; else cerrado">
+                            <input nz-input class="cierre-motivo" [(ngModel)]="motivoCierre" placeholder="Motivo (opcional; sirve si el cliente desiste)" />
+                            <button
+                                nz-button
+                                nzType="primary"
+                                class="brand-btn"
+                                nz-popconfirm
+                                nzPopconfirmTitle="¿Marcar esta etapa del caso como completada?"
+                                nzOkText="Completada"
+                                [nzLoading]="trabajando === 'cierre'"
+                                (nzOnConfirm)="cerrar('terminado')">
+                                <nz-icon nzType="check"></nz-icon> Marcar completada
+                            </button>
+                            <button
+                                nz-button
+                                nzDanger
+                                nz-popconfirm
+                                nzPopconfirmTitle="¿El cliente desiste de este trámite?"
+                                nzOkText="Desistió"
+                                nzOkDanger
+                                [nzLoading]="trabajando === 'cierre'"
+                                (nzOnConfirm)="cerrar('desistido')">
+                                El cliente desistió
+                            </button>
+                        </ng-container>
+                        <ng-template #cerrado>
+                            <nz-tag [nzColor]="estadoColor(v.t.estado)">{{ estadoTexto(v.t.estado) }}</nz-tag>
+                            <span class="tenue">el {{ fechaCorta(v.t.fechaCierre) }}<span *ngIf="v.t.motivoCierre"> · {{ v.t.motivoCierre }}</span></span>
+                            <button nz-button [nzLoading]="trabajando === 'cierre'" (click)="reabrir()">Reabrir</button>
+                        </ng-template>
+                    </div>
+                </nz-tab>
+
+                <!-- ===== Cobros al cliente ===== -->
+                <nz-tab nzTitle="Cobros">
+                    <form [formGroup]="formHonorario" class="form-grid form-honorario">
+                        <div class="campo">
+                            <label>Honorario</label>
+                            <nz-input-number formControlName="honorario" [nzMin]="0" [nzPrecision]="2" [nzStep]="10"></nz-input-number>
+                        </div>
+                        <div class="campo">
+                            <label>Monto a anular (referencia)</label>
+                            <nz-input-number formControlName="montoAnular" [nzMin]="0" [nzPrecision]="2" [nzStep]="100"></nz-input-number>
+                        </div>
+                        <div class="campo">
+                            <label>Porcentaje pactado (%)</label>
+                            <nz-input-number formControlName="porcentaje" [nzMin]="0" [nzMax]="100" [nzPrecision]="2" [nzStep]="1"></nz-input-number>
+                        </div>
+                        <div class="campo-boton campo-boton-doble">
+                            <button nz-button nz-tooltip nzTooltipTitle="Honorario = monto a anular × porcentaje" (click)="calcularHonorario()">Calcular</button>
+                            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="trabajando === 'honorario'" (click)="guardarHonorario()">Guardar</button>
+                        </div>
+                    </form>
+                    <p class="nota">
+                        El monto y el porcentaje son solo la referencia con la que se negoció: el honorario es el que escribas.
+                    </p>
+
+                    <nz-alert
+                        *ngIf="v.tot.cobrado > v.t.honorario"
+                        class="alerta"
+                        nzType="warning"
+                        nzShowIcon
+                        nzMessage="Lo cobrado supera el honorario"
+                        nzDescription="Revisa los cobros o actualiza el honorario.">
+                    </nz-alert>
+
+                    <h4 class="subtitulo">Cobros registrados</h4>
+                    <nz-empty *ngIf="v.pagos.length === 0" nzNotFoundContent="Todavía no se ha cobrado nada."></nz-empty>
+                    <nz-table *ngIf="v.pagos.length > 0" [nzData]="v.pagos" [nzShowPagination]="false" [nzPageSize]="1000" nzSize="small" [nzBordered]="true">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th>Monto</th>
+                                <th>Comprobante</th>
+                                <th>Nota</th>
+                                <th>Anotado por</th>
+                                <th *ngIf="esAdmin"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let p of v.pagos; let i = index">
+                                <td>{{ i + 1 }}</td>
+                                <td class="nowrap">{{ fechaCorta(p.pago.fecha) }}</td>
+                                <td class="nowrap">{{ formatoMoneda(p.pago.monto) }}</td>
+                                <td>{{ p.pago.comprobante || '—' }}</td>
+                                <td>{{ p.pago.nota || '—' }}</td>
+                                <td>{{ p.pago.registradoPor.nombre }}</td>
+                                <td *ngIf="esAdmin" class="nowrap">
+                                    <button
+                                        nz-button
+                                        nzType="link"
+                                        nzDanger
+                                        nzSize="small"
+                                        nz-popconfirm
+                                        nzPopconfirmTitle="¿Reversar este cobro? Se resta de lo cobrado."
+                                        nzPopconfirmPlacement="left"
+                                        nzOkText="Reversar"
+                                        nzOkDanger
+                                        [disabled]="!!trabajando"
+                                        (nzOnConfirm)="reversarPago(p.indice)">
+                                        Reversar
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </nz-table>
+
+                    <h4 class="subtitulo">Registrar un cobro</h4>
+                    <form [formGroup]="formPago" class="form-grid form-pago">
+                        <div class="campo">
+                            <label>Monto *</label>
+                            <nz-input-number formControlName="monto" [nzMin]="0" [nzPrecision]="2" [nzStep]="10"></nz-input-number>
+                        </div>
+                        <div class="campo">
+                            <label>Fecha *</label>
+                            <input nz-input type="date" formControlName="fecha" [max]="hoy" />
+                        </div>
+                        <div class="campo">
+                            <label>N.º de comprobante</label>
+                            <input nz-input formControlName="comprobante" placeholder="Opcional" />
+                        </div>
+                        <div class="campo">
+                            <label>Nota</label>
+                            <input nz-input formControlName="nota" placeholder="Ej.: anticipo 50%" />
+                        </div>
+                        <div class="campo-boton">
+                            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="trabajando === 'pago'" (click)="registrarPago()">Registrar cobro</button>
+                        </div>
+                    </form>
+                </nz-tab>
+
+                <!-- ===== Terceros ===== -->
+                <nz-tab nzTitle="Terceros">
+                    <div class="barra-terceros">
+                        <span>
+                            Pactado <b>{{ formatoMoneda(v.tot.pactadoTerceros) }}</b> ·
+                            Pagado <b>{{ formatoMoneda(v.tot.pagadoTerceros) }}</b> ·
+                            Por pagar <b [class.monto-pendiente]="v.tot.porPagarTerceros > 0">{{ formatoMoneda(v.tot.porPagarTerceros) }}</b>
+                        </span>
+                        <button *ngIf="!mostrarFormCosto" nz-button (click)="abrirCosto()">
+                            <nz-icon nzType="plus"></nz-icon> Agregar costo a tercero
+                        </button>
+                    </div>
+
+                    <form *ngIf="mostrarFormCosto" [formGroup]="formCosto" class="form-grid recuadro">
+                        <div class="campo">
+                            <label>Concepto *</label>
+                            <nz-select formControlName="concepto">
+                                <nz-option *ngFor="let c of conceptos" [nzValue]="c.id" [nzLabel]="c.nombre"></nz-option>
+                            </nz-select>
+                        </div>
+                        <div class="campo">
+                            <label>A quién se le paga *</label>
+                            <input nz-input formControlName="tercero" placeholder="Nombre del tramitador" />
+                        </div>
+                        <div class="campo">
+                            <label>Monto pactado *</label>
+                            <nz-input-number formControlName="monto" [nzMin]="0" [nzPrecision]="2" [nzStep]="10"></nz-input-number>
+                        </div>
+                        <div class="campo">
+                            <label>Detalle</label>
+                            <input nz-input formControlName="detalle" placeholder="Opcional" />
+                        </div>
+                        <div class="campo-boton campo-boton-doble">
+                            <button nz-button (click)="cancelarCosto()">Cancelar</button>
+                            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="trabajando === 'costo'" (click)="guardarCosto()">
+                                {{ costoEditandoId ? 'Guardar cambios' : 'Agregar' }}
+                            </button>
+                        </div>
+                    </form>
+
+                    <nz-empty *ngIf="v.costos.length === 0 && !mostrarFormCosto" nzNotFoundContent="Este trámite no tiene costos a terceros."></nz-empty>
+
+                    <div class="costo" *ngFor="let c of v.costos">
+                        <div class="costo-cabecera">
+                            <div>
+                                <nz-tag>{{ nombreConcepto(c.costo.concepto) }}</nz-tag>
+                                <b>{{ c.costo.tercero }}</b>
+                                <span class="tenue" *ngIf="c.costo.detalle"> · {{ c.costo.detalle }}</span>
+                            </div>
+                            <div class="costo-cifras">
+                                Pactado <b>{{ formatoMoneda(c.tot.pactado) }}</b> ·
+                                Pagado <b>{{ formatoMoneda(c.tot.pagado) }}</b> ·
+                                Por pagar <b [class.monto-pendiente]="c.tot.porPagar > 0">{{ formatoMoneda(c.tot.porPagar) }}</b>
+                            </div>
+                            <div class="costo-acciones">
+                                <button nz-button nzSize="small" (click)="abrirPagoTercero(c.costo.id)">Registrar pago</button>
+                                <button nz-button nzSize="small" nzType="link" (click)="abrirCosto(c.costo)">Editar</button>
+                                <button
+                                    *ngIf="esAdmin"
+                                    nz-button
+                                    nzSize="small"
+                                    nzType="link"
+                                    nzDanger
+                                    nz-popconfirm
+                                    nzPopconfirmTitle="¿Quitar este costo? Solo se puede si no tiene pagos."
+                                    nzOkText="Quitar"
+                                    nzOkDanger
+                                    [disabled]="!!trabajando"
+                                    (nzOnConfirm)="quitarCosto(c.costo.id)">
+                                    Quitar
+                                </button>
+                            </div>
+                        </div>
+
+                        <nz-table *ngIf="c.pagos.length > 0" [nzData]="c.pagos" [nzShowPagination]="false" [nzPageSize]="1000" nzSize="small" [nzBordered]="true">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Monto</th>
+                                    <th>Comprobante</th>
+                                    <th>Nota</th>
+                                    <th>Anotado por</th>
+                                    <th *ngIf="esAdmin"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let p of c.pagos">
+                                    <td class="nowrap">{{ fechaCorta(p.pago.fecha) }}</td>
+                                    <td class="nowrap">{{ formatoMoneda(p.pago.monto) }}</td>
+                                    <td>{{ p.pago.comprobante || '—' }}</td>
+                                    <td>{{ p.pago.nota || '—' }}</td>
+                                    <td>{{ p.pago.registradoPor.nombre }}</td>
+                                    <td *ngIf="esAdmin" class="nowrap">
+                                        <button
+                                            nz-button
+                                            nzType="link"
+                                            nzDanger
+                                            nzSize="small"
+                                            nz-popconfirm
+                                            nzPopconfirmTitle="¿Reversar este pago?"
+                                            nzPopconfirmPlacement="left"
+                                            nzOkText="Reversar"
+                                            nzOkDanger
+                                            [disabled]="!!trabajando"
+                                            (nzOnConfirm)="reversarPagoTercero(c.costo.id, p.indice)">
+                                            Reversar
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </nz-table>
+
+                        <form *ngIf="costoPagandoId === c.costo.id" [formGroup]="formPagoTercero" class="form-grid recuadro">
+                            <div class="campo">
+                                <label>Monto *</label>
+                                <nz-input-number formControlName="monto" [nzMin]="0" [nzPrecision]="2" [nzStep]="10"></nz-input-number>
+                            </div>
+                            <div class="campo">
+                                <label>Fecha *</label>
+                                <input nz-input type="date" formControlName="fecha" [max]="hoy" />
+                            </div>
+                            <div class="campo">
+                                <label>N.º de comprobante</label>
+                                <input nz-input formControlName="comprobante" placeholder="Opcional" />
+                            </div>
+                            <div class="campo">
+                                <label>Nota</label>
+                                <input nz-input formControlName="nota" placeholder="Ej.: mitad por adelantado" />
+                            </div>
+                            <div class="campo-boton campo-boton-doble">
+                                <button nz-button (click)="costoPagandoId = null">Cancelar</button>
+                                <button nz-button nzType="primary" class="brand-btn" [nzLoading]="trabajando === 'pagoTercero'" (click)="guardarPagoTercero()">Registrar pago</button>
+                            </div>
+                        </form>
+                    </div>
+                </nz-tab>
+
+                <!-- ===== Gestiones ===== -->
+                <nz-tab nzTitle="Gestiones">
+                    <div class="nueva-gestion">
+                        <textarea
+                            nz-input
+                            rows="2"
+                            [(ngModel)]="textoGestion"
+                            placeholder="Qué se hizo, con quién se habló, qué se acordó..."></textarea>
+                        <button
+                            nz-button
+                            nzType="primary"
+                            class="brand-btn"
+                            [disabled]="!textoGestion.trim()"
+                            [nzLoading]="trabajando === 'gestion'"
+                            (click)="agregarGestion()">
+                            Agregar gestión
+                        </button>
+                    </div>
+                    <nz-timeline>
+                        <nz-timeline-item *ngFor="let g of v.gestiones" [nzColor]="g.tipo === 'nota' ? 'blue' : 'gray'">
+                            <div [class.gestion-sistema]="g.tipo === 'sistema'">{{ g.texto }}</div>
+                            <div class="tenue">{{ g.fecha | date: 'dd/MM/yyyy HH:mm' }} · {{ g.registradoPor.nombre }}</div>
+                        </nz-timeline-item>
+                    </nz-timeline>
+                </nz-tab>
+
+                <!-- ===== Datos ===== -->
+                <nz-tab nzTitle="Datos">
+                    <form [formGroup]="formDatos" class="form-grid">
+                        <div class="campo campo-ancho">
+                            <label>Cliente *</label>
+                            <input nz-input formControlName="clienteNombre" />
+                        </div>
+                        <div class="campo">
+                            <label>RUC o cédula</label>
+                            <input nz-input formControlName="clienteRuc" />
+                        </div>
+                        <div class="campo">
+                            <label>Teléfono</label>
+                            <input nz-input formControlName="telefono" />
+                        </div>
+                        <div class="campo campo-ancho">
+                            <label>Quién lo lleva por el cliente</label>
+                            <input nz-input formControlName="contacto" placeholder="Él mismo, hija, representante legal..." />
+                        </div>
+                        <div class="campo">
+                            <label>Tipo de trámite *</label>
+                            <nz-select formControlName="tipo">
+                                <nz-option *ngFor="let t of tipos" [nzValue]="t.id" [nzLabel]="t.nombre"></nz-option>
+                            </nz-select>
+                        </div>
+                        <div class="campo" *ngIf="formDatos.value.tipo === 'otro'">
+                            <label>Qué trámite es *</label>
+                            <input nz-input formControlName="tipoDetalle" />
+                        </div>
+
+                        <h4 class="subtitulo campo-completo">En el IESS</h4>
+                        <div class="campo">
+                            <label>N.º de trámite (gestión documental)</label>
+                            <input nz-input formControlName="nroIngreso" placeholder="IESS-SDNGD-..." />
+                        </div>
+                        <div class="campo">
+                            <label>Fecha de presentación</label>
+                            <input nz-input type="date" formControlName="fechaPresentacion" />
+                        </div>
+                        <div class="campo">
+                            <label>N.º de resolución</label>
+                            <input nz-input formControlName="nroResolucion" placeholder="IESS-CPCCP-..." />
+                        </div>
+                        <div class="campo">
+                            <label>Fecha de resolución</label>
+                            <input nz-input type="date" formControlName="fechaResolucion" />
+                        </div>
+                    </form>
+
+                    <div class="acciones-form">
+                        <button nz-button nzType="primary" class="brand-btn" [nzLoading]="trabajando === 'datos'" (click)="guardarDatos()">Guardar datos</button>
+                        <button *ngIf="v.t.tipo === 'radiografia'" nz-button (click)="iniciarAnulacion()">
+                            <nz-icon nzType="arrow-right"></nz-icon> Iniciar anulación
+                        </button>
+                        <button
+                            *ngIf="esAdmin"
+                            nz-button
+                            nzDanger
+                            nz-popconfirm
+                            nzPopconfirmTitle="¿Eliminar este trámite con todo su historial? No se puede deshacer."
+                            nzOkText="Eliminar"
+                            nzOkDanger
+                            [nzLoading]="trabajando === 'eliminar'"
+                            (nzOnConfirm)="eliminarTramite()">
+                            Eliminar trámite
+                        </button>
+                    </div>
+                    <p class="nota">
+                        Creado por {{ v.t.creadoPor.nombre }}<span *ngIf="v.t.origenTramiteId"> · viene de una radiografía</span>.
+                    </p>
+                </nz-tab>
+            </nz-tabset>
+        </ng-container>
+    </ng-container>
+    <ng-template #fichaFooter>
+        <button nz-button (click)="cerrarFicha()">Cerrar</button>
+    </ng-template>
+</nz-modal>
+
+<!-- ================= MODAL: ACCESO (solo admin) ================= -->
+<nz-modal
+    [(nzVisible)]="mostrarAcceso"
+    nzTitle="Quién puede entrar a Trámites"
+    nzWidth="560px"
+    (nzOnCancel)="mostrarAcceso = false"
+    [nzFooter]="accesoFooter">
+    <ng-container *nzModalContent>
+        <p class="nota">
+            Las personas que elijas ven y trabajan todos los trámites, con sus montos. Tú, como admin, siempre tienes
+            acceso. Aquí aparecen los usuarios activos del área IESS.
+        </p>
+        <nz-empty *ngIf="cargandoAcceso" nzNotFoundContent="Cargando..."></nz-empty>
+        <nz-empty *ngIf="!cargandoAcceso && usuariosIess.length === 0" nzNotFoundContent="No hay usuarios activos en el área IESS."></nz-empty>
+        <div class="acceso-fila" *ngFor="let u of usuariosIess">
+            <div>
+                <b>{{ u.displayName || u.email }}</b>
+                <div class="tenue">{{ u.email }}</div>
+            </div>
+            <nz-switch
+                [ngModel]="u.tramitesIess === true"
+                (ngModelChange)="cambiarAcceso(u, $event)"
+                [nzLoading]="cambiandoAcceso === u.uid"
+                [nzDisabled]="!!cambiandoAcceso">
+            </nz-switch>
+        </div>
+    </ng-container>
+    <ng-template #accesoFooter>
+        <button nz-button (click)="mostrarAcceso = false">Cerrar</button>
+    </ng-template>
+</nz-modal>

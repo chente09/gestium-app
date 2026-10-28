@@ -889,6 +889,11 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     return this.registersService.isCurrentUserAdmin();
   }
 
+  // El admin y quien el admin haya elegido (se refleja al volver a iniciar sesión).
+  get puedeVerTramites(): boolean {
+    return this.registersService.canAccessTramitesIess();
+  }
+
   get confirmacionValida(): boolean {
     return !!this.seleccionado && this.confirmacionCedula.trim() === this.seleccionado.cedula;
   }

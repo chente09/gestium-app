@@ -157,7 +157,7 @@ export class AppComponent implements OnInit {
       ? this.activeRoute.substring(1)
       : this.activeRoute;
 
-    const standaloneRoutes = ['login', 'consultas', ''];
+    const standaloneRoutes = ['login', 'consultas', 'votar', ''];
     return standaloneRoutes.includes(currentPath);
   }
 

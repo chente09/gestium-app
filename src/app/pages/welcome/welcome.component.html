@@ -4,6 +4,15 @@
         <p>Selecciona una opción para comenzar.</p>
     </div>
 
+    <nz-card [nzBordered]="true" *ngIf="noticias.length > 0">
+        <h2 class="title">Noticias</h2>
+        <hr>
+        <figure class="noticia" *ngFor="let n of noticias">
+            <img nz-image [nzSrc]="n.imagen" [alt]="n.titulo" class="noticia-imagen" />
+            <figcaption class="noticia-titulo">{{ n.titulo }} · toca la imagen para verla completa</figcaption>
+        </figure>
+    </nz-card>
+
     <nz-card [nzBordered]="true">
         <h2 class="title">Áreas</h2>
         <hr>
@@ -24,7 +33,7 @@
         <h2 class="title">Utilidades</h2>
         <hr>
         <nz-row [nzGutter]="16" justify="center">
-            <nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="12" *ngFor="let item of sections2">
+            <nz-col [nzXs]="24" [nzSm]="24" [nzMd]="12" [nzLg]="12" *ngFor="let item of utilidades">
                 <a [routerLink]="item.route" class="section-link">
                     <nz-card class="section-card" [nzBordered]="false" [nzHoverable]="true">
                         <div class="section-avatar">

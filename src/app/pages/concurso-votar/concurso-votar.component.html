@@ -1,0 +1,103 @@
+<div class="votar-pagina">
+    <main class="votar-caja">
+        <header class="votar-cabecera">
+            <span class="calabaza">🎃</span>
+            <h1>Concurso de disfraces</h1>
+            <p>Gestium · Halloween 2026</p>
+        </header>
+
+        <p class="aviso" *ngIf="cargando">Cargando...</p>
+
+        <div class="aviso aviso-error" *ngIf="!cargando && falloCarga">
+            No se pudo cargar el concurso.
+            <button nz-button nzType="link" (click)="cargar()">Reintentar</button>
+        </div>
+
+        <!-- Ya votó -->
+        <section class="panel" *ngIf="!cargando && !falloCarga && paso === 'listo'">
+            <h2>¡Gracias por votar!</h2>
+            <p>Tu voto quedó registrado. El ganador se anuncia en la premiación.</p>
+        </section>
+
+        <ng-container *ngIf="!cargando && !falloCarga && paso !== 'listo'">
+            <section class="panel" *ngIf="!abierta">
+                <h2>La votación no está abierta</h2>
+                <p>Cuando se abra, podrás votar desde esta misma página.</p>
+                <button nz-button (click)="cargar()"><nz-icon nzType="reload"></nz-icon> Revisar de nuevo</button>
+            </section>
+
+            <section class="panel" *ngIf="abierta && participantes.length === 0">
+                <h2>Todavía no hay participantes</h2>
+                <button nz-button (click)="cargar()"><nz-icon nzType="reload"></nz-icon> Revisar de nuevo</button>
+            </section>
+
+            <ng-container *ngIf="abierta && participantes.length > 0">
+                <!-- Paso 1: correo -->
+                <section class="panel" *ngIf="paso === 'correo'">
+                    <h2>Eres parte del jurado</h2>
+                    <p>Escribe el correo con el que te registraron. Solo se cuenta un voto por correo.</p>
+                    <input
+                        nz-input
+                        nzSize="large"
+                        type="email"
+                        autocomplete="email"
+                        [(ngModel)]="correo"
+                        (keyup.enter)="continuar()"
+                        placeholder="tu-correo@empresa.com" />
+                    <p class="error" *ngIf="error">{{ error }}</p>
+                    <button nz-button nzType="primary" nzSize="large" nzBlock class="boton" (click)="continuar()">Continuar</button>
+                </section>
+
+                <!-- Paso 2: elegir y votar -->
+                <ng-container *ngIf="paso === 'votar'">
+                    <p class="quien">
+                        Votas como <strong>{{ correo }}</strong>
+                        <button nz-button nzType="link" nzSize="small" (click)="cambiarCorreo()">Cambiar</button>
+                    </p>
+
+                    <h2 class="titulo-lista">Elige el mejor disfraz</h2>
+                    <div class="grilla">
+                        <button
+                            type="button"
+                            class="tarjeta"
+                            *ngFor="let p of participantes; trackBy: trackById"
+                            [class.elegida]="seleccionado === p.id"
+                            (click)="elegir(p)">
+                            <img [src]="p.foto" [alt]="p.nombre" />
+                            <span class="tarjeta-nombre">{{ p.nombre }}</span>
+                            <span class="tarjeta-mensaje">{{ p.mensaje }}</span>
+                            <span class="marca" *ngIf="seleccionado === p.id"><nz-icon nzType="check-circle" nzTheme="fill"></nz-icon> Tu voto</span>
+                        </button>
+                    </div>
+
+                    <section class="panel">
+                        <label for="mensaje-voto">Deja un mensaje para tu voto *</label>
+                        <textarea
+                            id="mensaje-voto"
+                            nz-input
+                            rows="3"
+                            [maxlength]="maxMensaje"
+                            [(ngModel)]="mensaje"
+                            placeholder="¿Por qué este disfraz?"></textarea>
+                        <p class="error" *ngIf="error">{{ error }}</p>
+                        <button
+                            nz-button
+                            nzType="primary"
+                            nzSize="large"
+                            nzBlock
+                            class="boton"
+                            [disabled]="!!problema"
+                            [nzLoading]="enviando"
+                            nz-popconfirm
+                            [nzPopconfirmTitle]="'¿Votar por ' + (participanteElegido?.nombre ?? '') + '? No podrás cambiar tu voto.'"
+                            nzOkText="Sí, votar"
+                            nzCancelText="Cancelar"
+                            (nzOnConfirm)="votar()">
+                            Enviar mi voto
+                        </button>
+                    </section>
+                </ng-container>
+            </ng-container>
+        </ng-container>
+    </main>
+</div>

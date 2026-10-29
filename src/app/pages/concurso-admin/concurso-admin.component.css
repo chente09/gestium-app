@@ -1,0 +1,193 @@
+.concurso-container {
+    padding: 16px 24px 32px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.page-title {
+    margin: 12px 0 4px;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.page-subtitulo {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 13px;
+    margin-bottom: 16px;
+    max-width: 760px;
+}
+
+nz-card.paso-card {
+    display: block;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    margin-bottom: 16px;
+}
+
+.tenue {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+}
+
+.nota {
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+    margin: 8px 0;
+}
+
+.fila-votacion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.enlace-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.enlace {
+    flex: 1 1 280px;
+    max-width: 480px;
+}
+
+/* ===== Participantes ===== */
+.form-participante {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 10px 14px;
+    margin-bottom: 16px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.campo label:first-child {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.65);
+}
+
+.campo-foto {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+}
+
+.previa {
+    grid-column: 1 / -1;
+    max-width: 160px;
+    border-radius: 8px;
+}
+
+.campo-boton {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.grilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.participante {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+}
+
+.participante img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.participante-datos {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.participante button {
+    align-self: flex-end;
+}
+
+/* ===== Jurados ===== */
+.jurados,
+.resultados,
+.mensajes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.jurados li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.correo {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* ===== Resultados ===== */
+.alerta {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.resultados li {
+    margin-bottom: 8px;
+}
+
+.resultado-cabecera {
+    display: flex;
+    justify-content: space-between;
+}
+
+.subtitulo {
+    margin: 16px 0 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.mensajes li {
+    padding: 6px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.brand-btn.ant-btn-primary {
+    background-color: #001529;
+    border-color: #001529;
+}
+
+.brand-btn.ant-btn-primary:hover,
+.brand-btn.ant-btn-primary:focus {
+    background-color: #032341;
+    border-color: #032341;
+}
+
+@media (max-width: 720px) {
+    .form-participante {
+        grid-template-columns: 1fr;
+    }
+}

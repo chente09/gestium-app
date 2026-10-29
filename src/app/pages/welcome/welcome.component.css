@@ -5,6 +5,28 @@
 .title {
     text-align: left;
 }
+
+.noticia {
+    margin: 0;
+}
+
+.noticia-imagen {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    /* Que se vea entera sin bajar la página, sea vertical u horizontal. */
+    max-height: 75vh;
+    object-fit: contain;
+    margin: 0 auto;
+    border-radius: 8px;
+    cursor: zoom-in;
+}
+
+.noticia-titulo {
+    margin-top: 8px;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.45);
+}
 .welcome-header h1 {
     font-size: 24px;
     font-weight: bold;

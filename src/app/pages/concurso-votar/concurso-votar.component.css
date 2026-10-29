@@ -1,0 +1,162 @@
+:host {
+    display: block;
+}
+
+/* Página independiente (sin el menú de la intranet): se ve bien en celular. */
+.votar-pagina {
+    min-height: 100vh;
+    padding: 16px;
+    color: #fff;
+    background: radial-gradient(circle at top, #4a1d6e 0%, #1b0a2a 70%);
+}
+
+.votar-caja {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.votar-cabecera {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.votar-cabecera h1 {
+    margin: 0;
+    font-size: 26px;
+    color: #ff9d2e;
+}
+
+.votar-cabecera p {
+    margin: 4px 0 0;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.calabaza {
+    font-size: 40px;
+}
+
+.aviso {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.aviso-error {
+    color: #ffb3b3;
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 157, 46, 0.35);
+}
+
+.panel h2 {
+    margin: 0;
+    font-size: 18px;
+    color: #fff;
+}
+
+.panel p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.panel label {
+    font-weight: 600;
+}
+
+.error {
+    color: #ffb3b3;
+}
+
+.boton.ant-btn-primary {
+    background-color: #ff7a00;
+    border-color: #ff7a00;
+}
+
+.boton.ant-btn-primary:hover:not([disabled]) {
+    background-color: #ff9d2e;
+    border-color: #ff9d2e;
+}
+
+.boton.ant-btn-primary[disabled] {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: transparent;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.quien {
+    margin: 0 0 8px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.85);
+    overflow-wrap: anywhere;
+}
+
+.titulo-lista {
+    margin: 0 0 10px;
+    font-size: 18px;
+    color: #ff9d2e;
+}
+
+.grilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.tarjeta {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    text-align: left;
+    font: inherit;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid transparent;
+}
+
+.tarjeta:hover {
+    border-color: rgba(255, 157, 46, 0.6);
+}
+
+.tarjeta.elegida {
+    border-color: #ff7a00;
+    background: rgba(255, 122, 0, 0.18);
+}
+
+.tarjeta img {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.tarjeta-nombre {
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.tarjeta-mensaje {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.marca {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    background: #ff7a00;
+}

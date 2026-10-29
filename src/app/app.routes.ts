@@ -35,6 +35,8 @@ import { IessNotasDuplicadasComponent } from './pages/iess-notas-duplicadas/iess
 import { IessConveniosComponent } from './pages/iess-convenios/iess-convenios.component';
 import { UnauthorizedComponent } from './pages/error/unauthorized/unauthorized.component';
 import { NotFoundComponent } from './pages/error/not-found/not-found.component';
+import { ConcursoAdminComponent } from './pages/concurso-admin/concurso-admin.component';
+import { ConcursoVotarComponent } from './pages/concurso-votar/concurso-votar.component';
 
 // Redirección para usuarios no autenticados
 export const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['/login']);
@@ -47,6 +49,8 @@ const publicRoutes: Routes = [
   { path: '', component: LoginComponent },
   { path: 'login', component: LoginComponent },
   { path: 'consultas', component: ConsultasComponent },
+  // Concurso de disfraces (temporal): página del jurado, sin sesión.
+  { path: 'votar', component: ConcursoVotarComponent },
 ];
 
 const basicProtectedRoutes: Routes = [
@@ -89,6 +93,7 @@ const superAdminRoutes: Routes = [
   { path: 'iess/recuperacion', component: IessRecuperacionComponent },
   { path: 'iess/pagos', component: IessPagosComponent },
   { path: 'iess/duplicados', component: IessNotasDuplicadasComponent },
+  { path: 'concurso', component: ConcursoAdminComponent },
 ].map(withAuthAnd([AdminGuard]));
 
 const payrollRoutes: Routes = [

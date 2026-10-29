@@ -108,23 +108,21 @@
     margin-bottom: 16px;
 }
 
+.pista {
+    margin: -4px 0 10px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
 .tarjeta {
-    position: relative;
     display: flex;
     flex-direction: column;
     gap: 4px;
     padding: 8px;
-    text-align: left;
-    font: inherit;
     color: #fff;
-    cursor: pointer;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid transparent;
-}
-
-.tarjeta:hover {
-    border-color: rgba(255, 157, 46, 0.6);
 }
 
 .tarjeta.elegida {
@@ -132,11 +130,34 @@
     background: rgba(255, 122, 0, 0.18);
 }
 
-.tarjeta img {
+/* La foto se ve recortada en la tarjeta; al tocarla se abre entera. */
+.tarjeta-foto {
     width: 100%;
     aspect-ratio: 3 / 4;
     object-fit: cover;
     border-radius: 8px;
+    cursor: zoom-in;
+}
+
+.elegir {
+    margin-top: auto;
+    padding: 8px;
+    font: inherit;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid rgba(255, 157, 46, 0.7);
+}
+
+.elegir:hover {
+    background: rgba(255, 157, 46, 0.2);
+}
+
+.tarjeta.elegida .elegir {
+    background: #ff7a00;
+    border-color: #ff7a00;
 }
 
 .tarjeta-nombre {
@@ -149,12 +170,3 @@
     color: rgba(255, 255, 255, 0.7);
 }
 
-.marca {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-size: 12px;
-    background: #ff7a00;
-}

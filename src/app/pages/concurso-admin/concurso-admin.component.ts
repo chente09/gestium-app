@@ -10,6 +10,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzImageModule } from 'ng-zorro-antd/image';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
@@ -35,6 +36,7 @@ import { MAX_MENSAJE_PARTICIPANTE, Participante, ResultadoConcurso, Voto, result
     NzCardModule,
     NzEmptyModule,
     NzIconModule,
+    NzImageModule,
     NzInputModule,
     NzPopconfirmModule,
     NzProgressModule,

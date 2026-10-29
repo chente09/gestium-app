@@ -139,7 +139,7 @@ export class ConcursoService {
   // no pese demasiado en cada lectura del jurado.
   private async fotoComoTexto(archivo: File): Promise<string> {
     if (!archivo.type.startsWith('image/')) throw new Error('El archivo tiene que ser una imagen.');
-    const comprimida = await this.imageCompression.compressImage(archivo, 700, 0.7);
+    const comprimida = await this.imageCompression.compressImage(archivo, 900, 0.72);
     if (comprimida.size > MAX_BYTES_FOTO) throw new Error('La foto pesa demasiado: elige una más pequeña.');
 
     return new Promise<string>((resolve, reject) => {

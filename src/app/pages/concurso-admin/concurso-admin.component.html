@@ -63,7 +63,7 @@
 
         <div class="grilla" *ngIf="participantes.length > 0">
             <div class="participante" *ngFor="let p of participantes; trackBy: trackById">
-                <img [src]="p.foto" [alt]="p.nombre" />
+                <img nz-image [nzSrc]="p.foto" [alt]="p.nombre" />
                 <div class="participante-datos">
                     <strong>{{ p.nombre }}</strong>
                     <span class="tenue">{{ p.mensaje }}</span>

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzImageModule } from 'ng-zorro-antd/image';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 
@@ -15,7 +16,7 @@ import { MAX_NOMBRE, MAX_RAZON, Participante, validarVoto } from '../../services
 @Component({
   selector: 'app-concurso-votar',
   standalone: true,
-  imports: [CommonModule, FormsModule, NzButtonModule, NzIconModule, NzInputModule, NzPopconfirmModule],
+  imports: [CommonModule, FormsModule, NzButtonModule, NzIconModule, NzImageModule, NzInputModule, NzPopconfirmModule],
   templateUrl: './concurso-votar.component.html',
   styleUrl: './concurso-votar.component.css'
 })

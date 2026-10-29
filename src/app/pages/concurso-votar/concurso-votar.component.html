@@ -33,18 +33,22 @@
 
             <ng-container *ngIf="abierta && participantes.length > 0">
                 <h2 class="titulo-lista">1. Elige el mejor disfraz</h2>
+                <p class="pista"><nz-icon nzType="zoom-in"></nz-icon> Toca una foto para verla completa.</p>
                 <div class="grilla">
-                    <button
-                        type="button"
+                    <div
                         class="tarjeta"
                         *ngFor="let p of participantes; trackBy: trackById"
-                        [class.elegida]="seleccionado === p.id"
-                        (click)="elegir(p)">
-                        <img [src]="p.foto" [alt]="p.nombre" />
+                        [class.elegida]="seleccionado === p.id">
+                        <img nz-image [nzSrc]="p.foto" [alt]="p.nombre" class="tarjeta-foto" />
                         <span class="tarjeta-nombre">{{ p.nombre }}</span>
                         <span class="tarjeta-mensaje">{{ p.mensaje }}</span>
-                        <span class="marca" *ngIf="seleccionado === p.id"><nz-icon nzType="check-circle" nzTheme="fill"></nz-icon> Tu voto</span>
-                    </button>
+                        <button type="button" class="elegir" (click)="elegir(p)">
+                            <ng-container *ngIf="seleccionado === p.id; else sinElegir">
+                                <nz-icon nzType="check-circle" nzTheme="fill"></nz-icon> Tu voto
+                            </ng-container>
+                            <ng-template #sinElegir>Elegir este disfraz</ng-template>
+                        </button>
+                    </div>
                 </div>
 
                 <section class="panel">

@@ -681,6 +681,18 @@ export class CoactivadosService {
     return convenios.sort((a, b) => a.cartera.localeCompare(b.cartera) || a.nombre.localeCompare(b.nombre));
   }
 
+  // Los coactivados de la cartera que todavía no tienen ninguna gestión
+  // (tampoco migrada del Excel), en orden alfabético. Si ya se leyó la lista
+  // de la cartera se puede pasar para no volver a leerla.
+  async getSinGestion(cartera: string, coactivados?: Coactivado[]): Promise<Coactivado[]> {
+    const lista = coactivados ?? await this.getTodosLosCoactivados(cartera);
+    if (lista.length === 0) return [];
+    const { conGestion } = await this.estadoDeGestiones(lista.map(c => c.cedula));
+    return lista
+      .filter(c => !conGestion.has(c.cedula))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+
   async getTodosLosCoactivados(cartera?: string): Promise<Coactivado[]> {
     const ref = collection(this.firestore, this.collectionName);
     const snap = await getDocs(cartera ? query(ref, where('cartera', '==', cartera)) : ref);

@@ -9,10 +9,9 @@
         <nz-breadcrumb-item>{{ cartera }}</nz-breadcrumb-item>
     </nz-breadcrumb>
 
+    <app-iess-nav seccion="sin-gestion" [cartera]="cartera"></app-iess-nav>
+
     <h1 class="page-title"><nz-icon nzType="folder-open"></nz-icon> {{ cartera }}</h1>
-    <a class="enlace-convenios" [routerLink]="['/iess/convenios']" [queryParams]="{ abogado: cartera }">
-        <nz-icon nzType="swap"></nz-icon> Convenios de pago de esta cartera
-    </a>
 
     <nz-card *ngIf="cargando" [nzLoading]="true" [nzBodyStyle]="{ padding: '32px 16px' }"></nz-card>
 
@@ -92,10 +91,11 @@
                 placeholder="Filtrar por nombre..."
                 class="filtro-casos" />
 
-            <nz-radio-group [(ngModel)]="filtroLlamada" nzButtonStyle="solid" class="filtro-llamada">
+            <nz-radio-group [ngModel]="filtroCasos" (ngModelChange)="cambiarFiltro($event)" nzButtonStyle="solid" class="filtro-llamada">
                 <label nz-radio-button nzValue="todos">Todos</label>
-                <label nz-radio-button nzValue="sin">Sin llamada</label>
-                <label nz-radio-button nzValue="con">Con llamada</label>
+                <label nz-radio-button nzValue="sin-gestion">Sin gestión</label>
+                <label nz-radio-button nzValue="sin-llamada">Sin llamada</label>
+                <label nz-radio-button nzValue="con-llamada">Con llamada</label>
             </nz-radio-group>
 
             <nz-empty *ngIf="filtrados.length === 0" nzNotFoundContent="Sin resultados para ese filtro."></nz-empty>

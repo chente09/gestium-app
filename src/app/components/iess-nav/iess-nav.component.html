@@ -1,0 +1,23 @@
+<nav class="iess-nav" aria-label="Navegación del área IESS">
+    <div class="tabs">
+        <a class="tab" routerLink="/iess/bitacora" [class.activa]="seccion === 'bitacora'">Bitácora</a>
+        <a
+            class="tab"
+            [routerLink]="['/iess/cartera', carteraElegida]"
+            [queryParams]="{ filtro: 'sin-gestion' }"
+            [class.activa]="seccion === 'sin-gestion'">Sin gestión</a>
+        <a
+            class="tab"
+            routerLink="/iess/convenios"
+            [queryParams]="{ abogado: carteraElegida }"
+            [class.activa]="seccion === 'convenios'">Convenios de pago</a>
+        <a *ngIf="puedeVerTramites" class="tab" routerLink="/iess/tramites" [class.activa]="seccion === 'tramites'">Trámites</a>
+    </div>
+
+    <div class="cartera" *ngIf="mostrarSelector">
+        <span class="cartera-etiqueta">Cartera</span>
+        <nz-select class="select-cartera" nzSize="small" [ngModel]="carteraElegida" (ngModelChange)="cambiarCartera($event)">
+            <nz-option *ngFor="let c of carteras" [nzValue]="c" [nzLabel]="c"></nz-option>
+        </nz-select>
+    </div>
+</nav>

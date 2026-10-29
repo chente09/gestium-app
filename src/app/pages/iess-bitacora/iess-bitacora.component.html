@@ -9,16 +9,12 @@
         <nz-breadcrumb-item>Bitácora de Gestiones</nz-breadcrumb-item>
     </nz-breadcrumb>
 
+    <app-iess-nav seccion="bitacora" [cartera]="seleccionado?.cartera"></app-iess-nav>
+
     <div class="page-header">
         <h1 class="page-title"><nz-icon nzType="phone"></nz-icon> Bitácora de Gestiones</h1>
-        <div class="acciones-admin">
-            <a nz-button routerLink="/iess/convenios">
-                <nz-icon nzType="swap"></nz-icon> Convenios de pago
-            </a>
-            <a *ngIf="puedeVerTramites" nz-button routerLink="/iess/tramites">
-                <nz-icon nzType="solution"></nz-icon> Trámites
-            </a>
-            <ng-container *ngIf="esAdmin">
+        <div class="acciones-admin" *ngIf="esAdmin">
+            <ng-container>
             <a nz-button routerLink="/iess/titulos">
                 <nz-icon nzType="upload"></nz-icon> Importar títulos
             </a>
@@ -102,13 +98,15 @@
                     [ngModel]="modoNavegacion"
                     (ngModelChange)="cambiarModoNavegacion($event)">
                     <label nz-radio-button nzValue="cartera">Cartera</label>
+                    <label nz-radio-button nzValue="sin-gestion">Sin gestión<ng-container *ngIf="cantidadSinGestion !== null"> ({{ cantidadSinGestion }})</ng-container></label>
+                    <label nz-radio-button nzValue="convenios">Convenios<ng-container *ngIf="cantidadConvenios !== null"> ({{ cantidadConvenios }})</ng-container></label>
                     <label nz-radio-button nzValue="pendientes">Mis pendientes ({{ pendientes.length }})</label>
                 </nz-radio-group>
 
-                <ng-container *ngIf="!verPendientes && seleccionado; else vistaPendientes">
+                <ng-container *ngIf="vistaNavegacion === 'cartera'; else vistaOtra">
                 <div class="casos-cabecera">
                     <div class="casos-titulo">
-                        <strong>Casos de {{ seleccionado.cartera }}</strong>
+                        <strong>Casos de {{ seleccionado?.cartera }}</strong>
                         <span class="casos-posicion" *ngIf="indiceCasoActual >= 0">
                             {{ indiceCasoActual + 1 }} de {{ listaCasos.length }}
                         </span>
@@ -152,7 +150,7 @@
                             type="button"
                             class="caso-item"
                             *ngFor="let c of listaCasos; trackBy: trackByCedula"
-                            [class.activo]="seleccionado.cedula === c.cedula"
+                            [class.activo]="seleccionado?.cedula === c.cedula"
                             (click)="seleccionar(c)">
                             <span class="caso-nombre">{{ c.nombre }}</span>
                             <span class="caso-cedula">{{ c.cedula }}</span>
@@ -160,6 +158,69 @@
                     </div>
                 </ng-container>
                 </ng-container>
+
+                <ng-template #vistaOtra>
+                    <ng-container *ngIf="vistaNavegacion === 'modo'; else vistaPendientes">
+                        <div class="casos-cabecera">
+                            <div class="casos-titulo">
+                                <strong>{{ tituloModo }}</strong>
+                                <span class="casos-posicion" *ngIf="indiceModoActual >= 0">
+                                    {{ indiceModoActual + 1 }} de {{ itemsModo.length }}
+                                </span>
+                            </div>
+                            <div class="casos-nav">
+                                <button
+                                    nz-button
+                                    nzSize="small"
+                                    type="button"
+                                    aria-label="Caso anterior"
+                                    [disabled]="indiceModoActual <= 0"
+                                    (click)="irAlModo(-1)">
+                                    <nz-icon nzType="left"></nz-icon>
+                                </button>
+                                <button
+                                    nz-button
+                                    nzSize="small"
+                                    type="button"
+                                    aria-label="Caso siguiente"
+                                    [disabled]="indiceModoActual < 0 || indiceModoActual >= itemsModo.length - 1"
+                                    (click)="irAlModo(1)">
+                                    <nz-icon nzType="right"></nz-icon>
+                                </button>
+                                <button
+                                    nz-button
+                                    nzSize="small"
+                                    nzType="text"
+                                    type="button"
+                                    aria-label="Mostrar u ocultar la lista"
+                                    (click)="alternarLista()">
+                                    <nz-icon [nzType]="listaAbierta ? 'up' : 'down'"></nz-icon>
+                                </button>
+                            </div>
+                        </div>
+
+                        <ng-container *ngIf="listaAbierta">
+                            <nz-empty *ngIf="cargandoModo" nzNotFoundContent="Cargando casos..."></nz-empty>
+                            <nz-empty *ngIf="!cargandoModo && itemsModo.length === 0" [nzNotFoundContent]="vacioModo"></nz-empty>
+
+                            <div class="lista-casos" *ngIf="!cargandoModo && itemsModo.length > 0">
+                                <button
+                                    type="button"
+                                    class="caso-item"
+                                    *ngFor="let c of itemsModo; trackBy: trackByCasoModo"
+                                    [class.activo]="seleccionado?.cedula === c.cedula"
+                                    (click)="abrirCasoModo(c)">
+                                    <span class="caso-nombre">{{ c.nombre }}</span>
+                                    <span class="caso-cedula">{{ c.cedula }}</span>
+                                    <span class="caso-meta" *ngIf="c.detalle || esHechoSinGestion(c)">
+                                        <nz-tag *ngIf="esHechoSinGestion(c)" nzColor="green">Ya tiene gestión</nz-tag>
+                                        <span class="caso-cedula" *ngIf="c.detalle">{{ c.detalle }}</span>
+                                    </span>
+                                </button>
+                            </div>
+                        </ng-container>
+                    </ng-container>
+                </ng-template>
 
                 <ng-template #vistaPendientes>
                     <div class="casos-cabecera">
@@ -753,6 +814,17 @@
                                 class="btn-ver-pendientes"
                                 [routerLink]="['/iess/cartera', r.cartera]">
                                 Ver todos los casos ({{ r.coactivados }})
+                                <nz-icon nzType="arrow-right"></nz-icon>
+                            </a>
+                            <a
+                                *ngIf="r.pendientes.length > 0"
+                                nz-button
+                                nzType="link"
+                                nzSize="small"
+                                class="btn-ver-pendientes"
+                                [routerLink]="['/iess/cartera', r.cartera]"
+                                [queryParams]="{ filtro: 'sin-gestion' }">
+                                Sin gestión ({{ r.pendientes.length }})
                                 <nz-icon nzType="arrow-right"></nz-icon>
                             </a>
                             <a

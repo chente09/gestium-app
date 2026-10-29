@@ -48,6 +48,8 @@ import {
   TIPOS_GESTION_SELECCIONABLES
 } from '../../services/gestionesCoactivado/gestiones-coactivado.service';
 import { AvisoPrecoactivoModalComponent } from './aviso-precoactivo-modal/aviso-precoactivo-modal.component';
+import { IessNavComponent } from '../../components/iess-nav/iess-nav.component';
+import { IessNavegacionService } from '../../services/iessNavegacion/iess-navegacion.service';
 import {
   PendienteCaso,
   agruparPendientesPorCoactivado,
@@ -76,6 +78,21 @@ import {
   resumirTitulos
 } from '../../services/titulosCredito/titulos-credito.util';
 import { historialDePagos, totalPagado } from '../../services/titulosCredito/pagos-titulo.util';
+
+// Lo que el panel de la ficha recorre: los casos de la cartera, los que no
+// tienen ninguna gestión, los que tienen convenio de pago o mis pendientes.
+export type ModoNavegacion = 'cartera' | 'sin-gestion' | 'convenios' | 'pendientes';
+const MODOS_NAVEGACION: ModoNavegacion[] = ['cartera', 'sin-gestion', 'convenios', 'pendientes'];
+
+// Un caso de la lista de "Sin gestión" o "Convenios".
+interface CasoModo {
+  cedula: string;
+  nombre: string;
+  detalle?: string;
+  coactivado?: Coactivado; // si ya se leyó, se abre sin volver a buscarlo
+}
+
+interface ListaModo { cartera: string; items: CasoModo[] }
 
 @Component({
   selector: 'app-iess-bitacora',
@@ -106,7 +123,8 @@ import { historialDePagos, totalPagado } from '../../services/titulosCredito/pag
     NzDropDownModule,
     NzMenuModule,
     NzBreadCrumbModule,
-    AvisoPrecoactivoModalComponent
+    AvisoPrecoactivoModalComponent,
+    IessNavComponent
   ],
   templateUrl: './iess-bitacora.component.html',
   styleUrl: './iess-bitacora.component.css'
@@ -162,7 +180,17 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   // coactivado, para repasarlos de corrido sin volver a la agenda (la agenda
   // sigue mostrando los de todos). En vivo: si completo uno desde la agenda,
   // desaparece de acá.
-  modoNavegacion: 'cartera' | 'pendientes' = 'cartera';
+  modoNavegacion: ModoNavegacion = 'cartera';
+  // "Sin gestión" y "Convenios": la lista de la cartera del caso abierto, que
+  // se lee la primera vez que se elige el modo. Los casos que reciben su
+  // primera gestión se quedan en la lista (marcados) para poder seguir de
+  // corrido al siguiente.
+  cargandoModo = false;
+  private sinGestionLista: ListaModo | null = null;
+  private conveniosLista: ListaModo | null = null;
+  private hechosSinGestion = new Set<string>();
+  private cargaModo = 0;
+  private lecturasCartera = new Map<string, Promise<Coactivado[]>>();
   pendientes: PendienteCaso[] = [];
   private actividadesAbiertas: AreaActivity[] = []; // todas las abiertas a mi nombre
   private actividadesPendientes: AreaActivity[] = []; // de esas, las atrasadas y de hoy
@@ -301,6 +329,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     private titulosService: TitulosCreditoService,
     private usersService: UsersService,
     private registersService: RegistersService,
+    private navegacion: IessNavegacionService,
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
@@ -384,6 +413,9 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     // (en ese caso no hace falta cargar el panel de carteras). Si es mío, se
     // abre ya en "Mis pendientes".
     const params = this.route.snapshot.queryParamMap;
+    // Desde "Sin gestión" o "Convenios" se llega con el panel ya en esa lista.
+    const modo = params.get('modo') as ModoNavegacion | null;
+    if (modo && MODOS_NAVEGACION.includes(modo)) this.modoNavegacion = modo;
     if (params.get('pendientes')) this.modoNavegacion = 'pendientes';
     const cedula = params.get('cedula');
     if (cedula) this.abrirPorCedula(cedula);
@@ -526,6 +558,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.seleccionado = coactivado;
     this.reiniciarFormularioGestion();
     this.cargarListaCasos(coactivado.cartera);
+    void this.cargarListaModo();
 
     this.recordatoriosSub =this.gestionesService.getRecordatoriosPendientes(coactivado.cedula).subscribe({
       next: recordatorios => this.recordatorios = recordatorios,
@@ -579,9 +612,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.carteraLista = null;
     this.cargandoLista = true;
     try {
-      const casos = (await this.coactivadosService.getTodosLosCoactivados(cartera))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
-      this.listasPorCartera.set(cartera, casos);
+      const casos = await this.casosDeCartera(cartera);
       // La cartera del coactivado abierto pudo cambiar mientras cargaba.
       if (this.seleccionado?.cartera === cartera) {
         this.listaCasos = casos;
@@ -599,7 +630,13 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   // Si la cartera cambió o se agregó/quitó alguien, la lista guardada ya no
   // sirve: se vuelve a leer la próxima vez que haga falta.
   private invalidarListaCasos(...carteras: (string | undefined)[]): void {
-    carteras.forEach(c => { if (c) this.listasPorCartera.delete(c); });
+    carteras.forEach(c => {
+      if (!c) return;
+      this.listasPorCartera.delete(c);
+      this.navegacion.olvidar(c);
+    });
+    if (this.sinGestionLista && carteras.includes(this.sinGestionLista.cartera)) this.sinGestionLista = null;
+    if (this.conveniosLista && carteras.includes(this.conveniosLista.cartera)) this.conveniosLista = null;
     if (this.carteraLista && carteras.includes(this.carteraLista)) {
       this.carteraLista = null;
       this.listaCasos = [];
@@ -623,22 +660,153 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     this.seleccionar(this.listaCasos[i]);
   }
 
+  // Los casos de la cartera, ordenados, una sola vez por cartera aunque lo
+  // pidan a la vez el panel "Cartera" y el de "Sin gestión".
+  private casosDeCartera(cartera: string): Promise<Coactivado[]> {
+    const guardados = this.listasPorCartera.get(cartera);
+    if (guardados) return Promise.resolve(guardados);
+
+    let lectura = this.lecturasCartera.get(cartera);
+    if (!lectura) {
+      lectura = this.coactivadosService.getTodosLosCoactivados(cartera)
+        .then(casos => {
+          const ordenados = [...casos].sort((a, b) => a.nombre.localeCompare(b.nombre));
+          this.listasPorCartera.set(cartera, ordenados);
+          return ordenados;
+        })
+        .finally(() => this.lecturasCartera.delete(cartera));
+      this.lecturasCartera.set(cartera, lectura);
+    }
+    return lectura;
+  }
+
+  // ============================================
+  // 🧭 Sin gestión y Convenios: otras listas para recorrer desde la ficha
+  // ============================================
+  // Sin ficha abierta solo tiene sentido la lista de pendientes.
+  get vistaNavegacion(): 'cartera' | 'modo' | 'pendientes' {
+    if (!this.seleccionado || this.modoNavegacion === 'pendientes') return 'pendientes';
+    return this.modoNavegacion === 'cartera' ? 'cartera' : 'modo';
+  }
+
+  get itemsModo(): CasoModo[] {
+    const lista = this.modoNavegacion === 'sin-gestion' ? this.sinGestionLista
+      : this.modoNavegacion === 'convenios' ? this.conveniosLista
+      : null;
+    return lista && lista.cartera === this.seleccionado?.cartera ? lista.items : [];
+  }
+
+  // null = todavía no se leyó la lista de esta cartera.
+  get cantidadSinGestion(): number | null {
+    const lista = this.sinGestionLista;
+    if (!lista || lista.cartera !== this.seleccionado?.cartera) return null;
+    return lista.items.filter(i => !this.hechosSinGestion.has(i.cedula)).length;
+  }
+
+  get cantidadConvenios(): number | null {
+    const lista = this.conveniosLista;
+    return lista && lista.cartera === this.seleccionado?.cartera ? lista.items.length : null;
+  }
+
+  get tituloModo(): string {
+    const cartera = this.seleccionado?.cartera ?? '';
+    return this.modoNavegacion === 'convenios' ? `Convenios de ${cartera}` : `Sin gestión de ${cartera}`;
+  }
+
+  get vacioModo(): string {
+    return this.modoNavegacion === 'convenios'
+      ? 'Esta cartera no tiene razones sociales con pagos parciales.'
+      : 'Todos los casos de esta cartera ya tienen al menos una gestión.';
+  }
+
+  esHechoSinGestion(item: CasoModo): boolean {
+    return this.modoNavegacion === 'sin-gestion' && this.hechosSinGestion.has(item.cedula);
+  }
+
+  get indiceModoActual(): number {
+    const cedula = this.seleccionado?.cedula;
+    return cedula ? this.itemsModo.findIndex(i => i.cedula === cedula) : -1;
+  }
+
+  // delta = -1 (anterior) o +1 (siguiente).
+  irAlModo(delta: number): void {
+    const i = this.indiceModoActual + delta;
+    if (this.indiceModoActual < 0 || i < 0 || i >= this.itemsModo.length) return;
+    this.abrirCasoModo(this.itemsModo[i]);
+  }
+
+  abrirCasoModo(item: CasoModo): void {
+    if (this.seleccionado?.cedula === item.cedula) return;
+    if (item.coactivado) this.seleccionar(item.coactivado);
+    else void this.abrirPorCedula(item.cedula);
+  }
+
+  trackByCasoModo(_: number, item: CasoModo): string {
+    return item.cedula;
+  }
+
+  private async cargarListaModo(): Promise<void> {
+    const modo = this.modoNavegacion;
+    const cartera = this.seleccionado?.cartera;
+    if (!cartera || (modo !== 'sin-gestion' && modo !== 'convenios')) return;
+
+    const guardada = modo === 'sin-gestion' ? this.sinGestionLista : this.conveniosLista;
+    if (guardada?.cartera === cartera) {
+      this.desplazarAlCasoActivo();
+      return;
+    }
+
+    const carga = ++this.cargaModo;
+    this.cargandoModo = true;
+    try {
+      if (modo === 'sin-gestion') {
+        this.sinGestionLista = { cartera, items: await this.leerSinGestion(cartera) };
+        this.hechosSinGestion.clear();
+      } else {
+        this.conveniosLista = { cartera, items: await this.leerConvenios(cartera) };
+      }
+    } catch (error) {
+      console.error('Error cargando la lista del panel de navegación:', error);
+      this.message.error('No se pudo cargar la lista.');
+    } finally {
+      if (carga === this.cargaModo) this.cargandoModo = false;
+      this.desplazarAlCasoActivo();
+    }
+  }
+
+  private async leerSinGestion(cartera: string): Promise<CasoModo[]> {
+    // Si la lista de la cartera hace falta, se reutiliza la del panel "Cartera".
+    const lista = await this.navegacion.sinGestion(cartera, () => this.casosDeCartera(cartera));
+    return lista.map(c => ({ cedula: c.cedula, nombre: c.nombre, coactivado: c }));
+  }
+
+  private async leerConvenios(cartera: string): Promise<CasoModo[]> {
+    const convenios = await this.navegacion.convenios(cartera);
+    return convenios.map(c => ({
+      cedula: c.cedula,
+      nombre: c.nombre,
+      detalle: `${c.cancelados} de ${c.tc.length} TC cancelados · ${formatoMoneda(c.capitalPendiente)} pendiente`
+    }));
+  }
+
+  // Al registrar su primera gestión, el caso deja de estar "sin gestión".
+  private alRegistrarGestion(cartera: string, cedula: string): void {
+    this.navegacion.marcarConGestion(cartera, cedula);
+    if (this.sinGestionLista?.cartera === cartera) this.hechosSinGestion.add(cedula);
+  }
+
   // ============================================
   // 📌 Mis pendientes (recordatorios abiertos a mi nombre)
   // ============================================
-
-  // Sin ficha abierta solo tiene sentido la lista de pendientes.
-  get verPendientes(): boolean {
-    return this.modoNavegacion === 'pendientes' || !this.seleccionado;
-  }
 
   get indicePendienteActual(): number {
     const cedula = this.seleccionado?.cedula;
     return cedula ? this.pendientes.findIndex(p => p.coactivadoId === cedula) : -1;
   }
 
-  cambiarModoNavegacion(modo: 'cartera' | 'pendientes'): void {
+  cambiarModoNavegacion(modo: ModoNavegacion): void {
     this.modoNavegacion = modo;
+    void this.cargarListaModo();
     if (this.listaAbierta) this.desplazarAlCasoActivo();
   }
 
@@ -889,11 +1057,6 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
     return this.registersService.isCurrentUserAdmin();
   }
 
-  // El admin y quien el admin haya elegido (se refleja al volver a iniciar sesión).
-  get puedeVerTramites(): boolean {
-    return this.registersService.canAccessTramitesIess();
-  }
-
   get confirmacionValida(): boolean {
     return !!this.seleccionado && this.confirmacionCedula.trim() === this.seleccionado.cedula;
   }
@@ -929,6 +1092,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
   async registrarGestion(): Promise<void> {
     if (!this.seleccionado || this.gestionForm.invalid) return;
 
+    const { cedula, cartera } = this.seleccionado;
     this.guardandoGestion = true;
     try {
       const { tipo, descripcion, observacionGeneral, recordatorio, fechaRecordatorio, responsable } = this.gestionForm.value;
@@ -948,6 +1112,7 @@ export class IessBitacoraComponent implements OnInit, OnDestroy {
       }
 
       this.reiniciarFormularioGestion(tipo);
+      this.alRegistrarGestion(cartera, cedula);
     } catch (error) {
       console.error('Error registrando gestión:', error);
       this.message.error('No se pudo registrar la gestión.');

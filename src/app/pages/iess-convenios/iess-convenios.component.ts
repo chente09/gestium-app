@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -18,6 +19,8 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 
 import { CoactivadosService } from '../../services/coactivados/coactivados.service';
 import { SharedDataService } from '../../services/sharedData/shared-data.service';
+import { IessNavegacionService } from '../../services/iessNavegacion/iess-navegacion.service';
+import { IessNavComponent } from '../../components/iess-nav/iess-nav.component';
 import { ConvenioPago, TcConvenio, diasSinPagar } from '../../services/titulosCredito/convenios-pago.util';
 import { formatoMoneda } from '../../services/titulosCredito/titulos-credito.util';
 import { exportarConvenios } from './convenios-pago.export';
@@ -41,7 +44,8 @@ const TODOS = '__todos__';
     NzEmptyModule,
     NzStatisticModule,
     NzToolTipModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    IessNavComponent
   ],
   templateUrl: './iess-convenios.component.html',
   styleUrl: './iess-convenios.component.css'
@@ -60,6 +64,7 @@ export class IessConveniosComponent implements OnInit {
   filtrados: ConvenioPago[] = [];
   expandidos = new Set<string>();
   exportando = false;
+  private suscripcion?: Subscription;
 
   // Resumen de lo que se ve (según el filtro de texto)
   totalTcCancelados = 0;
@@ -69,20 +74,28 @@ export class IessConveniosComponent implements OnInit {
   constructor(
     private coactivadosService: CoactivadosService,
     private route: ActivatedRoute,
+    private navegacion: IessNavegacionService,
     sharedData: SharedDataService,
     private message: NzMessageService
   ) {
     this.carteras = sharedData.getCarterasIess();
   }
 
-  // Desde la tarjeta de un abogado (o la página de su cartera) se llega con
-  // el abogado ya elegido y se carga directo.
+  // Desde la tarjeta de un abogado, la página de su cartera o la barra de
+  // navegación se llega con el abogado ya elegido y se carga directo. La
+  // pantalla puede seguir abierta cuando cambia el abogado de la dirección.
   ngOnInit(): void {
-    const abogado = this.route.snapshot.queryParamMap.get('abogado');
-    if (abogado && this.carteras.includes(abogado)) {
-      this.abogado = abogado;
-      void this.cargar();
-    }
+    this.suscripcion = this.route.queryParamMap.subscribe(params => {
+      const abogado = params.get('abogado');
+      if (abogado && this.carteras.includes(abogado) && abogado !== this.abogadoCargado) {
+        this.abogado = abogado;
+        void this.cargar();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.suscripcion?.unsubscribe();
   }
 
   // Bajo demanda y por abogado: leer todos los títulos de la base en cada
@@ -94,6 +107,8 @@ export class IessConveniosComponent implements OnInit {
       this.convenios = await this.coactivadosService.getConveniosDePago(this.abogado === TODOS ? undefined : this.abogado);
       this.abogadoCargado = this.abogado;
       this.cargado = true;
+      // Lo leído le sirve al panel "Convenios" de la ficha, sin volver a leerlo.
+      if (this.abogado !== TODOS) this.navegacion.publicarConvenios(this.abogado, this.convenios);
       this.expandidos.clear();
       this.filtrar();
     } catch (error) {

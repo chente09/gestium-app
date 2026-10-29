@@ -81,6 +81,7 @@ import {
 } from '../../services/tramitesIess/importador-tramites.util';
 import { fechaCorta, formatoMoneda } from '../../services/titulosCredito/titulos-credito.util';
 import { leerArchivoTablas } from '../iess-titulos/lector-archivo.util';
+import { IessNavComponent } from '../../components/iess-nav/iess-nav.component';
 import { descargarPlantillaTramites } from './plantilla-tramites.export';
 
 // Una fila de la tabla, con todo lo calculado una sola vez (no en cada revisión).
@@ -162,7 +163,8 @@ interface PreviaImportacion {
     NzAlertModule,
     NzEmptyModule,
     NzStatisticModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    IessNavComponent
   ],
   templateUrl: './iess-tramites.component.html',
   styleUrl: './iess-tramites.component.css'

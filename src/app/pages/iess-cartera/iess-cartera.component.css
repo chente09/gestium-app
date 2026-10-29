@@ -12,11 +12,6 @@
     gap: 8px;
 }
 
-.enlace-convenios {
-    display: inline-block;
-    margin-bottom: 16px;
-}
-
 nz-card.paso-card {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     border-radius: 8px;

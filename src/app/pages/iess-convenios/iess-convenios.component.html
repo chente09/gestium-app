@@ -9,6 +9,8 @@
         <nz-breadcrumb-item>Convenios de pago</nz-breadcrumb-item>
     </nz-breadcrumb>
 
+    <app-iess-nav seccion="convenios" [cartera]="abogado !== TODOS ? abogado : null"></app-iess-nav>
+
     <h1 class="page-title"><nz-icon nzType="swap"></nz-icon> Convenios de pago</h1>
     <p class="page-subtitulo">
         Razones sociales que ya pagaron parte de sus títulos (cancelados, en convenio o con abono) y todavía tienen
@@ -95,7 +97,7 @@
                                     </ng-template>
                                 </td>
                                 <td class="nowrap">
-                                    <a [routerLink]="['/iess/bitacora']" [queryParams]="{ cedula: c.cedula }">Ver ficha</a>
+                                    <a [routerLink]="['/iess/bitacora']" [queryParams]="{ cedula: c.cedula, modo: 'convenios' }">Ver ficha</a>
                                 </td>
                             </tr>
                             <tr [nzExpand]="expandidos.has(clave(c))">

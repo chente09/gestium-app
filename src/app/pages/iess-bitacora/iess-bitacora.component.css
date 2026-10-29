@@ -557,14 +557,22 @@ nz-card {
     color: rgba(0, 0, 0, 0.45);
 }
 
+/* Cuatro modos en dos filas: en el ancho del panel no caben en una. */
 .modo-navegacion {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
     margin-bottom: 10px;
 }
 
 .modo-navegacion label {
-    flex: 1;
     text-align: center;
+    border-radius: 6px;
+    border-inline-start-width: 1px;
+}
+
+.modo-navegacion label::before {
+    display: none;
 }
 
 .caso-meta {

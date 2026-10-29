@@ -1,17 +1,22 @@
-// Concurso de disfraces (temporal): participantes, jurados y conteo de votos.
+// Concurso de disfraces (temporal): participantes, votos y conteo.
 // Sin Angular ni Firestore, para poder probarlo.
 //
-// Cada jurado se identifica con su correo, que es la clave de su documento:
-// así hay un solo voto por correo. El correo no se verifica (no se crean
-// cuentas de la app para los jurados): la lista de jurados la arma el admin y
-// solo esos correos pueden votar.
+// El enlace de votación se manda solo a personas preseleccionadas y no pide
+// cuenta ni correo: cada jurado escribe su nombre y la razón de su voto. Un
+// voto por nombre (el nombre es la clave del documento), así que no se puede
+// repetir con el mismo nombre; no se verifica que sea quien dice ser.
 
 export const COLECCION_PARTICIPANTES = 'concurso_participantes';
-export const COLECCION_JURADOS = 'concurso_jurados';
+export const COLECCION_VOTOS = 'concurso_votos';
 export const COLECCION_ESTADO = 'concurso_estado';
 export const DOC_ESTADO = 'actual';
 
-export const MAX_MENSAJE = 500;
+export const MIN_NOMBRE = 2;
+export const MAX_NOMBRE = 80;
+export const MIN_RAZON = 3;
+export const MAX_RAZON = 500;
+// Lo que el admin escribe junto a cada participante (qué disfraz es, una frase).
+export const MAX_MENSAJE_PARTICIPANTE = 200;
 // Las fotos van dentro del documento (como texto): se comprimen antes y se
 // rechazan las que aun asi pasan de este tamano.
 export const MAX_BYTES_FOTO = 300 * 1024;
@@ -25,35 +30,32 @@ export interface Participante {
   creado?: Date | any;
 }
 
-export interface VotoJurado {
+export interface Voto {
+  nombre: string; // como lo escribió el jurado
   participanteId: string;
-  mensaje: string;
+  razon: string;
   fecha?: Date | any;
 }
 
-export interface Jurado {
-  correo: string;
-  voto: VotoJurado | null;
-  creado?: Date | any;
+// "  María  José " y "maria jose" son el mismo jurado: la clave sirve de id del
+// documento, así que no puede llevar "/" ni quedar vacía.
+export function claveNombre(nombre: string): string {
+  return (nombre ?? '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/ /g, '-');
 }
 
-// "  Ana@Gestium.COM " -> "ana@gestium.com": el mismo correo escrito distinto
-// es el mismo jurado (y la misma clave de documento).
-export function claveCorreo(correo: string): string {
-  return (correo ?? '').trim().toLowerCase();
-}
-
-export function esCorreoValido(correo: string): boolean {
-  const c = claveCorreo(correo);
-  // Sin '/' ni espacios: el correo es el id del documento.
-  return c.length <= 120 && /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/.test(c);
-}
-
-export function validarVoto(participanteId: string | null | undefined, mensaje: string | null | undefined): string | null {
-  if (!participanteId) return 'Elige el disfraz por el que votas.';
-  const texto = (mensaje ?? '').trim();
-  if (texto.length < 3) return 'Escribe un mensaje para tu voto.';
-  if (texto.length > MAX_MENSAJE) return `El mensaje no puede pasar de ${MAX_MENSAJE} caracteres.`;
+export function validarVoto(datos: { nombre?: string | null; participanteId?: string | null; razon?: string | null }): string | null {
+  const nombre = (datos.nombre ?? '').trim();
+  if (nombre.length < MIN_NOMBRE || !claveNombre(nombre)) return 'Escribe tu nombre.';
+  if (nombre.length > MAX_NOMBRE) return `Tu nombre no puede pasar de ${MAX_NOMBRE} caracteres.`;
+  if (!datos.participanteId) return 'Elige el disfraz por el que votas.';
+  const razon = (datos.razon ?? '').trim();
+  if (razon.length < MIN_RAZON) return 'Cuéntanos por qué votas por ese disfraz.';
+  if (razon.length > MAX_RAZON) return `La razón no puede pasar de ${MAX_RAZON} caracteres.`;
   return null;
 }
 
@@ -62,42 +64,38 @@ export interface ResultadoParticipante {
   votos: number;
 }
 
-export interface MensajeVoto {
-  participante: string; // a quien se le dejo
-  mensaje: string; // sin el correo de quien lo escribio
+export interface RazonVoto {
+  participante: string; // por quien se votó
+  razon: string; // sin el nombre de quien la escribió
 }
 
 export interface ResultadoConcurso {
   porParticipante: ResultadoParticipante[]; // de mas a menos votos
   votaron: number;
-  totalJurados: number;
   ganadores: Participante[]; // mas de uno si hay empate en el primer lugar
   empate: boolean;
-  mensajes: MensajeVoto[];
+  razones: RazonVoto[];
 }
 
-export function resultadosDe(participantes: Participante[], jurados: Jurado[]): ResultadoConcurso {
-  const votos = new Map<string, number>();
-  const mensajes: MensajeVoto[] = [];
+export function resultadosDe(participantes: Participante[], votos: Voto[]): ResultadoConcurso {
+  const conteo = new Map<string, number>();
+  const razones: RazonVoto[] = [];
   const nombres = new Map(participantes.map(p => [p.id, p.nombre]));
-  let votaron = 0;
 
-  for (const j of jurados) {
-    if (!j.voto) continue;
-    votaron++;
-    votos.set(j.voto.participanteId, (votos.get(j.voto.participanteId) ?? 0) + 1);
-    const mensaje = (j.voto.mensaje ?? '').trim();
+  for (const v of votos) {
+    conteo.set(v.participanteId, (conteo.get(v.participanteId) ?? 0) + 1);
+    const razon = (v.razon ?? '').trim();
     // Un voto para alguien que ya no esta en la lista cuenta para el total, pero no se muestra.
-    const nombre = nombres.get(j.voto.participanteId);
-    if (mensaje && nombre) mensajes.push({ participante: nombre, mensaje });
+    const nombre = nombres.get(v.participanteId);
+    if (razon && nombre) razones.push({ participante: nombre, razon });
   }
 
   const porParticipante = participantes
-    .map(participante => ({ participante, votos: (participante.id && votos.get(participante.id)) || 0 }))
+    .map(participante => ({ participante, votos: (participante.id && conteo.get(participante.id)) || 0 }))
     .sort((a, b) => b.votos - a.votos || a.participante.orden - b.participante.orden);
 
   const maximo = porParticipante[0]?.votos ?? 0;
   const ganadores = maximo > 0 ? porParticipante.filter(r => r.votos === maximo).map(r => r.participante) : [];
 
-  return { porParticipante, votaron, totalJurados: jurados.length, ganadores, empate: ganadores.length > 1, mensajes };
+  return { porParticipante, votaron: votos.length, ganadores, empate: ganadores.length > 1, razones };
 }

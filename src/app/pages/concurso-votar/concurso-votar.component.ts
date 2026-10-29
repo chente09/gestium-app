@@ -8,12 +8,10 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 
 import { ConcursoService } from '../../services/concurso/concurso.service';
-import { MAX_MENSAJE, Participante, esCorreoValido, validarVoto } from '../../services/concurso/concurso.util';
+import { MAX_NOMBRE, MAX_RAZON, Participante, validarVoto } from '../../services/concurso/concurso.util';
 
-type Paso = 'correo' | 'votar' | 'listo';
-
-// Página pública del jurado (sin sesión): se entra con el correo con el que el
-// admin lo registró, se elige un disfraz y se deja un mensaje. Un voto por correo.
+// Página pública del jurado (sin sesión ni correo): se elige un disfraz, se
+// escribe el nombre y la razón del voto. Un voto por nombre.
 @Component({
   selector: 'app-concurso-votar',
   standalone: true,
@@ -22,18 +20,19 @@ type Paso = 'correo' | 'votar' | 'listo';
   styleUrl: './concurso-votar.component.css'
 })
 export class ConcursoVotarComponent implements OnInit {
-  readonly maxMensaje = MAX_MENSAJE;
+  readonly maxNombre = MAX_NOMBRE;
+  readonly maxRazon = MAX_RAZON;
 
   cargando = true;
   falloCarga = false;
   abierta = false;
   participantes: Participante[] = [];
 
-  paso: Paso = 'correo';
-  correo = '';
   seleccionado: string | null = null;
-  mensaje = '';
+  nombre = '';
+  razon = '';
   enviando = false;
+  votoRegistrado = false;
   error: string | null = null;
 
   constructor(private concursoService: ConcursoService) { }
@@ -58,20 +57,6 @@ export class ConcursoVotarComponent implements OnInit {
     }
   }
 
-  continuar(): void {
-    this.error = null;
-    if (!esCorreoValido(this.correo)) {
-      this.error = 'Escribe tu correo completo, por ejemplo nombre@empresa.com.';
-      return;
-    }
-    this.paso = 'votar';
-  }
-
-  cambiarCorreo(): void {
-    this.paso = 'correo';
-    this.error = null;
-  }
-
   elegir(p: Participante): void {
     this.seleccionado = p.id ?? null;
     this.error = null;
@@ -82,7 +67,7 @@ export class ConcursoVotarComponent implements OnInit {
   }
 
   get problema(): string | null {
-    return validarVoto(this.seleccionado, this.mensaje);
+    return validarVoto({ nombre: this.nombre, participanteId: this.seleccionado, razon: this.razon });
   }
 
   async votar(): Promise<void> {
@@ -94,8 +79,8 @@ export class ConcursoVotarComponent implements OnInit {
     this.enviando = true;
     this.error = null;
     try {
-      await this.concursoService.votar(this.correo, this.seleccionado!, this.mensaje);
-      this.paso = 'listo';
+      await this.concursoService.votar(this.nombre, this.seleccionado!, this.razon);
+      this.votoRegistrado = true;
     } catch (e: any) {
       this.error = e?.message ?? 'No se pudo registrar tu voto. Inténtalo de nuevo.';
     } finally {

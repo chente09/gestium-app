@@ -90,11 +90,9 @@
     color: rgba(255, 255, 255, 0.45);
 }
 
-.quien {
-    margin: 0 0 8px;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.85);
-    overflow-wrap: anywhere;
+.ayuda {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .titulo-lista {

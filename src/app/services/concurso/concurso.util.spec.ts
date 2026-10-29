@@ -1,88 +1,95 @@
 import {
-  Jurado,
-  MAX_MENSAJE,
+  MAX_NOMBRE,
+  MAX_RAZON,
   Participante,
-  claveCorreo,
-  esCorreoValido,
+  Voto,
+  claveNombre,
   resultadosDe,
   validarVoto
 } from './concurso.util';
 
 const participante = (id: string, nombre: string, orden: number): Participante => ({ id, nombre, mensaje: '', foto: '', orden });
-const jurado = (correo: string, participanteId?: string, mensaje = 'Muy creativo'): Jurado => ({
-  correo,
-  voto: participanteId ? { participanteId, mensaje } : null
-});
+const voto = (nombre: string, participanteId: string, razon = 'Muy creativo'): Voto => ({ nombre, participanteId, razon });
 
 const PARTICIPANTES = [participante('a', 'VAMPIRO', 1), participante('b', 'PIRATA', 2), participante('c', 'JOKER', 3)];
 
-describe('concurso: correos', () => {
-  it('el mismo correo escrito distinto es la misma clave', () => {
-    expect(claveCorreo('  Ana@Gestium.COM ')).toBe('ana@gestium.com');
+describe('concurso: clave del jurado', () => {
+  it('el mismo nombre escrito distinto es el mismo jurado', () => {
+    expect(claveNombre('  María   José ')).toBe('maria-jose');
+    expect(claveNombre('maria jose')).toBe('maria-jose');
+    expect(claveNombre('MARÍA-JOSÉ')).toBe('maria-jose');
   });
 
-  it('valida el formato del correo', () => {
-    expect(esCorreoValido('ana@gestium.com')).toBe(true);
-    expect(esCorreoValido('ana@gestium')).toBe(false);
-    expect(esCorreoValido('ana gestium.com')).toBe(false);
-    expect(esCorreoValido('a/b@gestium.com')).toBe(false);
-    expect(esCorreoValido('')).toBe(false);
+  it('no deja caracteres que no sirven en el id de un documento', () => {
+    expect(claveNombre('a/b')).toBe('a-b');
+    expect(claveNombre('...')).toBe('');
   });
 });
 
 describe('concurso: voto', () => {
-  it('pide el disfraz y un mensaje', () => {
-    expect(validarVoto(null, 'bonito')).toBe('Elige el disfraz por el que votas.');
-    expect(validarVoto('a', '  ')).toBe('Escribe un mensaje para tu voto.');
-    expect(validarVoto('a', 'ok')).toBe('Escribe un mensaje para tu voto.');
-    expect(validarVoto('a', 'Muy bien logrado')).toBe(null);
+  const bueno = { nombre: 'Ana Pérez', participanteId: 'a', razon: 'Muy bien logrado' };
+
+  it('un voto completo es válido', () => {
+    expect(validarVoto(bueno)).toBe(null);
   });
 
-  it('limita el largo del mensaje', () => {
-    expect(validarVoto('a', 'x'.repeat(MAX_MENSAJE))).toBe(null);
-    expect(validarVoto('a', 'x'.repeat(MAX_MENSAJE + 1))).toBe(`El mensaje no puede pasar de ${MAX_MENSAJE} caracteres.`);
+  it('pide el nombre', () => {
+    expect(validarVoto({ ...bueno, nombre: '  ' })).toBe('Escribe tu nombre.');
+    expect(validarVoto({ ...bueno, nombre: 'A' })).toBe('Escribe tu nombre.');
+    expect(validarVoto({ ...bueno, nombre: '...' })).toBe('Escribe tu nombre.');
+    expect(validarVoto({ ...bueno, nombre: 'x'.repeat(MAX_NOMBRE + 1) })).toBe(`Tu nombre no puede pasar de ${MAX_NOMBRE} caracteres.`);
+  });
+
+  it('pide el disfraz', () => {
+    expect(validarVoto({ ...bueno, participanteId: null })).toBe('Elige el disfraz por el que votas.');
+  });
+
+  it('pide la razón del voto', () => {
+    expect(validarVoto({ ...bueno, razon: '  ' })).toBe('Cuéntanos por qué votas por ese disfraz.');
+    expect(validarVoto({ ...bueno, razon: 'ok' })).toBe('Cuéntanos por qué votas por ese disfraz.');
+    expect(validarVoto({ ...bueno, razon: 'x'.repeat(MAX_RAZON) })).toBe(null);
+    expect(validarVoto({ ...bueno, razon: 'x'.repeat(MAX_RAZON + 1) })).toBe(`La razón no puede pasar de ${MAX_RAZON} caracteres.`);
   });
 });
 
 describe('concurso: resultados', () => {
   it('cuenta los votos y ordena de mas a menos', () => {
-    const r = resultadosDe(PARTICIPANTES, [jurado('1@x.com', 'b'), jurado('2@x.com', 'b'), jurado('3@x.com', 'c'), jurado('4@x.com')]);
+    const r = resultadosDe(PARTICIPANTES, [voto('Ana', 'b'), voto('Beto', 'b'), voto('Carla', 'c')]);
     expect(r.porParticipante.map(x => x.participante.nombre + ':' + x.votos).join(',')).toBe('PIRATA:2,JOKER:1,VAMPIRO:0');
     expect(r.votaron).toBe(3);
-    expect(r.totalJurados).toBe(4);
   });
 
   it('el ganador es quien tiene mas votos', () => {
-    const r = resultadosDe(PARTICIPANTES, [jurado('1@x.com', 'b'), jurado('2@x.com', 'b'), jurado('3@x.com', 'c')]);
+    const r = resultadosDe(PARTICIPANTES, [voto('Ana', 'b'), voto('Beto', 'b'), voto('Carla', 'c')]);
     expect(r.ganadores.map(g => g.nombre).join(',')).toBe('PIRATA');
     expect(r.empate).toBe(false);
   });
 
   it('si hay empate en el primer lugar salen todos', () => {
-    const r = resultadosDe(PARTICIPANTES, [jurado('1@x.com', 'a'), jurado('2@x.com', 'c')]);
+    const r = resultadosDe(PARTICIPANTES, [voto('Ana', 'a'), voto('Beto', 'c')]);
     expect(r.ganadores.map(g => g.nombre).join(',')).toBe('VAMPIRO,JOKER');
     expect(r.empate).toBe(true);
   });
 
   it('sin votos no hay ganador', () => {
-    const r = resultadosDe(PARTICIPANTES, [jurado('1@x.com'), jurado('2@x.com')]);
+    const r = resultadosDe(PARTICIPANTES, []);
     expect(r.ganadores.length).toBe(0);
     expect(r.empate).toBe(false);
     expect(r.votaron).toBe(0);
   });
 
-  it('los mensajes salen sin el correo de quien los dejo', () => {
-    const r = resultadosDe(PARTICIPANTES, [jurado('secreto@x.com', 'a', 'Me encantó la capa')]);
-    expect(r.mensajes.length).toBe(1);
-    expect(r.mensajes[0].participante).toBe('VAMPIRO');
-    expect(r.mensajes[0].mensaje).toBe('Me encantó la capa');
-    expect(JSON.stringify(r.mensajes).includes('secreto')).toBe(false);
+  it('las razones salen sin el nombre de quien las escribió', () => {
+    const r = resultadosDe(PARTICIPANTES, [voto('Secreta Pérez', 'a', 'Me encantó la capa')]);
+    expect(r.razones.length).toBe(1);
+    expect(r.razones[0].participante).toBe('VAMPIRO');
+    expect(r.razones[0].razon).toBe('Me encantó la capa');
+    expect(JSON.stringify(r.razones).includes('Secreta')).toBe(false);
   });
 
   it('un voto para alguien que ya no esta cuenta como voto, pero no se muestra', () => {
-    const r = resultadosDe(PARTICIPANTES, [jurado('1@x.com', 'zzz')]);
+    const r = resultadosDe(PARTICIPANTES, [voto('Ana', 'zzz')]);
     expect(r.votaron).toBe(1);
-    expect(r.mensajes.length).toBe(0);
+    expect(r.razones.length).toBe(0);
     expect(r.ganadores.length).toBe(0);
   });
 });

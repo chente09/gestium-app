@@ -12,7 +12,6 @@ import {
   query,
   serverTimestamp,
   setDoc,
-  updateDoc,
   writeBatch
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
@@ -21,14 +20,13 @@ import { map } from 'rxjs/operators';
 import { ImageCompressionService } from '../image-compression/image-compression.service';
 import {
   COLECCION_ESTADO,
-  COLECCION_JURADOS,
   COLECCION_PARTICIPANTES,
+  COLECCION_VOTOS,
   DOC_ESTADO,
-  Jurado,
   MAX_BYTES_FOTO,
   Participante,
-  claveCorreo,
-  esCorreoValido,
+  Voto,
+  claveNombre,
   validarVoto
 } from './concurso.util';
 
@@ -57,20 +55,22 @@ export class ConcursoService {
     return snap.exists() && snap.data()['abierta'] === true;
   }
 
-  // Un solo voto por correo: el voto se guarda en el documento del jurado y
-  // las reglas no dejan cambiarlo una vez puesto.
-  async votar(correo: string, participanteId: string, mensaje: string): Promise<void> {
-    if (!esCorreoValido(correo)) throw new Error('Escribe un correo válido.');
-    const error = validarVoto(participanteId, mensaje);
+  // Un voto por nombre: la clave del documento sale del nombre, y las reglas
+  // solo dejan crearlo (un segundo voto con el mismo nombre se rechaza).
+  async votar(nombre: string, participanteId: string, razon: string): Promise<void> {
+    const error = validarVoto({ nombre, participanteId, razon });
     if (error) throw new Error(error);
 
     try {
-      await updateDoc(doc(this.firestore, `${COLECCION_JURADOS}/${claveCorreo(correo)}`), {
-        voto: { participanteId, mensaje: mensaje.trim(), fecha: serverTimestamp() }
+      await setDoc(doc(this.firestore, `${COLECCION_VOTOS}/${claveNombre(nombre)}`), {
+        nombre: nombre.trim().replace(/\s+/g, ' '),
+        participanteId,
+        razon: razon.trim(),
+        fecha: serverTimestamp()
       });
     } catch (e: any) {
-      if (e?.code === 'permission-denied' || e?.code === 'not-found') {
-        throw new Error('No pudimos registrar tu voto. Revisa que sea el correo con el que te registraron como jurado, que no hayas votado antes y que la votación esté abierta.');
+      if (e?.code === 'permission-denied') {
+        throw new Error('No pudimos registrar tu voto. Puede que ya hayas votado con ese nombre o que la votación no esté abierta.');
       }
       throw e;
     }
@@ -84,9 +84,10 @@ export class ConcursoService {
     return collectionData(ref, { idField: 'id' }) as Observable<Participante[]>;
   }
 
-  jurados$(): Observable<Jurado[]> {
-    const ref = query(collection(this.firestore, COLECCION_JURADOS), orderBy('correo'));
-    return collectionData(ref) as Observable<Jurado[]>;
+  // Cada voto lleva su id (la clave del nombre) para poder quitarlo.
+  votos$(): Observable<(Voto & { id: string })[]> {
+    const ref = query(collection(this.firestore, COLECCION_VOTOS), orderBy('fecha'));
+    return collectionData(ref, { idField: 'id' }) as Observable<(Voto & { id: string })[]>;
   }
 
   votacionAbierta$(): Observable<boolean> {
@@ -117,24 +118,17 @@ export class ConcursoService {
     await lote.commit();
   }
 
-  async agregarJurado(correo: string): Promise<void> {
-    if (!esCorreoValido(correo)) throw new Error('Escribe un correo válido.');
-    const ref = doc(this.firestore, `${COLECCION_JURADOS}/${claveCorreo(correo)}`);
-    // setDoc pisaría el voto de un jurado que ya votó: primero se mira si existe.
-    if ((await getDoc(ref)).exists()) throw new Error('Ese correo ya está en la lista de jurados.');
-    await setDoc(ref, { correo: claveCorreo(correo), voto: null, creado: serverTimestamp() });
-  }
-
-  async quitarJurado(correo: string): Promise<void> {
+  // Si un jurado se equivocó, se quita su voto y puede votar de nuevo.
+  async quitarVoto(id: string): Promise<void> {
     const lote = writeBatch(this.firestore);
-    lote.delete(doc(this.firestore, `${COLECCION_JURADOS}/${claveCorreo(correo)}`));
+    lote.delete(doc(this.firestore, `${COLECCION_VOTOS}/${id}`));
     await lote.commit();
   }
 
-  // Limpia el concurso completo (participantes, jurados con sus votos y el estado).
+  // Limpia el concurso completo (participantes, votos y el estado).
   async borrarTodo(): Promise<void> {
     const lote = writeBatch(this.firestore);
-    for (const coleccion of [COLECCION_PARTICIPANTES, COLECCION_JURADOS, COLECCION_ESTADO]) {
+    for (const coleccion of [COLECCION_PARTICIPANTES, COLECCION_VOTOS, COLECCION_ESTADO]) {
       const snap = await getDocs(collection(this.firestore, coleccion));
       snap.docs.forEach(d => lote.delete(d.ref));
     }

@@ -8,9 +8,9 @@
 
     <h1 class="page-title"><nz-icon nzType="trophy"></nz-icon> Concurso de disfraces</h1>
     <p class="page-subtitulo">
-        Agrega a los participantes y a los jurados, abre la votación y comparte un solo enlace. Cada jurado entra con
-        su correo, elige un disfraz y deja un mensaje; solo cuenta un voto por correo. Aquí nunca se muestra quién votó
-        por quién.
+        Agrega a los participantes, abre la votación y manda un solo enlace a los jurados. Cada jurado elige un
+        disfraz y escribe su nombre y la razón de su voto; solo cuenta un voto por nombre. Aquí nunca se muestra por
+        quién votó cada uno.
     </p>
 
     <!-- ================= VOTACIÓN ================= -->
@@ -83,37 +83,29 @@
         </div>
     </nz-card>
 
-    <!-- ================= JURADOS ================= -->
-    <nz-card class="paso-card" [nzTitle]="'Jurados (' + resultado.votaron + ' de ' + jurados.length + ' han votado)'">
-        <div class="enlace-fila">
-            <input
-                nz-input
-                class="enlace"
-                type="email"
-                [(ngModel)]="correoJurado"
-                (keyup.enter)="agregarJurado()"
-                placeholder="correo@del-jurado.com" />
-            <button nz-button nzType="primary" class="brand-btn" [nzLoading]="trabajando === 'jurado'" (click)="agregarJurado()">
-                <nz-icon nzType="plus"></nz-icon> Agregar jurado
-            </button>
-        </div>
-        <p class="nota">Solo los correos de esta lista pueden votar. El correo no se verifica: cada jurado debe escribir exactamente el que registraste aquí.</p>
+    <!-- ================= VOTOS ================= -->
+    <nz-card class="paso-card" [nzTitle]="'Votos recibidos (' + votos.length + ')'">
+        <p class="nota">
+            Aquí solo se ve quién ya votó, no por quién. Si alguien se equivocó, quita su voto y podrá votar de nuevo
+            con su nombre. Nada impide que una persona escriba otro nombre y vote otra vez: manda el enlace solo a
+            quienes confías.
+        </p>
 
-        <nz-empty *ngIf="!cargando && jurados.length === 0" nzNotFoundContent="Todavía no hay jurados."></nz-empty>
+        <nz-empty *ngIf="!cargando && votos.length === 0" nzNotFoundContent="Todavía no hay votos."></nz-empty>
 
-        <ul class="jurados" *ngIf="jurados.length > 0">
-            <li *ngFor="let j of jurados; trackBy: trackByCorreo">
-                <span class="correo">{{ j.correo }}</span>
-                <nz-tag [nzColor]="j.voto ? 'success' : 'default'">{{ j.voto ? 'Ya votó' : 'Pendiente' }}</nz-tag>
+        <ul class="votos" *ngIf="votos.length > 0">
+            <li *ngFor="let v of votos; trackBy: trackByVoto">
+                <span class="nombre-voto">{{ v.nombre }}</span>
+                <nz-tag nzColor="success">Votó</nz-tag>
                 <button
                     nz-button
                     nzSize="small"
                     nzDanger
                     nz-popconfirm
-                    [nzPopconfirmTitle]="j.voto ? '¿Quitar a este jurado? Su voto también se pierde.' : '¿Quitar a este jurado?'"
+                    nzPopconfirmTitle="¿Quitar este voto? Esa persona podrá votar de nuevo."
                     nzOkText="Quitar"
                     nzCancelText="Cancelar"
-                    (nzOnConfirm)="quitarJurado(j)">
+                    (nzOnConfirm)="quitarVoto(v)">
                     <nz-icon nzType="delete"></nz-icon>
                 </button>
             </li>
@@ -136,7 +128,7 @@
             nzShowIcon
             class="alerta"
             nzMessage="La votación sigue abierta"
-            [nzDescription]="'Han votado ' + resultado.votaron + ' de ' + jurados.length + ' jurados. El ganador se marca al cerrarla.'">
+            [nzDescription]="'Han votado ' + resultado.votaron + ' jurado(s). El ganador se marca al cerrarla.'">
         </nz-alert>
 
         <nz-empty *ngIf="participantes.length === 0" nzNotFoundContent="Sin participantes todavía."></nz-empty>
@@ -151,11 +143,11 @@
             </li>
         </ul>
 
-        <ng-container *ngIf="resultado.mensajes.length > 0">
-            <h3 class="subtitulo">Mensajes de los jurados</h3>
+        <ng-container *ngIf="resultado.razones.length > 0">
+            <h3 class="subtitulo">Razones de los jurados</h3>
             <ul class="mensajes">
-                <li *ngFor="let m of resultado.mensajes">
-                    <strong>{{ m.participante }}:</strong> {{ m.mensaje }}
+                <li *ngFor="let r of resultado.razones">
+                    <strong>{{ r.participante }}:</strong> {{ r.razon }}
                 </li>
             </ul>
         </ng-container>
@@ -163,12 +155,12 @@
 
     <!-- ================= LIMPIEZA ================= -->
     <nz-card class="paso-card" nzTitle="Terminado el evento">
-        <p class="nota">Borra a los participantes, a los jurados con sus votos y el estado de la votación. No se puede deshacer.</p>
+        <p class="nota">Borra a los participantes, los votos y el estado de la votación. No se puede deshacer.</p>
         <button
             nz-button
             nzDanger
             nz-popconfirm
-            nzPopconfirmTitle="¿Borrar todo el concurso? Se pierden participantes, jurados y votos."
+            nzPopconfirmTitle="¿Borrar todo el concurso? Se pierden participantes y votos."
             nzOkText="Borrar todo"
             nzCancelText="Cancelar"
             [nzLoading]="trabajando === 'borrar'"

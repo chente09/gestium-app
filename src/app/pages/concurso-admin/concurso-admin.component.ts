@@ -18,10 +18,10 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { ConcursoService } from '../../services/concurso/concurso.service';
-import { Jurado, MAX_MENSAJE, Participante, ResultadoConcurso, resultadosDe } from '../../services/concurso/concurso.util';
+import { MAX_MENSAJE_PARTICIPANTE, Participante, ResultadoConcurso, Voto, resultadosDe } from '../../services/concurso/concurso.util';
 
-// Panel del admin del concurso de disfraces: participantes, jurados, apertura
-// de la votación y resultados. Quien vota lo hace en la página pública /votar.
+// Panel del admin del concurso de disfraces: participantes, apertura de la
+// votación, votos recibidos y resultados. Quien vota lo hace en la página pública /votar.
 @Component({
   selector: 'app-concurso-admin',
   standalone: true,
@@ -45,11 +45,11 @@ import { Jurado, MAX_MENSAJE, Participante, ResultadoConcurso, resultadosDe } fr
   styleUrl: './concurso-admin.component.css'
 })
 export class ConcursoAdminComponent implements OnInit, OnDestroy {
-  readonly maxMensaje = MAX_MENSAJE;
+  readonly maxMensaje = MAX_MENSAJE_PARTICIPANTE;
   readonly enlace = `${window.location.origin}/votar`;
 
   participantes: Participante[] = [];
-  jurados: Jurado[] = [];
+  votos: (Voto & { id: string })[] = [];
   abierta = false;
   resultado: ResultadoConcurso = resultadosDe([], []);
   cargando = true;
@@ -60,7 +60,6 @@ export class ConcursoAdminComponent implements OnInit, OnDestroy {
   mensaje = '';
   foto: File | null = null;
   fotoPrevia: string | null = null;
-  correoJurado = '';
 
   private suscripciones: Subscription[] = [];
 
@@ -74,11 +73,11 @@ export class ConcursoAdminComponent implements OnInit, OnDestroy {
     };
 
     this.suscripciones.push(
-      combineLatest([this.concursoService.participantes$(), this.concursoService.jurados$()]).subscribe({
-        next: ([participantes, jurados]) => {
+      combineLatest([this.concursoService.participantes$(), this.concursoService.votos$()]).subscribe({
+        next: ([participantes, votos]) => {
           this.participantes = participantes;
-          this.jurados = jurados;
-          this.resultado = resultadosDe(participantes, jurados);
+          this.votos = votos;
+          this.resultado = resultadosDe(participantes, votos);
           this.cargando = false;
         },
         error: error('No se pudo cargar el concurso.')
@@ -144,16 +143,10 @@ export class ConcursoAdminComponent implements OnInit, OnDestroy {
       'Participante eliminado.', 'No se pudo eliminar al participante.');
   }
 
-  // ----- Jurados
-  async agregarJurado(): Promise<void> {
-    const ok = await this.hacer('jurado', () => this.concursoService.agregarJurado(this.correoJurado),
-      'Jurado agregado.', 'No se pudo agregar al jurado.');
-    if (ok) this.correoJurado = '';
-  }
-
-  quitarJurado(j: Jurado): Promise<boolean> {
-    return this.hacer('quitar-jurado', () => this.concursoService.quitarJurado(j.correo),
-      'Jurado quitado.', 'No se pudo quitar al jurado.');
+  // ----- Votos
+  quitarVoto(v: Voto & { id: string }): Promise<boolean> {
+    return this.hacer('quitar-voto', () => this.concursoService.quitarVoto(v.id),
+      'Voto quitado.', 'No se pudo quitar el voto.');
   }
 
   // ----- Resultados
@@ -179,8 +172,8 @@ export class ConcursoAdminComponent implements OnInit, OnDestroy {
     return p.id;
   }
 
-  trackByCorreo(_: number, j: Jurado): string {
-    return j.correo;
+  trackByVoto(_: number, v: { id: string }): string {
+    return v.id;
   }
 
   trackByResultado(_: number, r: { participante: Participante }): string | undefined {

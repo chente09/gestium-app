@@ -126,8 +126,8 @@ nz-card.paso-card {
     align-self: flex-end;
 }
 
-/* ===== Jurados ===== */
-.jurados,
+/* ===== Votos ===== */
+.votos,
 .resultados,
 .mensajes {
     list-style: none;
@@ -135,7 +135,7 @@ nz-card.paso-card {
     padding: 0;
 }
 
-.jurados li {
+.votos li {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -143,7 +143,7 @@ nz-card.paso-card {
     border-bottom: 1px solid #f5f5f5;
 }
 
-.correo {
+.nombre-voto {
     flex: 1;
     min-width: 0;
     overflow-wrap: anywhere;

@@ -272,9 +272,8 @@ service cloud.firestore {
     // ============================================
     // Concurso de disfraces (temporal). La página del jurado funciona SIN
     // sesión, así que estas reglas son las únicas que permiten acceso
-    // público: lectura de participantes y estado, y UN voto por jurado.
-    // El jurado se identifica por su correo (id del documento) y solo
-    // pueden votar los correos que el admin registró.
+    // público: lectura de participantes y estado, y crear un voto (uno por
+    // nombre) mientras la votación esté abierta.
     // ============================================
     match /concurso_participantes/{id} {
       allow read: if true;
@@ -286,23 +285,25 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /concurso_jurados/{correo} {
-      allow read, create, delete: if isAdmin();
+    // Un voto por nombre: el id del documento sale del nombre y las reglas
+    // solo dejan CREARLO (un segundo voto con el mismo nombre es una
+    // actualización, y esa solo la hace el admin). Sin sesión no se lee nada.
+    match /concurso_votos/{clave} {
+      allow read, update, delete: if isAdmin();
 
-      // El voto se guarda una sola vez (voto == null) y con la votación
-      // abierta. Nadie sin sesión puede leer ni cambiar nada más.
-      allow update: if isAdmin() || (
-        resource.data.voto == null &&
+      allow create: if
         get(/databases/$(database)/documents/concurso_estado/actual).data.abierta == true &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['voto']) &&
-        request.resource.data.voto.keys().hasOnly(['participanteId', 'mensaje', 'fecha']) &&
-        request.resource.data.voto.participanteId is string &&
-        exists(/databases/$(database)/documents/concurso_participantes/$(request.resource.data.voto.participanteId)) &&
-        request.resource.data.voto.mensaje is string &&
-        request.resource.data.voto.mensaje.size() >= 3 &&
-        request.resource.data.voto.mensaje.size() <= 500 &&
-        request.resource.data.voto.fecha == request.time
-      );
+        request.resource.data.keys().hasOnly(['nombre', 'participanteId', 'razon', 'fecha']) &&
+        request.resource.data.keys().hasAll(['nombre', 'participanteId', 'razon', 'fecha']) &&
+        request.resource.data.nombre is string &&
+        request.resource.data.nombre.size() >= 2 &&
+        request.resource.data.nombre.size() <= 80 &&
+        request.resource.data.participanteId is string &&
+        exists(/databases/$(database)/documents/concurso_participantes/$(request.resource.data.participanteId)) &&
+        request.resource.data.razon is string &&
+        request.resource.data.razon.size() >= 3 &&
+        request.resource.data.razon.size() <= 500 &&
+        request.resource.data.fecha == request.time;
     }
 
     // ============================================

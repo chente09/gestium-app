@@ -17,9 +17,24 @@ export const MIN_RAZON = 3;
 export const MAX_RAZON = 500;
 // Lo que el admin escribe junto a cada participante (qué disfraz es, una frase).
 export const MAX_MENSAJE_PARTICIPANTE = 200;
-// Las fotos van dentro del documento (como texto): se comprimen antes y se
-// rechazan las que aun asi pasan de este tamano.
-export const MAX_BYTES_FOTO = 300 * 1024;
+
+// Cada foto se guarda dos veces, como texto dentro de documentos de Firestore:
+// una miniatura liviana para las tarjetas (la página del jurado las carga
+// todas) y la completa, en un documento aparte que solo se lee al ampliarla.
+// Un documento admite 1 MB y el texto de una imagen pesa un tercio más que la
+// imagen, de ahí los topes (en caracteres del texto).
+export const COLECCION_FOTOS = 'concurso_fotos';
+export const LADO_MINIATURA = 640;
+export const LADO_COMPLETA = 1600;
+export const MAX_CHARS_MINIATURA = 160000;
+export const MAX_CHARS_COMPLETA = 850000;
+
+// Tamaño de la foto reducida para que su lado mayor sea `ladoMax`, con la
+// misma proporción y sin agrandarla nunca.
+export function escalar(ancho: number, alto: number, ladoMax: number): { ancho: number; alto: number } {
+  const factor = Math.min(1, ladoMax / Math.max(ancho, alto));
+  return { ancho: Math.max(1, Math.round(ancho * factor)), alto: Math.max(1, Math.round(alto * factor)) };
+}
 
 export interface Participante {
   id?: string;

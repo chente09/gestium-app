@@ -280,6 +280,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // La foto en alta calidad de cada participante: se lee de a una (por su
+    // id) al ampliarla; no se puede listar sin sesión.
+    match /concurso_fotos/{id} {
+      allow get: if true;
+      allow list, write: if isAdmin();
+    }
+
     match /concurso_estado/{id} {
       allow read: if true;
       allow write: if isAdmin();

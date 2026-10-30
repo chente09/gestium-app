@@ -1,4 +1,5 @@
 import {
+  escalar,
   MAX_NOMBRE,
   MAX_RAZON,
   Participante,
@@ -12,6 +13,22 @@ const participante = (id: string, nombre: string, orden: number): Participante =
 const voto = (nombre: string, participanteId: string, razon = 'Muy creativo'): Voto => ({ nombre, participanteId, razon });
 
 const PARTICIPANTES = [participante('a', 'VAMPIRO', 1), participante('b', 'PIRATA', 2), participante('c', 'JOKER', 3)];
+
+describe('concurso: tamaño de las fotos', () => {
+  it('reduce por el lado mayor y mantiene la proporción', () => {
+    expect(JSON.stringify(escalar(4000, 3000, 1600))).toBe('{"ancho":1600,"alto":1200}');
+    expect(JSON.stringify(escalar(3000, 4000, 1600))).toBe('{"ancho":1200,"alto":1600}');
+  });
+
+  it('nunca agranda una foto pequeña', () => {
+    expect(JSON.stringify(escalar(800, 600, 1600))).toBe('{"ancho":800,"alto":600}');
+  });
+
+  it('una foto cuadrada o muy angosta no se deforma', () => {
+    expect(JSON.stringify(escalar(2000, 2000, 640))).toBe('{"ancho":640,"alto":640}');
+    expect(JSON.stringify(escalar(3200, 100, 1600))).toBe('{"ancho":1600,"alto":50}');
+  });
+});
 
 describe('concurso: clave del jurado', () => {
   it('el mismo nombre escrito distinto es el mismo jurado', () => {

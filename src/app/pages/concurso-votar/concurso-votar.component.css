@@ -139,6 +139,11 @@
     cursor: zoom-in;
 }
 
+.tarjeta-foto.abriendo {
+    opacity: 0.6;
+    cursor: progress;
+}
+
 .elegir {
     margin-top: auto;
     padding: 8px;

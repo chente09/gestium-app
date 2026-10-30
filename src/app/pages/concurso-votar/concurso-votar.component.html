@@ -39,7 +39,7 @@
                         class="tarjeta"
                         *ngFor="let p of participantes; trackBy: trackById"
                         [class.elegida]="seleccionado === p.id">
-                        <img nz-image [nzSrc]="p.foto" [alt]="p.nombre" class="tarjeta-foto" />
+                        <img [src]="p.foto" [alt]="p.nombre" class="tarjeta-foto" [class.abriendo]="abriendoFotoId === p.id" (click)="abrirFoto(p)" />
                         <span class="tarjeta-nombre">{{ p.nombre }}</span>
                         <span class="tarjeta-mensaje">{{ p.mensaje }}</span>
                         <button type="button" class="elegir" (click)="elegir(p)">

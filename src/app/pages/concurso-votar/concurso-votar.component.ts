@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzImageModule } from 'ng-zorro-antd/image';
+import { NzImageModule, NzImageService } from 'ng-zorro-antd/image';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 
@@ -16,6 +16,7 @@ import { MAX_NOMBRE, MAX_RAZON, Participante, validarVoto } from '../../services
 @Component({
   selector: 'app-concurso-votar',
   standalone: true,
+  // NzImageModule: trae el servicio que abre la foto en grande.
   imports: [CommonModule, FormsModule, NzButtonModule, NzIconModule, NzImageModule, NzInputModule, NzPopconfirmModule],
   templateUrl: './concurso-votar.component.html',
   styleUrl: './concurso-votar.component.css'
@@ -36,7 +37,10 @@ export class ConcursoVotarComponent implements OnInit {
   votoRegistrado = false;
   error: string | null = null;
 
-  constructor(private concursoService: ConcursoService) { }
+  // La tarjeta muestra una miniatura; la foto completa se lee al tocarla.
+  abriendoFotoId: string | null = null;
+
+  constructor(private concursoService: ConcursoService, private imageService: NzImageService) { }
 
   ngOnInit(): void {
     void this.cargar();
@@ -55,6 +59,17 @@ export class ConcursoVotarComponent implements OnInit {
       this.falloCarga = true;
     } finally {
       this.cargando = false;
+    }
+  }
+
+  async abrirFoto(p: Participante): Promise<void> {
+    if (this.abriendoFotoId) return;
+    this.abriendoFotoId = p.id ?? null;
+    try {
+      const src = await this.concursoService.fotoCompleta(p);
+      this.imageService.preview([{ src, alt: p.nombre }]);
+    } finally {
+      this.abriendoFotoId = null;
     }
   }
 

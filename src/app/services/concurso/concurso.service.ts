@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import {
   Firestore,
-  addDoc,
   collection,
   collectionData,
   doc,
@@ -17,16 +16,20 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { ImageCompressionService } from '../image-compression/image-compression.service';
 import {
   COLECCION_ESTADO,
+  COLECCION_FOTOS,
   COLECCION_PARTICIPANTES,
   COLECCION_VOTOS,
   DOC_ESTADO,
-  MAX_BYTES_FOTO,
+  LADO_COMPLETA,
+  LADO_MINIATURA,
+  MAX_CHARS_COMPLETA,
+  MAX_CHARS_MINIATURA,
   Participante,
   Voto,
   claveNombre,
+  escalar,
   validarVoto
 } from './concurso.util';
 
@@ -37,10 +40,10 @@ import {
   providedIn: 'root'
 })
 export class ConcursoService {
-  constructor(
-    private firestore: Firestore,
-    private imageCompression: ImageCompressionService
-  ) { }
+  // Las fotos completas ya leídas: abrir la misma foto otra vez no vuelve a la base.
+  private fotosCompletas = new Map<string, string>();
+
+  constructor(private firestore: Firestore) { }
 
   // ============================================
   // 🗳️ Página del jurado (sin sesión)
@@ -53,6 +56,25 @@ export class ConcursoService {
   async votacionAbierta(): Promise<boolean> {
     const snap = await getDoc(doc(this.firestore, `${COLECCION_ESTADO}/${DOC_ESTADO}`));
     return snap.exists() && snap.data()['abierta'] === true;
+  }
+
+  // La foto en alta calidad, que se lee solo al ampliarla. Los participantes
+  // creados antes de que existiera no la tienen: se usa la miniatura.
+  async fotoCompleta(participante: Participante): Promise<string> {
+    const id = participante.id;
+    if (!id) return participante.foto;
+    const guardada = this.fotosCompletas.get(id);
+    if (guardada) return guardada;
+
+    try {
+      const snap = await getDoc(doc(this.firestore, `${COLECCION_FOTOS}/${id}`));
+      const foto = snap.exists() ? String(snap.data()['foto']) : participante.foto;
+      this.fotosCompletas.set(id, foto);
+      return foto;
+    } catch (e) {
+      console.error('Error leyendo la foto completa:', e);
+      return participante.foto;
+    }
   }
 
   // Un voto por nombre: la clave del documento sale del nombre, y las reglas
@@ -106,16 +128,21 @@ export class ConcursoService {
     if (!mensaje) throw new Error('Escribe el mensaje que acompaña al participante.');
     if (!datos.foto) throw new Error('Elige la foto del participante.');
 
-    const foto = await this.fotoComoTexto(datos.foto);
-    await addDoc(collection(this.firestore, COLECCION_PARTICIPANTES), {
-      nombre, mensaje, foto, orden: Date.now(), creado: serverTimestamp()
-    });
+    const { miniatura, completa } = await this.prepararFotos(datos.foto);
+    // Los dos documentos se crean juntos: nunca queda un participante sin su foto completa.
+    const participante = doc(collection(this.firestore, COLECCION_PARTICIPANTES));
+    const lote = writeBatch(this.firestore);
+    lote.set(participante, { nombre, mensaje, foto: miniatura, orden: Date.now(), creado: serverTimestamp() });
+    lote.set(doc(this.firestore, `${COLECCION_FOTOS}/${participante.id}`), { foto: completa });
+    await lote.commit();
   }
 
   async eliminarParticipante(id: string): Promise<void> {
     const lote = writeBatch(this.firestore);
     lote.delete(doc(this.firestore, `${COLECCION_PARTICIPANTES}/${id}`));
+    lote.delete(doc(this.firestore, `${COLECCION_FOTOS}/${id}`));
     await lote.commit();
+    this.fotosCompletas.delete(id);
   }
 
   // Si un jurado se equivocó, se quita su voto y puede votar de nuevo.
@@ -128,25 +155,61 @@ export class ConcursoService {
   // Limpia el concurso completo (participantes, votos y el estado).
   async borrarTodo(): Promise<void> {
     const lote = writeBatch(this.firestore);
-    for (const coleccion of [COLECCION_PARTICIPANTES, COLECCION_VOTOS, COLECCION_ESTADO]) {
+    for (const coleccion of [COLECCION_PARTICIPANTES, COLECCION_FOTOS, COLECCION_VOTOS, COLECCION_ESTADO]) {
       const snap = await getDocs(collection(this.firestore, coleccion));
       snap.docs.forEach(d => lote.delete(d.ref));
     }
     await lote.commit();
+    this.fotosCompletas.clear();
   }
 
-  // La foto viaja dentro del documento (como texto): se achica antes para que
-  // no pese demasiado en cada lectura del jurado.
-  private async fotoComoTexto(archivo: File): Promise<string> {
-    if (!archivo.type.startsWith('image/')) throw new Error('El archivo tiene que ser una imagen.');
-    const comprimida = await this.imageCompression.compressImage(archivo, 900, 0.72);
-    if (comprimida.size > MAX_BYTES_FOTO) throw new Error('La foto pesa demasiado: elige una más pequeña.');
+  // ============================================
+  // 🖼️ Fotos
+  // ============================================
+  // Miniatura para las tarjetas y completa para ampliar. La completa se guarda
+  // con la mejor calidad que quepa en un documento de Firestore: se prueba de
+  // la mayor calidad y tamaño a la menor, y se usa la primera que entra.
+  private async prepararFotos(archivo: File): Promise<{ miniatura: string; completa: string }> {
+    const imagen = await this.cargarImagen(archivo);
+    return {
+      miniatura: this.reducir(imagen, LADO_MINIATURA, [0.82, 0.72], MAX_CHARS_MINIATURA),
+      completa: this.reducir(imagen, LADO_COMPLETA, [0.92, 0.86, 0.8, 0.72], MAX_CHARS_COMPLETA)
+    };
+  }
 
-    return new Promise<string>((resolve, reject) => {
-      const lector = new FileReader();
-      lector.onload = () => resolve(String(lector.result));
-      lector.onerror = () => reject(new Error('No se pudo leer la foto.'));
-      lector.readAsDataURL(comprimida);
+  private cargarImagen(archivo: File): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(archivo);
+      const imagen = new Image();
+      imagen.onload = () => { URL.revokeObjectURL(url); resolve(imagen); };
+      imagen.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('No se pudo leer la foto. Usa una imagen JPG, PNG o WebP.'));
+      };
+      imagen.src = url;
     });
+  }
+
+  private reducir(imagen: HTMLImageElement, ladoMax: number, calidades: number[], maxChars: number): string {
+    // Si ni a la menor calidad entra, se prueba con la foto un poco más chica.
+    for (const lado of [ladoMax, Math.round(ladoMax * 0.85), Math.round(ladoMax * 0.7)]) {
+      const { ancho, alto } = escalar(imagen.naturalWidth, imagen.naturalHeight, lado);
+      const lienzo = document.createElement('canvas');
+      lienzo.width = ancho;
+      lienzo.height = alto;
+      const ctx = lienzo.getContext('2d');
+      if (!ctx) throw new Error('No se pudo procesar la foto.');
+      // Fondo blanco: un PNG con transparencia saldría negro en JPEG.
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, ancho, alto);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(imagen, 0, 0, ancho, alto);
+
+      for (const calidad of calidades) {
+        const texto = lienzo.toDataURL('image/jpeg', calidad);
+        if (texto.length <= maxChars) return texto;
+      }
+    }
+    throw new Error('La foto pesa demasiado incluso reducida. Elige otra.');
   }
 }

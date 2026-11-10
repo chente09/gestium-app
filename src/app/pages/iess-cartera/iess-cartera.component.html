@@ -56,7 +56,9 @@
             </nz-card>
         </div>
 
-        <nz-card *ngIf="resumen.anulados.length > 0" nzTitle="Títulos anulados" class="paso-card">
+        <!-- Cerrado de entrada: si hay muchos, la lista no empuja el resto de la pantalla. -->
+        <nz-collapse *ngIf="resumen.anulados.length > 0" class="colapso-anulados">
+            <nz-collapse-panel [nzHeader]="'Títulos anulados (' + resumen.anulados.length + ')'" [nzActive]="false">
             <p class="nota-cancelados">
                 Siguen dentro de la asignación (están en los TC y en el capital de arriba), pero no son capital a
                 recuperar. Aquí puedes ver cuáles son y abrir el caso de cada uno.
@@ -83,7 +85,8 @@
                     </tbody>
                 </nz-table>
             </div>
-        </nz-card>
+            </nz-collapse-panel>
+        </nz-collapse>
 
         <nz-card
             *ngIf="resumenCancelados && resumenCancelados.pendientesDeRegistro.length > 0"

@@ -77,6 +77,11 @@ nz-card.paso-card {
     color: rgba(0, 0, 0, 0.45);
 }
 
+.colapso-anulados {
+    margin-bottom: 16px;
+    background: #fff;
+}
+
 .filtro-llamada {
     display: block;
     margin-bottom: 12px;

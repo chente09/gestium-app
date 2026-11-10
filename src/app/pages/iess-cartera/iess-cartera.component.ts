@@ -14,6 +14,7 @@ import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 
 import {
@@ -48,6 +49,7 @@ const FILTROS: FiltroCasos[] = ['todos', 'sin-gestion', 'sin-llamada', 'con-llam
     NzAlertModule,
     NzEmptyModule,
     NzBreadCrumbModule,
+    NzCollapseModule,
     NzRadioModule,
     IessNavComponent
   ],

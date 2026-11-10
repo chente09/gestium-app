@@ -76,19 +76,36 @@ export interface CoactivadoConEstado extends Coactivado {
   tieneLlamada: boolean;
 }
 
+// Un título anulado de la cartera, con el nombre de su coactivado: así se
+// pueden ver cuáles son (el panel solo los cuenta aparte).
+export interface TituloAnulado {
+  numero: string;
+  coactivadoId: string;
+  nombre: string;
+  capital: number;
+  entregado: boolean;
+  guia?: string;
+  // Quién y cuándo lo marcó como anulado a mano; sin esto, vino anulado de la matriz.
+  marcadoPor?: string;
+  fecha?: Date;
+}
+
 // Panel de carteras: para decidir por dónde seguir gestionando.
 export interface ResumenCartera {
   cartera: string;
   coactivados: number;
-  // Sin los anulados (no son capital a recuperar): titulos, entregados, no
-  // entregados y capital. Los anulados y los cancelados en convenio se
-  // cuentan aparte.
+  // La asignación completa de la cartera: titulos, entregados, no entregados
+  // y capital INCLUYEN los anulados (siguen asignados al abogado y coinciden
+  // con la matriz). Los anulados se muestran aparte como "de ellos", y
+  // capitalARecuperar es el capital sin los anulados.
   titulos: number;
   titulosEntregados: number;
   titulosNoEntregados: number;
   capital: number;
+  capitalARecuperar: number;
   titulosAnulados: number;
   capitalAnulado: number;
+  anulados: TituloAnulado[];
   titulosConvenio: number;
   // Coactivados sin ninguna gestión registrada todavía (ni siquiera migrada).
   pendientes: Coactivado[];
@@ -416,6 +433,7 @@ export class CoactivadosService {
   // ============================================
   private async totalesTitulosPorCartera(cartera: string): Promise<{
     titulos: number; capital: number; entregados: number; anulados: number; capitalAnulado: number; convenio: number;
+    listaAnulados: TituloCredito[];
   }> {
     const ref = collection(this.firestore, COLECCION_TITULOS);
     const deCartera = where('cartera', '==', cartera);
@@ -428,23 +446,31 @@ export class CoactivadosService {
       getAggregateFromServer(query(ref, deCartera, where('estadoIess', '==', ESTADO_CONVENIO)), { convenio: count() })
     ]);
 
-    let anulados = 0, capitalAnulado = 0, anuladosEntregados = 0;
+    let anulados = 0, capitalAnulado = 0;
+    const listaAnulados: TituloCredito[] = [];
     snapAnulados.forEach(d => {
       const t = d.data() as TituloCredito;
+      listaAnulados.push(t);
       anulados++;
       capitalAnulado += t.capital;
-      if (t.estadoEntrega === 'entregado') anuladosEntregados++;
     });
     capitalAnulado = Math.round(capitalAnulado * 100) / 100;
 
     return {
-      titulos: agg.data().titulos - anulados,
-      capital: Math.round((agg.data().capital - capitalAnulado) * 100) / 100,
-      entregados: aggEntregados.data().entregados - anuladosEntregados,
+      titulos: agg.data().titulos,
+      capital: Math.round(agg.data().capital * 100) / 100,
+      entregados: aggEntregados.data().entregados,
       anulados,
       capitalAnulado,
-      convenio: aggConvenio.data().convenio
+      convenio: aggConvenio.data().convenio,
+      listaAnulados
     };
+  }
+
+  // Firestore devuelve Timestamps; la app trabaja con Date.
+  private comoFecha(valor: any): Date | undefined {
+    const fecha = valor?.toDate ? valor.toDate() : valor;
+    return fecha instanceof Date && !isNaN(fecha.getTime()) ? fecha : undefined;
   }
 
   // Cédulas que ya tienen al menos una gestión (incluye las migradas del
@@ -472,8 +498,8 @@ export class CoactivadosService {
     const coactivados = snap.docs.map(d => d.data() as Coactivado);
     if (coactivados.length === 0) {
       return {
-        cartera, coactivados: 0, titulos: 0, titulosEntregados: 0, titulosNoEntregados: 0, capital: 0,
-        titulosAnulados: 0, capitalAnulado: 0, titulosConvenio: 0, pendientes: [], sinLlamada: 0, todos: []
+        cartera, coactivados: 0, titulos: 0, titulosEntregados: 0, titulosNoEntregados: 0, capital: 0, capitalARecuperar: 0,
+        titulosAnulados: 0, capitalAnulado: 0, anulados: [], titulosConvenio: 0, pendientes: [], sinLlamada: 0, todos: []
       };
     }
 
@@ -499,7 +525,20 @@ export class CoactivadosService {
       titulosEntregados: totales.entregados,
       titulosNoEntregados: totales.titulos - totales.entregados,
       capital: totales.capital,
+      capitalARecuperar: Math.round((totales.capital - totales.capitalAnulado) * 100) / 100,
       titulosAnulados: totales.anulados,
+      anulados: totales.listaAnulados
+        .map(t => ({
+          numero: t.numero,
+          coactivadoId: t.coactivadoId,
+          nombre: coactivados.find(c => c.cedula === t.coactivadoId)?.nombre ?? t.coactivadoId,
+          capital: t.capital,
+          entregado: t.estadoEntrega === 'entregado',
+          guia: t.guia,
+          marcadoPor: t.estadoManual ? t.estadoModificadoPor?.nombre : undefined,
+          fecha: t.estadoManual ? this.comoFecha(t.fechaEstadoModificado) : undefined
+        }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre) || a.numero.localeCompare(b.numero)),
       capitalAnulado: totales.capitalAnulado,
       titulosConvenio: totales.convenio,
       pendientes,

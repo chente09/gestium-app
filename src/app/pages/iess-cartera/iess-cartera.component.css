@@ -73,6 +73,10 @@ nz-card.paso-card {
     margin-bottom: 12px;
 }
 
+.tenue {
+    color: rgba(0, 0, 0, 0.45);
+}
+
 .filtro-llamada {
     display: block;
     margin-bottom: 12px;

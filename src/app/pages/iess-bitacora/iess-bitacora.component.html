@@ -771,7 +771,8 @@
                         <div class="carta-stats">
                             <span class="stat-item"><b>{{ r.coactivados }}</b> coactivado(s)</span>
                             <span class="stat-item"><b>{{ r.titulos }}</b> título(s)</span>
-                            <span class="stat-item">{{ formatoMoneda(r.capital) }} de capital</span>
+                            <span class="stat-item">{{ formatoMoneda(r.capital) }} de capital asignado</span>
+                            <span class="stat-item" *ngIf="r.titulosAnulados > 0">{{ r.titulosAnulados }} anulado(s) incluidos</span>
                         </div>
 
                         <nz-alert

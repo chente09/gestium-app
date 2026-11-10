@@ -18,11 +18,11 @@
     <ng-container *ngIf="!cargando && resumen">
         <div class="resumen-stats">
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.coactivados" nzTitle="Coactivados"></nz-statistic></nz-card>
-            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulos" nzTitle="Títulos"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulos" nzTitle="Títulos asignados"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosEntregados" nzTitle="TC entregados"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosNoEntregados" nzTitle="TC no entregados"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-capital">
-                <div class="stat-titulo">Capital</div>
+                <div class="stat-titulo">Capital asignado</div>
                 <div class="stat-valor">{{ formatoMoneda(resumen.capital) }}</div>
             </nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.pendientes.length" nzTitle="Sin gestión todavía"></nz-statistic></nz-card>
@@ -33,10 +33,14 @@
 
         <div class="resumen-stats" *ngIf="resumen.titulosConvenio > 0 || resumen.titulosAnulados > 0">
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosConvenio" nzTitle="Cancelados en convenio"></nz-statistic></nz-card>
-            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosAnulados" nzTitle="Anulados (no cuentan en el capital)"></nz-statistic></nz-card>
+            <nz-card [nzBodyStyle]="{ padding: '10px 14px' }"><nz-statistic [nzValue]="resumen.titulosAnulados" nzTitle="De ellos, anulados"></nz-statistic></nz-card>
             <nz-card [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-capital">
                 <div class="stat-titulo">Capital anulado</div>
                 <div class="stat-valor">{{ formatoMoneda(resumen.capitalAnulado) }}</div>
+            </nz-card>
+            <nz-card *ngIf="resumen.titulosAnulados > 0" [nzBodyStyle]="{ padding: '10px 14px' }" class="carta-capital">
+                <div class="stat-titulo">Capital a recuperar (sin anulados)</div>
+                <div class="stat-valor">{{ formatoMoneda(resumen.capitalARecuperar) }}</div>
             </nz-card>
         </div>
 
@@ -51,6 +55,35 @@
                 <div class="stat-valor">{{ formatoMoneda(resumenCancelados.capitalCancelado) }}</div>
             </nz-card>
         </div>
+
+        <nz-card *ngIf="resumen.anulados.length > 0" nzTitle="Títulos anulados" class="paso-card">
+            <p class="nota-cancelados">
+                Siguen dentro de la asignación (están en los TC y en el capital de arriba), pero no son capital a
+                recuperar. Aquí puedes ver cuáles son y abrir el caso de cada uno.
+            </p>
+            <div class="tabla-scroll">
+                <nz-table [nzData]="resumen.anulados" [nzPageSize]="20" [nzShowPagination]="resumen.anulados.length > 20" nzSize="small" [nzBordered]="true">
+                    <thead>
+                        <tr><th>Razón social</th><th>Cédula / RUC</th><th>Título</th><th>Capital</th><th>Entrega</th><th>Cómo se anuló</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let a of resumen.anulados" class="fila-caso" (click)="abrirFicha({ cedula: a.coactivadoId })">
+                            <td>{{ a.nombre }}</td>
+                            <td class="nowrap">{{ a.coactivadoId }}</td>
+                            <td class="nowrap">{{ a.numero }}</td>
+                            <td class="nowrap">{{ formatoMoneda(a.capital) }}</td>
+                            <td>{{ a.entregado ? 'Entregado' : 'No entregado' }}</td>
+                            <td>
+                                <ng-container *ngIf="a.marcadoPor; else deLaMatriz">
+                                    Marcado por {{ a.marcadoPor }}<span *ngIf="a.fecha"> el {{ a.fecha | date: 'dd/MM/yyyy' }}</span>
+                                </ng-container>
+                                <ng-template #deLaMatriz><span class="tenue">Vino anulado de la matriz</span></ng-template>
+                            </td>
+                        </tr>
+                    </tbody>
+                </nz-table>
+            </div>
+        </nz-card>
 
         <nz-card
             *ngIf="resumenCancelados && resumenCancelados.pendientesDeRegistro.length > 0"
